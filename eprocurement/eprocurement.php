@@ -3,7 +3,7 @@
  * Plugin Name: eProcurement
  * Plugin URI:  https://www.myblisstech.com/eprocurement
  * Description: A mini-CRM WordPress plugin for procurement processes. Manages bid/tender notices, structured communication between procurement officials and prospective bidders, cloud-based document storage, and role-based access control.
- * Version:     2.10.2
+ * Version:     2.10.3
  * Author:      MyBliss Tech
  * Author URI:  https://www.myblisstech.com
  * License:     GPL-2.0+
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin constants
  */
-define( 'EPROC_VERSION', '2.10.2' );
+define( 'EPROC_VERSION', '2.10.3' );
 define( 'EPROC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EPROC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'EPROC_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );

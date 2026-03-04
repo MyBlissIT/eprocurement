@@ -495,7 +495,7 @@ $providers = [
         </div>
         <div class="eproc-card-body">
             <p class="eproc-text-muted eproc-text-sm" style="margin-bottom:16px;">
-                <?php esc_html_e( 'Seed the system with sample users, contacts, bids, and Q&A threads for demonstration purposes. All demo users use the password: demo123', 'eprocurement' ); ?>
+                <?php esc_html_e( 'Seed the system with sample users, contacts, bids, and Q&A threads for demonstration purposes. All demo users use the password: Demo@2025', 'eprocurement' ); ?>
             </p>
 
             <div id="eproc-demo-notices"></div>
@@ -513,10 +513,10 @@ $providers = [
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td>demo-scm-manager</td><td>SCM Manager</td><td>demo123</td></tr>
-                        <tr><td>demo-scm-official</td><td>SCM Official</td><td>demo123</td></tr>
-                        <tr><td>demo-unit-manager</td><td>Unit Manager</td><td>demo123</td></tr>
-                        <tr><td>demo-bidder</td><td>Bidder</td><td>demo123</td></tr>
+                        <tr><td>demo-scm-manager</td><td>SCM Manager</td><td>Demo@2025</td></tr>
+                        <tr><td>demo-scm-official</td><td>SCM Official</td><td>Demo@2025</td></tr>
+                        <tr><td>demo-unit-manager</td><td>Unit Manager</td><td>Demo@2025</td></tr>
+                        <tr><td>demo-bidder</td><td>Bidder</td><td>Demo@2025</td></tr>
                     </tbody>
                 </table>
                 <button type="button" id="eproc-remove-demo" class="eproc-btn eproc-btn-danger">

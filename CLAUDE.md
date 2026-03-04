@@ -2,7 +2,7 @@
 
 > **Last updated:** 2026-03-04
 > **Author:** MyBliss Technologies
-> **Plugin version:** 2.10.2
+> **Plugin version:** 2.10.3
 > **PHP:** 8.0+ | **WordPress:** 6.0+
 
 ---
@@ -145,7 +145,7 @@ eProcument Plugin/
 
 ### Plugin Constants
 ```php
-EPROC_VERSION       = '2.10.2'      // Used for CSS/JS cache busting
+EPROC_VERSION       = '2.10.3'      // Used for CSS/JS cache busting
 EPROC_PLUGIN_DIR    = plugin_dir_path(__FILE__)
 EPROC_PLUGIN_URL    = plugin_dir_url(__FILE__)
 EPROC_TABLE_PREFIX  = 'eproc_'     // All 9 tables: wp_eproc_*
@@ -347,7 +347,7 @@ All colors defined as CSS custom properties on `.eproc-admin-shell` for multi-te
 
 | Plugin | Version | Purpose |
 |--------|---------|---------|
-| eProcurement | 2.10.2 | The main procurement plugin (this project) |
+| eProcurement | 2.10.3 | The main procurement plugin (this project) |
 | sme-admin-customizations (MU) | v5.0 | Dynamic tenant branding: login page, admin bar hidden, scoped sidebar hide, WP sidebar restyled, profile cleanup, security. **Auto-installed** from `bundled-mu/` on plugin activation. |
 
 > **Removed plugins**: Wordfence and Really Simple SSL were removed (2026-03-04) — 25 Wordfence tables dropped, DB reduced from 46 → 21 tables. Security hardening now handled by MU-plugin + `class-access-control.php`.
@@ -389,7 +389,7 @@ All use `wp_ajax_` hooks with nonce verification:
 | **Repo** | `MyBlissIT/eprocurement` (public) |
 | **URL** | https://github.com/MyBlissIT/eprocurement |
 | **Branch** | `master` |
-| **Current tag** | `v2.10.2` |
+| **Current tag** | `v2.10.3` |
 | **CI/CD** | GitHub Actions (`.github/workflows/release.yml`) |
 
 ### Self-Update Mechanism
@@ -465,7 +465,7 @@ git push origin v2.11.0
 ### CSS not updating
 Bump `EPROC_VERSION` in `eprocurement.php` to bust browser cache:
 ```php
-define( 'EPROC_VERSION', '2.10.2' ); // Increment this
+define( 'EPROC_VERSION', '2.10.3' ); // Increment this
 ```
 
 ### Sub-pages showing 404

@@ -20,7 +20,7 @@ class Eprocurement_Demo_Data {
     private const DEMO_META_KEY = '_eproc_demo_data';
 
     /** Default password for all demo users. */
-    private const DEMO_PASSWORD = 'demo123';
+    private const DEMO_PASSWORD = 'Demo@2025';
 
     /**
      * Check if demo data has been seeded.
