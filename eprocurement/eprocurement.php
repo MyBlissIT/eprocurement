@@ -3,7 +3,7 @@
  * Plugin Name: eProcurement
  * Plugin URI:  https://www.myblisstech.com/eprocurement
  * Description: A mini-CRM WordPress plugin for procurement processes. Manages bid/tender notices, structured communication between procurement officials and prospective bidders, cloud-based document storage, and role-based access control.
- * Version:     2.10.1
+ * Version:     2.10.2
  * Author:      MyBliss Tech
  * Author URI:  https://www.myblisstech.com
  * License:     GPL-2.0+
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin constants
  */
-define( 'EPROC_VERSION', '2.10.1' );
+define( 'EPROC_VERSION', '2.10.2' );
 define( 'EPROC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EPROC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'EPROC_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -218,6 +218,15 @@ function eprocurement_init(): void {
 
     // Also run auto-close on every page load (lightweight UPDATE query)
     $documents->auto_close_expired_bids();
+
+    // Exclude eProcurement pages from Bluehost Endurance Page Cache.
+    // The file-based cache serves stale HTML for dynamic routes like
+    // /tenders/register/, /tenders/bid/5/, etc.
+    add_filter( 'epc_exempt_uri_contains', function ( array $exempt ): array {
+        $slug = get_option( 'eprocurement_frontend_page_slug', 'tenders' );
+        $exempt[] = $slug;
+        return $exempt;
+    } );
 }
 add_action( 'plugins_loaded', 'eprocurement_init' );
 

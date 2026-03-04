@@ -2,7 +2,7 @@
 
 > **Last updated:** 2026-03-04
 > **Author:** MyBliss Technologies
-> **Plugin version:** 2.10.0
+> **Plugin version:** 2.10.2
 > **PHP:** 8.0+ | **WordPress:** 6.0+
 
 ---
@@ -145,7 +145,7 @@ eProcument Plugin/
 
 ### Plugin Constants
 ```php
-EPROC_VERSION       = '2.10.0'      // Used for CSS/JS cache busting
+EPROC_VERSION       = '2.10.2'      // Used for CSS/JS cache busting
 EPROC_PLUGIN_DIR    = plugin_dir_path(__FILE__)
 EPROC_PLUGIN_URL    = plugin_dir_url(__FILE__)
 EPROC_TABLE_PREFIX  = 'eproc_'     // All 9 tables: wp_eproc_*
@@ -347,7 +347,7 @@ All colors defined as CSS custom properties on `.eproc-admin-shell` for multi-te
 
 | Plugin | Version | Purpose |
 |--------|---------|---------|
-| eProcurement | 2.10.0 | The main procurement plugin (this project) |
+| eProcurement | 2.10.2 | The main procurement plugin (this project) |
 | sme-admin-customizations (MU) | v5.0 | Dynamic tenant branding: login page, admin bar hidden, scoped sidebar hide, WP sidebar restyled, profile cleanup, security. **Auto-installed** from `bundled-mu/` on plugin activation. |
 
 > **Removed plugins**: Wordfence and Really Simple SSL were removed (2026-03-04) — 25 Wordfence tables dropped, DB reduced from 46 → 21 tables. Security hardening now handled by MU-plugin + `class-access-control.php`.
@@ -389,7 +389,7 @@ All use `wp_ajax_` hooks with nonce verification:
 | **Repo** | `MyBlissIT/eprocurement` (public) |
 | **URL** | https://github.com/MyBlissIT/eprocurement |
 | **Branch** | `master` |
-| **Current tag** | `v2.10.0` |
+| **Current tag** | `v2.10.2` |
 | **CI/CD** | GitHub Actions (`.github/workflows/release.yml`) |
 
 ### Self-Update Mechanism
@@ -455,6 +455,8 @@ git push origin v2.11.0
 - ~~Front page redirect~~ — 302 redirect from `/` to `/tenders/` instead of static front page assignment
 - ~~Self-update system~~ — `class-updater.php` checks GitHub Releases, auto-update via wp-admin
 - ~~GitHub Actions CI/CD~~ — `.github/workflows/release.yml` auto-builds ZIP on tag push
+- ~~Bluehost cache fix~~ — EPC exempt filter for tenders slug, `.htaccess` no-cache headers, rewrite rule exclusion
+- ~~Demo data~~ — `demo-data.sql` with 5 tenders, 3 contacts, 3 bidders, 6 compliance docs, 12 supporting docs, 4 query threads with 7 messages, 9 download audit entries
 
 ---
 
@@ -463,13 +465,28 @@ git push origin v2.11.0
 ### CSS not updating
 Bump `EPROC_VERSION` in `eprocurement.php` to bust browser cache:
 ```php
-define( 'EPROC_VERSION', '2.10.0' ); // Increment this
+define( 'EPROC_VERSION', '2.10.2' ); // Increment this
 ```
 
 ### Sub-pages showing 404
 Flush rewrite rules:
 ```bash
 docker exec eproc-wp wp rewrite flush --allow-root
+```
+
+### Sub-pages showing 404 on Bluehost / shared hosting
+Bluehost's Endurance Page Cache caches full HTML pages — including 404 responses. The plugin hooks the `epc_exempt_uri_contains` filter to exclude the tenders slug, but you also need to:
+1. Add a `RewriteCond %{REQUEST_URI} !^/tenders` line before the EPC cache rewrite rule in `.htaccess`
+2. Delete stale cached files: `rm -rf wp-content/endurance-page-cache/tenders/`
+3. Add no-cache headers for `/tenders/` URLs at the top of `.htaccess`:
+```apache
+<IfModule mod_headers.c>
+    <If "%{REQUEST_URI} =~ m#^/tenders(/.*)?$#">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </If>
+</IfModule>
 ```
 
 ### Docker won't start
