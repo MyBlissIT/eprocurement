@@ -17,6 +17,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( have_posts() ) {
     the_post();
 }
+
+// Buffer output so that WordPress can still send cookie/redirect
+// headers from shortcode callbacks (login, access control, etc.).
+ob_start();
 ?><!DOCTYPE html>
 <html <?php language_attributes(); ?>>
 <head>
@@ -32,3 +36,4 @@ if ( have_posts() ) {
 <?php wp_footer(); ?>
 </body>
 </html>
+<?php ob_end_flush(); ?>
