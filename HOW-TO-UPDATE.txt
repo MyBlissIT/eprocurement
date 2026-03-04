@@ -1,0 +1,60 @@
+HOW TO PUSH UPDATES FROM LOCAL
+===============================
+
+PREREQUISITES
+- Git installed
+- GitHub CLI (gh) authenticated -- run: gh auth status
+- Open terminal in project folder:
+  cd "/c/Users/sinet/OneDrive/Documents/MyBliss Technologies/Website Development/Plugins/Custom Plugins/eProcument Plugin"
+
+
+STEP 1: SAVE CHANGES (does NOT update client sites)
+----------------------------------------------------
+
+  git status                          <-- see what changed
+  git add -A                          <-- stage all changes
+  git commit -m "Fix bid status bug"  <-- save with a description
+  git push                            <-- push to GitHub (no client update)
+
+
+STEP 2: RELEASE TO CLIENTS (triggers auto-update)
+---------------------------------------------------
+Only do this when ready for client sites to receive the update:
+
+  git tag v2.11.0                     <-- tag the release
+  git push origin v2.11.0             <-- push tag (triggers GitHub Actions)
+
+GitHub Actions will automatically:
+  1. Build eprocurement.zip from the tagged code
+  2. Create a GitHub Release with the ZIP attached
+  3. Client sites see "Update Available" in wp-admin within 12 hours
+
+
+VERSION NUMBERING
+-----------------
+  Bug fix         (e.g. fix email)       v2.10.0 --> v2.10.1
+  New feature     (e.g. add CSV import)  v2.10.0 --> v2.11.0
+  Breaking change (e.g. DB restructure)  v2.10.0 --> v3.0.0
+
+  IMPORTANT: Also bump EPROC_VERSION in eprocurement.php before releasing.
+
+
+QUICK REFERENCE
+---------------
+  git status                  See what files changed
+  git diff                    See exact changes
+  git add -A                  Stage all changes
+  git commit -m "message"     Save changes locally
+  git push                    Push to GitHub (no client update)
+  git tag vX.Y.Z              Tag a release version
+  git push origin vX.Y.Z      Push tag (triggers client update)
+  git log --oneline -10       See last 10 commits
+  gh release list             See all releases on GitHub
+
+
+KEY POINTS
+----------
+  git push             = saves code to GitHub. Clients NOT affected.
+  git push origin vX   = creates a release. Clients WILL see the update.
+
+  Always test locally (Docker) before tagging a release.

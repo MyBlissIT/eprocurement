@@ -32,7 +32,31 @@ class Eprocurement_Activator {
             wp_schedule_event( time(), 'daily', 'eprocurement_daily_cleanup' );
         }
 
-        // Flush rewrite rules for any custom endpoints
+        // Register rewrite rules before flushing — on activation, the init
+        // hook has already fired so the rules from class-public.php aren't
+        // registered yet in this request. We must register them explicitly.
+        $slug = get_option( 'eprocurement_frontend_page_slug', 'tenders' );
+
+        add_rewrite_rule(
+            '^' . preg_quote( $slug, '/' ) . '/manage/([^/]*)/?$',
+            'index.php?pagename=' . $slug . '&eproc_route=manage&eproc_manage_page=$matches[1]',
+            'top'
+        );
+        add_rewrite_rule(
+            '^' . preg_quote( $slug, '/' ) . '/bid/(\d+)/?$',
+            'index.php?pagename=' . $slug . '&eproc_route=bid&eproc_bid_id=$matches[1]',
+            'top'
+        );
+        add_rewrite_rule(
+            '^' . preg_quote( $slug, '/' ) . '/([^/]+)/?$',
+            'index.php?pagename=' . $slug . '&eproc_route=$matches[1]',
+            'top'
+        );
+
+        add_rewrite_tag( '%eproc_route%', '([^&]+)' );
+        add_rewrite_tag( '%eproc_manage_page%', '([^&]+)' );
+        add_rewrite_tag( '%eproc_bid_id%', '(\d+)' );
+
         flush_rewrite_rules();
     }
 

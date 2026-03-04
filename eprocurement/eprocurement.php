@@ -3,7 +3,7 @@
  * Plugin Name: eProcurement
  * Plugin URI:  https://www.myblisstech.com/eprocurement
  * Description: A mini-CRM WordPress plugin for procurement processes. Manages bid/tender notices, structured communication between procurement officials and prospective bidders, cloud-based document storage, and role-based access control.
- * Version:     2.10.0
+ * Version:     2.10.1
  * Author:      MyBliss Tech
  * Author URI:  https://www.myblisstech.com
  * License:     GPL-2.0+
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin constants
  */
-define( 'EPROC_VERSION', '2.10.0' );
+define( 'EPROC_VERSION', '2.10.1' );
 define( 'EPROC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EPROC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'EPROC_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -200,6 +200,17 @@ function eprocurement_init(): void {
 
     // Frontend (public) classes
     $public_handler = new Eprocurement_Public();
+
+    // Self-healing rewrite flush: runs once per version to ensure custom
+    // rewrite rules are registered. Fixes the issue where activation flush
+    // runs before init registers the rules.
+    $flush_key = 'eprocurement_rewrite_version';
+    if ( get_option( $flush_key ) !== EPROC_VERSION ) {
+        add_action( 'init', function () use ( $flush_key ) {
+            flush_rewrite_rules();
+            update_option( $flush_key, EPROC_VERSION );
+        }, 99 ); // Priority 99: run after our rules are registered at default priority
+    }
 
     // Hook cron callback (scheduling happens on activation only)
     add_action( 'eprocurement_daily_cleanup', [ $documents, 'auto_close_expired_bids' ] );

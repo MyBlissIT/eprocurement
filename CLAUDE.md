@@ -55,6 +55,10 @@ docker exec eproc-wp wp rewrite flush --allow-root
 eProcument Plugin/
 ├── docker-compose.yml                        # Dev environment (4 services)
 ├── CLAUDE.md                                 # THIS FILE
+├── .gitignore                                # Git ignore rules
+├── .github/
+│   └── workflows/
+│       └── release.yml                      # GitHub Actions: build ZIP on tag push
 ├── mu-plugins/                               # MU-plugins (mounted into container)
 │   ├── sme-admin-customizations.php         # MyBliss branding v5.0: login, admin bar hidden, scoped sidebar hide, WP sidebar restyled, profile cleanup, security
 │   └── sme-assets/
@@ -85,6 +89,7 @@ eProcument Plugin/
     │   ├── class-admin-rest-api.php         # Admin REST API (eprocurement/v1/admin) — 28 endpoints
     │   ├── class-branding.php               # Dynamic tenant branding (name, logo, colors, login)
     │   ├── class-demo-data.php              # Demo data seeder/remover (users, bids, contacts, threads)
+    │   ├── class-updater.php                # Self-update via GitHub Releases API
     │   ├── class-smtp.php                   # SMTP configuration from plugin settings
     │   ├── class-storage-interface.php      # Abstract cloud storage + AES-256-CBC encryption
     │   └── storage/                         # Cloud provider implementations
@@ -144,6 +149,7 @@ EPROC_VERSION       = '2.10.0'      // Used for CSS/JS cache busting
 EPROC_PLUGIN_DIR    = plugin_dir_path(__FILE__)
 EPROC_PLUGIN_URL    = plugin_dir_url(__FILE__)
 EPROC_TABLE_PREFIX  = 'eproc_'     // All 9 tables: wp_eproc_*
+EPROC_GITHUB_REPO   = 'MyBlissIT/eprocurement'  // For self-updater
 ```
 
 ### Database Schema (9 custom tables)
@@ -376,13 +382,59 @@ All use `wp_ajax_` hooks with nonce verification:
 
 ---
 
+## GitHub Repository & Version Control
+
+| Detail | Value |
+|--------|-------|
+| **Repo** | `MyBlissIT/eprocurement` (public) |
+| **URL** | https://github.com/MyBlissIT/eprocurement |
+| **Branch** | `master` |
+| **Current tag** | `v2.10.0` |
+| **CI/CD** | GitHub Actions (`.github/workflows/release.yml`) |
+
+### Self-Update Mechanism
+- **`includes/class-updater.php`** hooks into WordPress plugin update system
+- Checks GitHub Releases API every 12 hours (cached via transient)
+- Client sites see "Update Available" in wp-admin when a new release exists
+- Downloads `eprocurement.zip` from the release assets
+- **No token needed** — repo is public, updates work like any standard plugin
+
+### Release Flow
+```bash
+# 1. Make code changes and commit
+git add <files>
+git commit -m "Description of changes"
+git push
+
+# 2. When ready to release to clients — tag and push:
+git tag v2.11.0
+git push origin v2.11.0
+# GitHub Actions auto-builds eprocurement.zip and creates a Release
+# Client sites will see "Update Available" within 12 hours
+```
+
+> **Important**: `git push` saves code but does NOT trigger client updates. Only pushing a **tag** (`v2.x.x`) creates a release that clients receive.
+
+### Claude Workflow Rule — GitHub Pushes
+**ALWAYS ask the user for permission before pushing to GitHub.** After making code edits:
+1. Commit changes locally (if asked to commit)
+2. Ask: "Should I push these changes to GitHub?" — wait for confirmation
+3. If releasing: Ask: "Should I tag this as vX.Y.Z and push the tag to create a release?" — wait for confirmation
+4. **Never auto-push or auto-tag without explicit user approval**
+
+### Environment Strategy
+- **Local (Docker)** = Development + Testing environment
+- **GitHub** = Version control + distribution to clients
+- **Client sites (shared hosting / VPS)** = Production — receive updates via self-updater
+
+---
+
 ## What's Next (Remaining Work)
 
 ### Should Do
 1. **Deploy to shared hosting** — upload `eprocurement/` folder to `wp-content/plugins/`, activate, configure WP Mail SMTP
-2. **Self-update server** — build update checker into the plugin so clients get automatic updates
-3. **MainWP dashboard** — set up centralized management for all client sites
-4. **Visual verification** of admin and frontend pages via browser screenshots (pixel-perfect CSS check)
+2. **MainWP dashboard** — set up centralized management for all client sites
+3. **Visual verification** of admin and frontend pages via browser screenshots (pixel-perfect CSS check)
 5. **Test cloud storage** with at least one real provider (S3 recommended for simplicity)
 6. **Cross-browser check** the frontend (Chrome, Firefox, mobile Safari)
 
@@ -401,6 +453,8 @@ All use `wp_ajax_` hooks with nonce verification:
 - ~~MU-plugin auto-install~~ — bundled in `bundled-mu/`, auto-copied to `mu-plugins/` on activation
 - ~~Demo data seeder~~ — Settings > Demo Data card (seed/remove), 4 users, 6 bids, 3 contacts, 2 threads
 - ~~Front page redirect~~ — 302 redirect from `/` to `/tenders/` instead of static front page assignment
+- ~~Self-update system~~ — `class-updater.php` checks GitHub Releases, auto-update via wp-admin
+- ~~GitHub Actions CI/CD~~ — `.github/workflows/release.yml` auto-builds ZIP on tag push
 
 ---
 

@@ -3,11 +3,8 @@
  * Self-update via GitHub Releases.
  *
  * Hooks into WordPress's native plugin update system to check for new
- * versions on a private GitHub repo. When a new tagged release is found,
+ * versions on a public GitHub repo. When a new tagged release is found,
  * WordPress shows "Update Available" and the admin can one-click update.
- *
- * Requires a GitHub Personal Access Token (PAT) for private repos.
- * The token is stored encrypted in wp_options via the Settings page.
  *
  * @package Eprocurement
  * @since   2.10.0
@@ -48,30 +45,6 @@ class Eprocurement_Updater {
     }
 
     /**
-     * Get the GitHub Personal Access Token.
-     *
-     * Reads from the encrypted option, falling back to the EPROC_GITHUB_TOKEN
-     * constant (useful for wp-config.php definition).
-     */
-    private function get_token(): string {
-        // 1. Check wp-config.php constant
-        if ( defined( 'EPROC_GITHUB_TOKEN' ) && EPROC_GITHUB_TOKEN ) {
-            return EPROC_GITHUB_TOKEN;
-        }
-
-        // 2. Check encrypted option
-        $encrypted = get_option( 'eprocurement_github_token', '' );
-        if ( ! empty( $encrypted ) && class_exists( 'Eprocurement_Storage_Interface' ) ) {
-            $decrypted = Eprocurement_Storage_Interface::decrypt( $encrypted );
-            if ( $decrypted ) {
-                return $decrypted;
-            }
-        }
-
-        return '';
-    }
-
-    /**
      * Fetch the latest release from GitHub API.
      *
      * Results are cached in a transient for 12 hours.
@@ -95,11 +68,6 @@ class Eprocurement_Updater {
             'Accept'     => 'application/vnd.github.v3+json',
             'User-Agent' => 'eProcurement-WP-Updater/' . EPROC_VERSION,
         ];
-
-        $token = $this->get_token();
-        if ( $token ) {
-            $headers['Authorization'] = 'token ' . $token;
-        }
 
         $response = wp_remote_get( $url, [
             'headers' => $headers,
@@ -137,11 +105,6 @@ class Eprocurement_Updater {
         if ( ! empty( $release->assets ) ) {
             foreach ( $release->assets as $asset ) {
                 if ( $asset->name === 'eprocurement.zip' ) {
-                    // For private repos, use the API URL with auth
-                    $token = $this->get_token();
-                    if ( $token ) {
-                        return add_query_arg( 'access_token', $token, $asset->url );
-                    }
                     return $asset->browser_download_url;
                 }
             }
