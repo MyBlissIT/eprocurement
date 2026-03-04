@@ -1,0 +1,32 @@
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Docker volumes (local dev only)
+db_data/
+
+# Node / Composer
+node_modules/
+vendor/
+
+# Environment
+.env
+.env.local
+
+# WordPress uploads (generated at runtime)
+uploads/
+
+# Logs
+*.log
+error_log
+
+# Claude Code
+.claude/

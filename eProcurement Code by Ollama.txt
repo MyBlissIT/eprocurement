@@ -1,0 +1,348 @@
+<?php
+/*
+Plugin Name: eProcurement Plugin
+Description: Manage supply chain documents in an easy-to-use interface with premium features
+Version: 2.0
+Author: Your Name
+License: GPL-2.0+
+Text Domain: eprocurement
+*/
+
+// Prevent direct access
+defined('ABSPATH') || exit;
+
+// Load plugin text domain
+load_plugin_textdomain('eprocurement', false, plugin_basename(dirname(__FILE__)));
+
+// Initialize plugin
+function eprocurement_init() {
+    // Register admin menu
+    add_action('admin_menu', 'eprocurement_register_admin_menu');
+    
+    // Register AJAX hooks
+    add_action('wp_ajax_add_document', 'eprocurement_add_document');
+    add_action('wp_ajax_nopriv_add_document', 'eprocurement_add_document');
+    
+    add_action('wp_ajax_display_documents', 'eprocurement_display_documents');
+    add_action('wp_ajax_nopriv_display_documents', 'eprocurement_display_documents');
+    
+    add_action('wp_ajax_update_hits', 'eprocurement_update_hits');
+    add_action('wp_ajax_nopriv_update_hits', 'eprocurement_update_hits');
+    
+    // Initialize database
+    eprocurement_create_tables();
+    
+    // Initialize cloud storage
+    eprocurement_init_cloud_storage();
+    
+    // Enqueue scripts
+    add_action('wp_enqueue_scripts', 'eprocurement_enqueue_scripts');
+    add_action('admin_enqueue_scripts', 'eprocurement_enqueue_admin_scripts');
+}
+
+// Register admin menu
+function eprocurement_register_admin_menu() {
+    add_menu_page(
+        __('eProcurement Dashboard', 'eprocurement'),
+        'eProcurement',
+        'manage_options',
+        'eprocurement-dashboard',
+        'eprocurement_admin_dashboard',
+        'dashicons-chart-bar',
+        6
+    );
+    
+    add_submenu_page(
+        'eprocurement-dashboard',
+        __('Documents', 'eprocurement'),
+        'Documents',
+        'manage_options',
+        'eprocurement-documents',
+        'eprocurement_admin_documents'
+    );
+    
+    add_submenu_page(
+        'eprocurement-dashboard',
+        __('Settings', 'eprocurement'),
+        'Settings',
+        'manage_options',
+        'eprocurement-settings',
+        'eprocurement_admin_settings'
+    );
+}
+
+// Create database tables
+function eprocurement_create_tables() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'eprocurement_documents';
+    
+    $charset_collate = $wpdb->get_charset_collate();
+    
+    $sql = "CREATE TABLE IF NOT EXISTS $table_name (
+        id INT(11) PRIMARY KEY AUTO_INCREMENT,
+        title VARCHAR(255) NOT NULL,
+        contact_person VARCHAR(255) NOT NULL,
+        opening_date DATE,
+        closing_date DATE,
+        briefing_date DATE,
+        hits INT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) $charset_collate;";
+    
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    dbDelta($sql);
+}
+
+// Initialize cloud storage
+function eprocurement_init_cloud_storage() {
+    // Initialize cloud storage service
+    if (class_exists('Cloud_Storage')) {
+        $storage_type = get_option('eprocurement_cloud_storage', 'google_drive');
+        $storage_service = new Cloud_Storage($storage_type);
+        $storage_service->connect();
+    }
+}
+
+// Enqueue scripts
+function eprocurement_enqueue_scripts() {
+    wp_enqueue_script('eprocurement-frontend', plugins_url('/assets/js/frontend.js', __FILE__), array('jquery'), '1.0', true);
+}
+
+function eprocurement_enqueue_admin_scripts() {
+    wp_enqueue_script('eprocurement-admin', plugins_url('/assets/js/admin.js', __FILE__), array('jquery'), '1.0', true);
+    wp_enqueue_style('eprocurement-admin', plugins_url('/assets/css/admin.css', __FILE__), array(), '1.0');
+}
+
+// AJAX handlers
+function eprocurement_add_document() {
+    check_ajax_referer('eprocurement_nonce', 'security');
+
+    $title = sanitize_text_field($_POST['title']);
+    $contact_person = sanitize_text_field($_POST['contact_person']);
+    $opening_date = sanitize_date($_POST['opening_date']);
+    $closing_date = sanitize_date($_POST['closing_date']);
+    $briefing_date = sanitize_date($_POST['briefing_date']);
+    
+    if (empty($title) || empty($contact_person)) {
+        wp_send_json_error(__('Please fill all required fields', 'eprocurement'));
+        return;
+    }
+    
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'eprocurement_documents';
+    
+    $wpdb->insert($table_name, array(
+        'title' => $title,
+        'contact_person' => $contact_person,
+        'opening_date' => $opening_date,
+        'closing
+    ));
+    
+    wp_send_json_success(array('message' => __('Document added successfully', 'eprocurement')));
+}
+
+function eprocurement_display_documents() {
+    check_ajax_referer('eprocurement_nonce', 'security');
+    
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'eprocurement_documents';
+    
+    $documents = $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
+    
+    $output = '<table class="widefat">';
+    $output .= '<thead><tr><th>' . __('Title', 'eprocurement') . '</th><th>' . __('Contact Person', 'eprocurement') . '</th><th>' . __('Download', 'eprocurement') . '</th><th>' . __('Opening Date', 'eprocurement') . '</th><th>' . __('Closing Date', 'eprocurement') . '</th><th>' . __('Briefing Date', 'eprocurement') . '</th><th>' . __('Hits', 'eprocurement') . '</th></tr></thead>';
+    
+    foreach ($documents as $document) {
+        $output .= '<tr>';
+        $output .= '<td>' . esc_html($document->title) . '</td>';
+        $output .= '<td>' . esc_html($document->contact_person) . '</td>';
+        $output .= '<td><a href="#" class="download-link" data-id="' . esc_attr($document->id) . '">' . __('Download', 'eprocurement') . '</a></td>';
+        $output .= '<td>' . esc_html($document->opening_date) . '</td>';
+        $output .= '<td>' . esc_html($document->closing_date) . '</td>';
+        $output .= '<td>' . esc_html($document->briefing_date) . '</td>';
+        $output .= '<td>' . esc_html($document->hits) . '</td>';
+        $output .= '</tr>';
+    }
+    
+    $output .= '</table>';
+    
+    wp_send_json_success(array('html' => $output));
+}
+
+function eprocurement_update_hits() {
+    check_ajax_referer('eprocurement_nonce', 'security');
+    
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'eprocurement_documents';
+    
+    $wpdb->query("UPDATE $table_name SET hits = hits + 1 WHERE id = " . intval($_POST['document_id']));
+    
+    wp_send_json_success(array('message' => __('Hits updated successfully', 'eprocurement')));
+}
+
+// Admin pages
+function eprocurement_admin_dashboard() {
+    include plugin_dir_path(__FILE__) . 'templates/admin-dashboard.php';
+}
+
+function eprocurement_admin_documents() {
+    include plugin_dir_path(__FILE__) . 'templates/admin-documents.php';
+}
+
+function eprocurement_admin_settings() {
+    include plugin_dir_path(__FILE__) . 'templates/admin-settings.php';
+}
+
+// Cloud Storage Class
+class Cloud_Storage {
+    protected $storage_type;
+    protected $client;
+    
+    public function __construct($storage_type) {
+        $this->storage_type = $storage_type;
+        $this->initialize_client();
+    }
+    
+    protected function initialize_client() {
+        switch ($this->storage_type) {
+            case 'google_drive':
+                // Initialize Google Drive API client
+                $this->client = new Google_Client();
+                $this->client->setClientId('YOUR_CLIENT_ID');
+                $this->client->setClientSecret('YOUR_CLIENT_SECRET');
+                $this->client->setRedirectUri('https://yourdomain.com/auth');
+                $this->client->setScopes([Google_Service_Drive::DRIVE_FILE]);
+                break;
+            case 'dropbox':
+                // Initialize Dropbox API client
+                $this->client = new Dropbox\Client('YOUR_ACCESS_TOKEN', 'php');
+                break;
+            default:
+                $this->client = null;
+        }
+    }
+    
+    public function connect() {
+        if ($this->client) {
+            // Connect to storage service
+            if ($this->storage_type === 'google_drive') {
+                // Handle OAuth flow
+                if (!isset($_GET['code'])) {
+                    $auth_url = $this->client->createAuthUrl();
+                    wp_redirect($auth_url);
+                    exit;
+                } else {
+                    $this->client->authenticate($_GET['code']);
+                }
+            }
+        }
+    }
+    
+    public function upload_file($file_path, $remote_path) {
+        if ($this->client) {
+            switch ($this->storage_type) {
+                case 'google_drive':
+                    $service = new Google_Service_Drive($this->client);
+                    $file = new Google_Service_Drive_DriveFile();
+                    $file->setName(basename($file_path));
+                    $file->setParents(['root']);
+                    $file->setMimeType('application/octet-stream');
+                    
+                    $content = file_get_contents($file_path);
+                    $file = $service->files->create($file, array(
+                        'data' => $content,
+                        'mimeType' => 'application/octet-stream',
+                        'uploadType' => 'multipart',
+                        'fields' => 'id'
+                    ));
+                    
+                    return $file->getId();
+                case 'dropbox':
+                    $file = $this->client->putFile($remote_path, fopen($file_path, 'r'));
+                    return $file->getId();
+            }
+        }
+        return false;
+    }
+    
+    public function download_file($file_id, $download_path) {
+        if ($this->client) {
+            switch ($this->storage_type) {
+                case 'google_drive':
+                    $service = new Google_Service_Drive($this->client);
+                    $file = $service->files->get($file_id, array('fields' => 'webViewLink'));
+                    return $file->getWebViewLink();
+                case 'dropbox':
+                    $file = $this->client->getFile($file_id);
+                    file_put_contents($download_path, $file->getContents());
+                    return $download_path;
+            }
+        }
+        return false;
+    }
+}
+
+// Initialize plugin
+add_action('init', 'eprocurement_init');
+function eprocurement_init() {
+    eprocurement_init();
+    wp_localize_script('eprocurement-frontend', 'eprocurementAjax', array(
+        'ajaxurl' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('eprocurement_nonce')
+    ));
+}
+</think>
+
+```php
+// Fix: Add missing closing PHP tag and complete the code
+
+// Continue from where the code was cut off
+
+    case 'dropbox':
+                $file = $this->client->putFile($remote_path, fopen($file_path, 'r'));
+                return $file->getId();
+            }
+        }
+        return false;
+    }
+    
+    public function download_file($file_id, $download_path) {
+        if ($this->client) {
+            switch ($this->storage_type) {
+                case 'google_drive':
+                    $service = new Google_Service_Drive($this->client);
+                    $file = $service->files->get($file_id, array('fields' => 'webViewLink'));
+                    return $file->getWebViewLink();
+                case 'dropbox':
+                    $file = $this->client->getFile($file_id);
+                    file_put_contents($download_path, $file->getContents());
+                    return $download_path;
+            }
+        }
+        return false;
+    }
+}
+
+// Admin Templates
+function eprocurement_admin_dashboard() {
+    include plugin_dir_path(__FILE__) . 'templates/admin-dashboard.php';
+}
+
+function eprocurement_admin_documents() {
+    include plugin_dir_path(__FILE__) . 'templates/admin-documents.php';
+}
+
+function eprocurement_admin_settings() {
+    include plugin_dir_path(__FILE__) . 'templates/admin-settings.php';
+}
+
+// Initialize plugin
+add_action('init', 'eprocurement_init');
+function eprocurement_init() {
+    eprocurement_init();
+    wp_localize_script('eprocurement-frontend', 'eprocurementAjax', array(
+        'ajaxurl' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('eprocurement_nonce')
+    ));
+}

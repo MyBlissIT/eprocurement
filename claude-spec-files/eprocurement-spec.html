@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1.0'>
+<title>eProcurement Plugin - Technical Specification</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;color:#222;background:#fff;line-height:1.6}
+@media print{.pb{page-break-before:always}body{font-size:11px}}
+.wrap{max-width:960px;margin:0 auto;padding:40px 32px}
+.cover{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  text-align:center;background:linear-gradient(135deg,#1e3a5f 0%,#2980b9 100%);color:#fff;padding:60px}
+.cover h1{font-size:38px;font-weight:700;margin-bottom:12px}
+.cover h2{font-size:18px;font-weight:400;opacity:.85;margin-bottom:28px}
+.cover .meta{font-size:13px;opacity:.7;line-height:2.2}
+.cbadge{display:inline-block;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  padding:4px 16px;border-radius:20px;font-size:12px;margin-bottom:28px}
+h1.sec{font-size:22px;color:#1e3a5f;border-bottom:3px solid #2980b9;padding-bottom:8px;margin:40px 0 18px}
+h2.sub{font-size:15px;color:#1e3a5f;margin:24px 0 10px;padding-left:10px;border-left:4px solid #2980b9}
+p{margin-bottom:10px;color:#333}
+code{font-family:monospace;background:#f0f0f0;padding:1px 5px;border-radius:3px;font-size:11px;color:#c0392b}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:12px}
+th{background:#1e3a5f;color:#fff;padding:8px 10px;text-align:left;font-weight:600}
+td{padding:7px 10px;border-bottom:1px solid #e0e0e0;vertical-align:top}
+tr:nth-child(even) td{background:#f7f9fc}
+.cl{border-left:4px solid #2980b9;background:#eef6fb;padding:12px 16px;margin:14px 0;border-radius:0 6px 6px 0;font-size:12px}
+.cl.ok{border-color:#27ae60;background:#eafaf1}
+.cl.warn{border-color:#f39c12;background:#fef9ec}
+.toc{background:#f7f9fc;border:1px solid #d0dce8;border-radius:6px;padding:20px 24px;margin:20px 0}
+.toc h3{color:#1e3a5f;margin-bottom:12px;font-size:15px}
+.toc ol{padding-left:20px;line-height:2.4;font-size:13px}
+.toc a{color:#2980b9;text-decoration:none}
+/* DB */
+.db{border:2px solid #1e3a5f;border-radius:6px;overflow:hidden;margin-bottom:18px}
+.db-h{background:#1e3a5f;color:#fff;padding:7px 14px;font-weight:700;font-size:12px;display:flex;justify-content:space-between}
+.db-h span{font-size:10px;font-weight:400;opacity:.7}
+.db-r{display:grid;grid-template-columns:185px 130px 1fr;padding:5px 12px;border-bottom:1px solid #e0e8f0;font-size:11px}
+.db-r:nth-child(even){background:#f7f9fc}
+.cn{font-weight:600;color:#1e3a5f;font-family:monospace}
+.ct{color:#c0392b;font-family:monospace;font-size:10px}
+.cno{color:#666;font-size:10px}
+.pk{font-size:9px;background:#f39c12;color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px}
+.fk{font-size:9px;background:#8e44ad;color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px}
+.uq{font-size:9px;background:#27ae60;color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px}
+/* WIREFRAMES */
+.wf{background:#e8eaed;border:2px solid #aaa;border-radius:8px;overflow:hidden;margin:18px 0;font-size:11px}
+.wf-bar{background:#333;color:#fff;padding:5px 12px;display:flex;align-items:center;gap:8px}
+.dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+.wf-url{background:#fff;border-radius:10px;padding:2px 12px;font-size:10px;color:#555;flex:1;max-width:340px;margin:0 auto}
+.wf-lbl{background:#1e3a5f;color:#fff;padding:4px 14px;font-size:10px;font-weight:700;letter-spacing:.5px}
+.wf-body{padding:10px}
+.wf-nav{background:#1e3a5f;color:#fff;padding:7px 12px;display:flex;align-items:center;gap:14px;font-size:10px;margin-bottom:8px;border-radius:4px}
+.wf-nav .logo{font-weight:700;font-size:12px;margin-right:auto}
+.wf-nav a{color:#a8c8e8;text-decoration:none;font-size:10px}
+.nbtn{background:#2980b9;padding:3px 10px;border-radius:3px;color:#fff;font-size:10px}
+.nbtn.g{background:#27ae60}
+.hero{background:#2980b9;color:#fff;padding:16px;border-radius:4px;margin-bottom:10px;text-align:center}
+.hero h3{font-size:15px;margin-bottom:3px}
+.hero p{font-size:10px;opacity:.85;margin:0}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:10px}
+.g12{display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.card{background:#fff;border:1px solid #ddd;border-radius:4px;padding:10px}
+.card h4{font-size:11px;color:#1e3a5f;margin-bottom:4px;font-weight:700}
+.card p{font-size:10px;color:#666;margin:0 0 3px}
+.tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:9px;font-weight:700;color:#fff;margin-bottom:4px}
+.tg{background:#27ae60}.tr{background:#e74c3c}.to{background:#f39c12}.tb{background:#2980b9}.tp{background:#8e44ad}
+.wbtn{display:inline-block;padding:3px 10px;border-radius:3px;font-size:10px;color:#fff;cursor:pointer;margin-top:5px}
+.bb{background:#2980b9}.bg{background:#27ae60}.br{background:#e74c3c}.bgr{background:#888}
+.inp{border:1px solid #ccc;border-radius:3px;padding:4px 8px;font-size:10px;background:#fff;width:100%;display:block;margin-bottom:6px}
+.lbl{font-size:10px;color:#555;font-weight:600;margin-bottom:2px;display:block}
+.sta{background:#fff;border:1px solid #ddd;border-radius:4px;padding:10px;text-align:center}
+.sta .num{font-size:22px;font-weight:700;color:#2980b9}
+.sta .lbl2{font-size:9px;color:#888;text-transform:uppercase}
+.wt{width:100%;border-collapse:collapse}
+.wt th{background:#f0f2f5;color:#333;padding:5px 8px;border:1px solid #ddd;font-weight:600;font-size:10px;text-align:left}
+.wt td{padding:5px 8px;border:1px solid #ddd;color:#444;font-size:10px}
+.wt tr:nth-child(even) td{background:#fafafa}
+.tabs{display:flex;border-bottom:2px solid #2980b9;margin-bottom:8px}
+.tab{padding:5px 14px;font-size:10px;color:#666;border-radius:4px 4px 0 0;cursor:pointer}
+.tab.active{background:#2980b9;color:#fff}
+.mi{padding:7px 10px;border-bottom:1px solid #eee;background:#fff;font-size:10px;cursor:pointer}
+.mi.act{background:#eef6fb;border-left:3px solid #2980b9}
+.mi .snd{font-weight:700;color:#1e3a5f;font-size:10px}
+.mi .prv{color:#888;font-size:9px}
+.pill{display:inline-block;padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700}
+.ppub{background:#2980b9;color:#fff}.ppriv{background:#8e44ad;color:#fff}
+.bub{background:#f0f0f0;border-radius:8px;padding:7px 10px;margin-bottom:6px;font-size:10px;max-width:80%}
+.bub.rep{background:#dbeeff;margin-left:auto;text-align:right}
+.bub .who{font-size:9px;color:#888;margin-bottom:2px}
+.cc{background:#fff;border:1px solid #ddd;border-radius:4px;padding:9px}
+.cc .ctype{display:inline-block;padding:1px 7px;border-radius:10px;font-size:9px;color:#fff;font-weight:700;margin-bottom:4px}
+.scm{background:#1e3a5f}.tech{background:#8e44ad}
+.cc .cname{font-weight:700;font-size:11px;color:#1e3a5f;margin-bottom:3px}
+.cc .cd{font-size:9px;color:#555;line-height:1.9}
+.cc .cd a{color:#2980b9}
+.sb{background:#fff;border:1px solid #ddd;border-radius:4px;padding:10px}
+.sb h5{font-size:11px;color:#1e3a5f;font-weight:700;margin-bottom:7px;border-bottom:1px solid #eee;padding-bottom:4px}
+/* BUILD */
+.phase{border:1px solid #ddd;border-radius:6px;margin-bottom:12px;overflow:hidden}
+.ph{background:#1e3a5f;color:#fff;padding:8px 14px;font-weight:700;font-size:12px;display:flex;align-items:center;gap:10px}
+.pn{background:#2980b9;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.pb2{padding:10px 14px;font-size:12px}
+.pb2 li{margin-bottom:3px;color:#444}
+.ft{font-family:monospace;font-size:11px;background:#f7f7f7;border:1px solid #ddd;border-radius:4px;padding:14px;line-height:2}
+.ft .d{color:#1e3a5f;font-weight:700}
+.ft .fi{color:#444}
+.ft .cm{color:#27ae60}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cbadge">INTERNAL DOCUMENT &mdash; PRE-BUILD REVIEW</div>
+  <h1>eProcurement Plugin</h1>
+  <h2>Technical Specification &amp; UI Wireframe Document</h2>
+  <div style="width:80px;height:3px;background:rgba(255,255,255,.35);margin:18px auto 24px"></div>
+  <div class="meta">
+    Version: 1.0 &nbsp;&bull;&nbsp; Date: February 2026<br>
+    Status: Approved for Development<br><br>
+    <strong>Purpose:</strong> Full architecture, database schema, roles,<br>
+    feature specifications &amp; UI wireframes for review before build.
+  </div>
+</div>
+
+<div class="wrap pb">
+  <div class="toc">
+    <h3>&#128221; Table of Contents</h3>
+    <ol>
+      <li><a href="#s1">Executive Summary</a></li>
+      <li><a href="#s2">Confirmed Design Decisions</a></li>
+      <li><a href="#s3">Plugin Architecture Overview</a></li>
+      <li><a href="#s4">User Roles &amp; Capabilities Matrix</a></li>
+      <li><a href="#s5">Database Schema (10 Tables)</a></li>
+      <li><a href="#s6">Feature Specifications</a></li>
+      <li><a href="#s7">Frontend UI Wireframes (5 Screens)</a></li>
+      <li><a href="#s8">Backend / Admin UI Wireframes (5 Screens)</a></li>
+      <li><a href="#s9">Build Approach, File Structure &amp; Phases</a></li>
+      <li><a href="#s10">Dependencies &amp; Deployment Requirements</a></li>
+    </ol>
+  </div>
+</div>
+
+<div class="wrap pb" id="s1">
+<h1 class="sec">1. Executive Summary</h1>
+<p>The <strong>eProcurement Plugin</strong> is a WordPress plugin functioning as a <strong>mini-CRM for procurement processes</strong>. It manages the full lifecycle of a tender/bid notice from publication to closure, providing a structured communication channel between procurement officials and prospective bidders. It is <em>not</em> a bid submission system &mdash; bidders communicate and download documents only.</p>
+<h2 class="sub">Core Capabilities</h2>
+<table>
+<tr><th>Function</th><th>Who</th><th>Description</th></tr>
+<tr><td>Publish Bid Notices</td><td>SCM Manager / Official</td><td>Create tender records with bid number, dates, metadata, contacts, and status</td></tr>
+<tr><td>Attach Supporting Documents</td><td>SCM Manager / Official</td><td>Multiple files per bid (specs, BOQ, addenda) via WordPress Media Library</td></tr>
+<tr><td>Download Documents</td><td>Any visitor (guest or registered)</td><td>Document downloads are open to everyone &mdash; no login required. All downloads are logged (with user_id if logged in, IP address if guest).</td></tr>
+<tr><td>Send Queries (Private)</td><td>Registered Bidders</td><td>Direct query to SCM or Technical contact &mdash; only sender and contact see it</td></tr>
+<tr><td>Post Public Q&amp;A</td><td>Registered Bidders</td><td>Bidder marks query Public &mdash; all registered bidders see the Q&amp;A on the bid page</td></tr>
+<tr><td>Reply to Queries</td><td>Unit Manager / SCM Staff</td><td>Assigned contacts respond through the plugin inbox; email notification sent to bidder</td></tr>
+<tr><td>Audit Trail</td><td>SCM Manager</td><td>Full log of all downloads and conversations per bid, exportable</td></tr>
+</table>
+<div class="cl ok"><strong>Design Principle:</strong> This is a communication and document distribution tool. Bidders interact with the process but never submit bid responses through the plugin. All formal submissions happen offline per procurement procedure.</div>
+</div>
+
+<div class="wrap pb" id="s2">
+<h1 class="sec">2. Confirmed Design Decisions</h1>
+<table>
+<tr><th>#</th><th>Topic</th><th>Decision</th><th>Implication</th></tr>
+<tr><td>1</td><td>Conversation Visibility</td><td>Bidder chooses <strong>Public (Q&amp;A)</strong> or <strong>Private</strong> per query</td><td>Public threads visible to all registered bidders on the bid detail page. Private threads visible only to sender and assigned contact.</td></tr>
+<tr><td>2</td><td>Account Activation</td><td><strong>Email verification</strong> required &mdash; no manual admin approval</td><td>Plugin sends a verification link on registration. Account inactive until clicked. Self-service, automated.</td></tr>
+<tr><td>3</td><td>Registration Gate</td><td>Registration required only to <strong>send queries / interact</strong>. Downloads are <strong>open to all guests</strong>.</td><td>Tender listing, detail pages, and document downloads are fully public &mdash; no login needed. Registration and email verification are only enforced when a visitor tries to send a query or post a public Q&amp;A.</td></tr>
+<tr><td>4</td><td>Unit Manager Replies</td><td>Unit Managers <strong>can reply</strong> to queries</td><td>Unit Manager role has an inbox view and reply capability but cannot manage documents or bidder accounts.</td></tr>
+<tr><td>5</td><td>Publish / Close Rights</td><td>SCM Manager, SCM Official, WordPress Admin, and WordPress Editor</td><td>Custom plugin capabilities mapped to these four roles. No other roles can publish or close bids.</td></tr>
+<tr><td>6</td><td>Document Versioning</td><td><strong>No versioning</strong> &mdash; files are additive only</td><td>Supporting documents are added to a bid, never replaced. Each file has an optional label. Old files are never deleted by the system.</td></tr>
+<tr><td>7</td><td>Supporting Documents</td><td>Each bid can have <strong>multiple supporting files</strong></td><td>A junction table links bid to media library uploads. Each file has a sort order and display label (e.g., &ldquo;Bill of Quantities&rdquo;, &ldquo;Site Map&rdquo;).</td></tr>
+</table>
+</div>
+
+<div class="wrap pb" id="s3">
+<h1 class="sec">3. Plugin Architecture Overview</h1>
+<h2 class="sub">Query Lifecycle Flow</h2>
+<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#f7f9fc;padding:16px;border-radius:6px;border:1px solid #ddd;margin-bottom:14px">
+  <div style="background:#fff;border:2px solid #2980b9;border-radius:4px;padding:6px 10px;font-size:11px;color:#1e3a5f;font-weight:600;text-align:center">Bidder views<br>Bid Detail</div>
+  <span style="color:#2980b9;font-size:18px">&rarr;</span>
+  <div style="background:#fff;border:2px solid #2980b9;border-radius:4px;padding:6px 10px;font-size:11px;color:#1e3a5f;font-weight:600;text-align:center">Clicks<br>Send Query</div>
+  <span style="color:#2980b9;font-size:18px">&rarr;</span>
+  <div style="background:#fff;border:2px solid #2980b9;border-radius:4px;padding:6px 10px;font-size:11px;color:#1e3a5f;font-weight:600;text-align:center">Chooses contact<br>+ Public/Private</div>
+  <span style="color:#2980b9;font-size:18px">&rarr;</span>
+  <div style="background:#fff;border:2px solid #2980b9;border-radius:4px;padding:6px 10px;font-size:11px;color:#1e3a5f;font-weight:600;text-align:center">Thread created<br>in DB</div>
+  <span style="color:#2980b9;font-size:18px">&rarr;</span>
+  <div style="background:#fff;border:2px solid #2980b9;border-radius:4px;padding:6px 10px;font-size:11px;color:#1e3a5f;font-weight:600;text-align:center">Email notification<br>to contact</div>
+  <span style="color:#2980b9;font-size:18px">&rarr;</span>
+  <div style="background:#fff;border:2px solid #27ae60;border-radius:4px;padding:6px 10px;font-size:11px;color:#27ae60;font-weight:600;text-align:center">Contact replies<br>via plugin</div>
+  <span style="color:#27ae60;font-size:18px">&rarr;</span>
+  <div style="background:#fff;border:2px solid #27ae60;border-radius:4px;padding:6px 10px;font-size:11px;color:#27ae60;font-weight:600;text-align:center">Bidder gets<br>email + sees reply</div>
+</div>
+<h2 class="sub">Core Classes</h2>
+<table>
+<tr><th>Class</th><th>File</th><th>Responsibility</th></tr>
+<tr><td><code>Eprocurement_Activator</code></td><td>class-activator.php</td><td>DB tables, roles, default options on plugin activation</td></tr>
+<tr><td><code>Eprocurement_Roles</code></td><td>class-roles.php</td><td>Defines 4 custom WP roles and maps capabilities</td></tr>
+<tr><td><code>Eprocurement_Database</code></td><td>class-database.php</td><td>Shared query methods, dbDelta schema management</td></tr>
+<tr><td><code>Eprocurement_Documents</code></td><td>class-documents.php</td><td>CRUD for bids, metadata, status transitions, supporting file management</td></tr>
+<tr><td><code>Eprocurement_Contact_Persons</code></td><td>class-contact-persons.php</td><td>SCM and Technical contacts linked to bid records</td></tr>
+<tr><td><code>Eprocurement_Messaging</code></td><td>class-messaging.php</td><td>Thread creation, message storage, public/private visibility rules</td></tr>
+<tr><td><code>Eprocurement_Bidder</code></td><td>class-bidder.php</td><td>Registration, email verification token, extended bidder profiles</td></tr>
+<tr><td><code>Eprocurement_Downloads</code></td><td>class-downloads.php</td><td>Logs every download with user, document, timestamp, IP</td></tr>
+<tr><td><code>Eprocurement_Storage_Interface</code></td><td>class-storage-interface.php</td><td>Abstract class: upload(), get_download_url(), delete()</td></tr>
+<tr><td><code>Eprocurement_Google_Drive</code></td><td>storage/class-google-drive.php</td><td>Google Drive implementation (OAuth 2.0, Google API Client)</td></tr>
+<tr><td><code>Eprocurement_OneDrive</code></td><td>storage/class-onedrive.php</td><td>OneDrive implementation (OAuth 2.0, Microsoft Graph API)</td></tr>
+<tr><td><code>Eprocurement_Dropbox</code></td><td>storage/class-dropbox.php</td><td>Dropbox implementation (OAuth 2.0, Dropbox API v2)</td></tr>
+<tr><td><code>Eprocurement_S3_Storage</code></td><td>storage/class-s3.php</td><td>S3-compatible implementation (AWS SDK, pre-signed URLs)</td></tr>
+<tr><td><code>Eprocurement_Notifications</code></td><td>class-notifications.php</td><td>All wp_mail() notification emails for every system event</td></tr>
+<tr><td><code>Eprocurement_REST_API</code></td><td>class-rest-api.php</td><td>Registers /wp-json/eprocurement/v1/ endpoints for frontend</td></tr>
+<tr><td><code>Eprocurement_Admin</code></td><td>admin/class-admin.php</td><td>WP admin menus, admin asset enqueue, admin page rendering</td></tr>
+<tr><td><code>Eprocurement_Public</code></td><td>public/class-public.php</td><td>Shortcode [eprocurement], frontend assets, public page rendering</td></tr>
+</table>
+</div>
+
+<div class="wrap pb" id="s4">
+<h1 class="sec">4. User Roles &amp; Capabilities Matrix</h1>
+<div class="cl"><strong>Note on WP Admin &amp; Editor:</strong> WordPress Super Admin and Editor inherit publish/close rights for bids alongside the custom roles below. The Super Admin retains full plugin management rights.</div>
+<table>
+<tr>
+  <th>Capability</th>
+  <th style="text-align:center">Super Admin</th>
+  <th style="text-align:center">SCM Manager</th>
+  <th style="text-align:center">SCM Official</th>
+  <th style="text-align:center">Unit Manager</th>
+  <th style="text-align:center">Subscriber (Bidder)</th>
+</tr>
+<tr><td><strong>Access WP Admin area</strong></td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td></tr>
+<tr><td><strong>Install / delete plugin</strong></td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td></tr>
+<tr><td><strong>Manage plugin settings</strong></td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td></tr>
+<tr><td><strong>Create / edit bid documents</strong></td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td></tr>
+<tr><td><strong>Publish / close bids</strong></td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td></tr>
+<tr><td><strong>Upload supporting documents</strong></td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td></tr>
+<tr><td><strong>Manage contact persons</strong></td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td></tr>
+<tr><td><strong>View all query threads</strong></td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td></tr>
+<tr><td><strong>Reply to queries (inbox)</strong></td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td></tr>
+<tr><td><strong>View bidder accounts</strong></td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td></tr>
+<tr><td><strong>View download audit log</strong></td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td></tr>
+<tr><td><strong>Register on frontend</strong></td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&#10003;</td></tr>
+<tr><td><strong>Download bid documents</strong></td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003; (no login needed)</td></tr>
+<tr><td><strong>Send queries to contacts</strong></td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&#10003; (verified)</td></tr>
+<tr><td><strong>Mark query Public / Private</strong></td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&#10003;</td></tr>
+<tr><td><strong>View public Q&amp;A on bids</strong></td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003; (registered)</td></tr>
+</table>
+</div>
+
+<div class="wrap pb" id="s5">
+<h1 class="sec">5. Database Schema (10 Tables)</h1>
+<div class="cl"><strong>Convention:</strong> All tables use the WordPress table prefix (e.g., <code>wp_eproc_</code>). IDs are <code>BIGINT(20) UNSIGNED</code>. Foreign keys use <span class="fk">FK</span> notation. <span class="pk">PK</span> = Primary Key. <span class="uq">UQ</span> = Unique.</div>
+<div class="db"><div class="db-h"><span style="font-family:monospace">wp_eproc_documents</span><span>Core bid/tender records</span></div>
+<div class="db-r"><div class="cn">id<span class="pk">PK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">PK AUTO_INCREMENT</div></div>
+<div class="db-r"><div class="cn">bid_number<span class="uq">UQ</span></div><div class="ct">VARCHAR(100)</div><div class="cno">Unique bid reference e.g. RFQ/2025/001</div></div>
+<div class="db-r"><div class="cn">title</div><div class="ct">VARCHAR(255)</div><div class="cno">Official tender title</div></div>
+<div class="db-r"><div class="cn">description</div><div class="ct">LONGTEXT</div><div class="cno">Full description / scope of work (supports inline JPEG/PNG images &mdash; rich text editor)</div></div>
+<div class="db-r"><div class="cn">status</div><div class="ct">ENUM</div><div class="cno">draft | published | open | closed | cancelled | archived</div></div>
+<div class="db-r"><div class="cn">scm_contact_id<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_eproc_contact_persons</div></div>
+<div class="db-r"><div class="cn">technical_contact_id<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_eproc_contact_persons (nullable)</div></div>
+<div class="db-r"><div class="cn">opening_date</div><div class="ct">DATETIME</div><div class="cno">Date tender opens</div></div>
+<div class="db-r"><div class="cn">briefing_date</div><div class="ct">DATETIME</div><div class="cno">Compulsory/optional briefing (nullable)</div></div>
+<div class="db-r"><div class="cn">closing_date</div><div class="ct">DATETIME</div><div class="cno">Submission deadline (display only)</div></div>
+<div class="db-r"><div class="cn">created_by<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_users</div></div>
+<div class="db-r"><div class="cn">created_at</div><div class="ct">DATETIME</div><div class="cno">AUTO</div></div>
+<div class="db-r"><div class="cn">updated_at</div><div class="ct">DATETIME</div><div class="cno">AUTO on update</div></div>
+</div>
+<div class="db"><div class="db-h"><span style="font-family:monospace">wp_eproc_contact_persons</span><span>SCM and Technical contact profiles</span></div>
+<div class="db-r"><div class="cn">id<span class="pk">PK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">PK AUTO_INCREMENT</div></div>
+<div class="db-r"><div class="cn">user_id<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_users (nullable &mdash; must be WP user to reply)</div></div>
+<div class="db-r"><div class="cn">type</div><div class="ct">ENUM</div><div class="cno">scm | technical</div></div>
+<div class="db-r"><div class="cn">name</div><div class="ct">VARCHAR(255)</div><div class="cno">Full name</div></div>
+<div class="db-r"><div class="cn">phone</div><div class="ct">VARCHAR(50)</div><div class="cno">Click-to-call number</div></div>
+<div class="db-r"><div class="cn">email</div><div class="ct">VARCHAR(255)</div><div class="cno">Direct email address</div></div>
+<div class="db-r"><div class="cn">department</div><div class="ct">VARCHAR(255)</div><div class="cno">Department or unit (nullable)</div></div>
+<div class="db-r"><div class="cn">created_at</div><div class="ct">DATETIME</div><div class="cno">AUTO</div></div>
+</div>
+<div class="db"><div class="db-h"><span style="font-family:monospace">wp_eproc_supporting_docs</span><span>Files attached to a bid (cloud-stored)</span></div>
+<div class="db-r"><div class="cn">id<span class="pk">PK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">PK AUTO_INCREMENT</div></div>
+<div class="db-r"><div class="cn">document_id<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_eproc_documents</div></div>
+<div class="db-r"><div class="cn">file_name</div><div class="ct">VARCHAR(255)</div><div class="cno">Original filename as uploaded</div></div>
+<div class="db-r"><div class="cn">file_size</div><div class="ct">BIGINT UNSIGNED</div><div class="cno">File size in bytes</div></div>
+<div class="db-r"><div class="cn">file_type</div><div class="ct">VARCHAR(100)</div><div class="cno">MIME type (application/pdf, etc.)</div></div>
+<div class="db-r"><div class="cn">cloud_provider</div><div class="ct">VARCHAR(50)</div><div class="cno">google_drive | onedrive | dropbox | s3</div></div>
+<div class="db-r"><div class="cn">cloud_key</div><div class="ct">VARCHAR(500)</div><div class="cno">Provider file ID or S3 object key</div></div>
+<div class="db-r"><div class="cn">cloud_url</div><div class="ct">VARCHAR(500)</div><div class="cno">Full URL or path in cloud storage</div></div>
+<div class="db-r"><div class="cn">label</div><div class="ct">VARCHAR(255)</div><div class="cno">Display label e.g. &ldquo;Bill of Quantities&rdquo;</div></div>
+<div class="db-r"><div class="cn">sort_order</div><div class="ct">INT</div><div class="cno">Display order on bid page</div></div>
+<div class="db-r"><div class="cn">uploaded_by<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_users</div></div>
+<div class="db-r"><div class="cn">created_at</div><div class="ct">DATETIME</div><div class="cno">AUTO</div></div>
+</div>
+<div class="db"><div class="db-h"><span style="font-family:monospace">wp_eproc_compliance_docs</span><span>Static compliance document library (cloud-stored)</span></div>
+<div class="db-r"><div class="cn">id<span class="pk">PK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">PK AUTO_INCREMENT</div></div>
+<div class="db-r"><div class="cn">file_name</div><div class="ct">VARCHAR(255)</div><div class="cno">Original filename</div></div>
+<div class="db-r"><div class="cn">file_size</div><div class="ct">BIGINT UNSIGNED</div><div class="cno">File size in bytes</div></div>
+<div class="db-r"><div class="cn">file_type</div><div class="ct">VARCHAR(100)</div><div class="cno">MIME type</div></div>
+<div class="db-r"><div class="cn">cloud_provider</div><div class="ct">VARCHAR(50)</div><div class="cno">google_drive | onedrive | dropbox | s3</div></div>
+<div class="db-r"><div class="cn">cloud_key</div><div class="ct">VARCHAR(500)</div><div class="cno">Provider file ID or S3 object key</div></div>
+<div class="db-r"><div class="cn">cloud_url</div><div class="ct">VARCHAR(500)</div><div class="cno">Full cloud URL</div></div>
+<div class="db-r"><div class="cn">label</div><div class="ct">VARCHAR(255)</div><div class="cno">Display label e.g. &ldquo;BBBEE Declaration Form&rdquo;</div></div>
+<div class="db-r"><div class="cn">description</div><div class="ct">TEXT</div><div class="cno">Optional short description of the document</div></div>
+<div class="db-r"><div class="cn">sort_order</div><div class="ct">INT</div><div class="cno">Display order on compliance page</div></div>
+<div class="db-r"><div class="cn">uploaded_by<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_users</div></div>
+<div class="db-r"><div class="cn">created_at</div><div class="ct">DATETIME</div><div class="cno">AUTO</div></div>
+</div>
+<div class="db"><div class="db-h"><span style="font-family:monospace">wp_eproc_threads</span><span>Query / conversation threads per bid</span></div>
+<div class="db-r"><div class="cn">id<span class="pk">PK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">PK AUTO_INCREMENT</div></div>
+<div class="db-r"><div class="cn">document_id<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_eproc_documents</div></div>
+<div class="db-r"><div class="cn">bidder_id<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_users (Subscriber)</div></div>
+<div class="db-r"><div class="cn">contact_id<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_eproc_contact_persons</div></div>
+<div class="db-r"><div class="cn">subject</div><div class="ct">VARCHAR(255)</div><div class="cno">Auto: Query: [Bid Number] &mdash; [Title]</div></div>
+<div class="db-r"><div class="cn">visibility</div><div class="ct">ENUM</div><div class="cno">private | public</div></div>
+<div class="db-r"><div class="cn">status</div><div class="ct">ENUM</div><div class="cno">open | resolved | closed</div></div>
+<div class="db-r"><div class="cn">created_at</div><div class="ct">DATETIME</div><div class="cno">AUTO</div></div>
+<div class="db-r"><div class="cn">updated_at</div><div class="ct">DATETIME</div><div class="cno">AUTO on update</div></div>
+</div>
+<div class="db"><div class="db-h"><span style="font-family:monospace">wp_eproc_messages</span><span>Individual messages within a thread</span></div>
+<div class="db-r"><div class="cn">id<span class="pk">PK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">PK AUTO_INCREMENT</div></div>
+<div class="db-r"><div class="cn">thread_id<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_eproc_threads</div></div>
+<div class="db-r"><div class="cn">sender_id<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_users</div></div>
+<div class="db-r"><div class="cn">message</div><div class="ct">LONGTEXT</div><div class="cno">Message body (sanitized HTML allowed)</div></div>
+<div class="db-r"><div class="cn">is_read</div><div class="ct">TINYINT(1)</div><div class="cno">0 = unread, 1 = read</div></div>
+<div class="db-r"><div class="cn">created_at</div><div class="ct">DATETIME</div><div class="cno">AUTO</div></div>
+</div>
+<div class="db"><div class="db-h"><span style="font-family:monospace">wp_eproc_message_attachments</span><span>Files attached to query/reply messages (cloud-stored, max 5MB)</span></div>
+<div class="db-r"><div class="cn">id<span class="pk">PK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">PK AUTO_INCREMENT</div></div>
+<div class="db-r"><div class="cn">message_id<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_eproc_messages</div></div>
+<div class="db-r"><div class="cn">file_name</div><div class="ct">VARCHAR(255)</div><div class="cno">Original filename</div></div>
+<div class="db-r"><div class="cn">file_size</div><div class="ct">BIGINT UNSIGNED</div><div class="cno">File size in bytes (max 5242880 = 5MB)</div></div>
+<div class="db-r"><div class="cn">file_type</div><div class="ct">VARCHAR(100)</div><div class="cno">MIME type</div></div>
+<div class="db-r"><div class="cn">cloud_provider</div><div class="ct">VARCHAR(50)</div><div class="cno">google_drive | onedrive | dropbox | s3</div></div>
+<div class="db-r"><div class="cn">cloud_key</div><div class="ct">VARCHAR(500)</div><div class="cno">Provider file ID or S3 object key</div></div>
+<div class="db-r"><div class="cn">cloud_url</div><div class="ct">VARCHAR(500)</div><div class="cno">Full cloud URL</div></div>
+<div class="db-r"><div class="cn">created_at</div><div class="ct">DATETIME</div><div class="cno">AUTO</div></div>
+</div>
+<div class="db"><div class="db-h"><span style="font-family:monospace">wp_eproc_downloads</span><span>Audit log of every file download</span></div>
+<div class="db-r"><div class="cn">id<span class="pk">PK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">PK AUTO_INCREMENT</div></div>
+<div class="db-r"><div class="cn">document_id<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_eproc_documents</div></div>
+<div class="db-r"><div class="cn">supporting_doc_id<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_eproc_supporting_docs (nullable)</div></div>
+<div class="db-r"><div class="cn">user_id<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_users (nullable &mdash; NULL for guest downloads)</div></div>
+<div class="db-r"><div class="cn">ip_address</div><div class="ct">VARCHAR(45)</div><div class="cno">IPv4 or IPv6 address</div></div>
+<div class="db-r"><div class="cn">user_agent</div><div class="ct">VARCHAR(255)</div><div class="cno">Browser user-agent string (guest identification)</div></div>
+<div class="db-r"><div class="cn">downloaded_at</div><div class="ct">DATETIME</div><div class="cno">AUTO</div></div>
+</div>
+<div class="db"><div class="db-h"><span style="font-family:monospace">wp_eproc_bidder_profiles</span><span>Extended profile for Subscriber/Bidder accounts</span></div>
+<div class="db-r"><div class="cn">id<span class="pk">PK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">PK AUTO_INCREMENT</div></div>
+<div class="db-r"><div class="cn">user_id<span class="fk">FK</span></div><div class="ct">BIGINT UNSIGNED</div><div class="cno">FK &rarr; wp_users</div></div>
+<div class="db-r"><div class="cn">company_name</div><div class="ct">VARCHAR(255)</div><div class="cno">Bidding entity name</div></div>
+<div class="db-r"><div class="cn">company_reg</div><div class="ct">VARCHAR(100)</div><div class="cno">Registration number (nullable)</div></div>
+<div class="db-r"><div class="cn">phone</div><div class="ct">VARCHAR(50)</div><div class="cno">Contact number</div></div>
+<div class="db-r"><div class="cn">verified</div><div class="ct">TINYINT(1)</div><div class="cno">0 = pending, 1 = email verified</div></div>
+<div class="db-r"><div class="cn">verification_token</div><div class="ct">VARCHAR(255)</div><div class="cno">One-time email verification token</div></div>
+<div class="db-r"><div class="cn">created_at</div><div class="ct">DATETIME</div><div class="cno">AUTO</div></div>
+</div>
+</div>
+
+<div class="wrap pb" id="s6">
+<h1 class="sec">6. Feature Specifications</h1>
+
+<h2 class="sub">6.1 Bid Document Management</h2>
+<p>Each bid record contains: Bid Number (unique), Title, Description, Status, SCM Contact, Technical Contact (optional), Opening Date, Briefing Date, Closing Date. Status transitions follow a defined workflow.</p>
+<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:10px 0">
+  <div style="background:#888;color:#fff;padding:4px 12px;border-radius:3px;font-size:11px;font-weight:700">DRAFT</div>
+  <span style="color:#aaa">&rarr;</span>
+  <div style="background:#2980b9;color:#fff;padding:4px 12px;border-radius:3px;font-size:11px;font-weight:700">PUBLISHED</div>
+  <span style="color:#aaa">&rarr;</span>
+  <div style="background:#27ae60;color:#fff;padding:4px 12px;border-radius:3px;font-size:11px;font-weight:700">OPEN</div>
+  <span style="color:#aaa">&rarr;</span>
+  <div style="background:#e74c3c;color:#fff;padding:4px 12px;border-radius:3px;font-size:11px;font-weight:700">CLOSED</div>
+</div>
+<div class="cl warn"><strong>Cancelled</strong> is also a valid terminal status. An SCM Manager or Official can cancel a bid at any stage before Closed.</div>
+<div class="cl"><strong>Closed Bid Retention:</strong> An admin setting controls how long closed bids remain visible: <code>Auto-remove closed bids after ___ days (leave blank = keep forever)</code>. A daily WP-Cron job checks for expired closed bids and soft-deletes them (sets status to <code>archived</code>). Archived bids are hidden from the frontend but remain in the database for audit purposes.</div>
+
+<h2 class="sub">6.2 Supporting Documents per Bid (Cloud Storage &mdash; Multi-Provider)</h2>
+<p>Each bid can have unlimited supporting files. Files are uploaded through the plugin admin and <strong>stored on external cloud storage</strong>. The local WordPress server is never used for permanent file storage &mdash; this prevents server overload and keeps page load times fast.</p>
+
+<div style="font-size:11px;font-weight:700;color:#1e3a5f;margin:10px 0 6px">Supported Cloud Storage Providers</div>
+<table>
+<tr><th>Provider</th><th>Auth Method</th><th>How Downloads Work</th><th>Setup Complexity</th></tr>
+<tr><td><strong>Google Drive</strong></td><td>OAuth 2.0 (Google Cloud Console)</td><td>Plugin generates a time-limited shareable link; file served from Google</td><td>Medium &mdash; requires Google Cloud project + OAuth consent screen</td></tr>
+<tr><td><strong>Microsoft OneDrive</strong></td><td>OAuth 2.0 (Microsoft Azure / Graph API)</td><td>Plugin generates a sharing link via Graph API; file served from OneDrive</td><td>Medium &mdash; requires Azure App Registration</td></tr>
+<tr><td><strong>Dropbox</strong></td><td>OAuth 2.0 (Dropbox App Console)</td><td>Plugin generates a temporary download link via Dropbox API</td><td>Medium &mdash; requires Dropbox App</td></tr>
+<tr><td><strong>S3-Compatible</strong> (AWS S3, DigitalOcean Spaces, Backblaze B2, MinIO)</td><td>Access Key + Secret Key</td><td>Plugin generates a time-limited <strong>pre-signed URL</strong>; file served directly from bucket</td><td>Simple &mdash; key-based, no OAuth</td></tr>
+</table>
+
+<div style="font-size:11px;font-weight:700;color:#1e3a5f;margin:14px 0 6px">Upload &amp; Download Flow</div>
+<table>
+<tr><th>Step</th><th>What Happens</th></tr>
+<tr><td>Upload</td><td>Admin uploads file via the plugin. File is sent to the active cloud provider. A <code>cloud_provider</code>, <code>cloud_key</code> (file identifier/path), and <code>cloud_url</code> are stored in the database.</td></tr>
+<tr><td>Display</td><td>Bid detail page shows file label, size, and a Download button. No file is stored on the WordPress server.</td></tr>
+<tr><td>Download</td><td>Plugin requests a <strong>time-limited download URL</strong> from the active provider, logs the download event, then redirects the user. File is served directly from the cloud &mdash; zero load on WordPress.</td></tr>
+<tr><td>Configuration</td><td>Admin settings page: select provider, enter credentials (OAuth or API keys). All credentials stored as <strong>encrypted WordPress options</strong>. OAuth tokens auto-refresh.</td></tr>
+</table>
+
+<div style="font-size:11px;font-weight:700;color:#1e3a5f;margin:14px 0 6px">Storage Abstraction Architecture</div>
+<p>The plugin uses a <strong>Storage Interface</strong> pattern &mdash; one abstract class defining <code>upload()</code>, <code>get_download_url()</code>, and <code>delete()</code> methods, with 4 concrete provider classes. The admin selects a provider in Settings; the rest of the plugin is provider-agnostic.</p>
+<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#f7f9fc;padding:14px;border-radius:6px;border:1px solid #ddd;margin:8px 0">
+  <div style="background:#1e3a5f;color:#fff;padding:6px 12px;border-radius:4px;font-size:11px;font-weight:600;text-align:center">Eprocurement_Storage_Interface<br><span style="font-size:9px;font-weight:400">upload() | get_download_url() | delete()</span></div>
+  <span style="color:#2980b9;font-size:18px">&larr;</span>
+  <div style="display:flex;flex-direction:column;gap:4px">
+    <div style="background:#4285f4;color:#fff;padding:3px 10px;border-radius:3px;font-size:10px">Google_Drive_Storage</div>
+    <div style="background:#0078d4;color:#fff;padding:3px 10px;border-radius:3px;font-size:10px">OneDrive_Storage</div>
+    <div style="background:#0061fe;color:#fff;padding:3px 10px;border-radius:3px;font-size:10px">Dropbox_Storage</div>
+    <div style="background:#ff9900;color:#fff;padding:3px 10px;border-radius:3px;font-size:10px">S3_Compatible_Storage</div>
+  </div>
+</div>
+<div class="cl warn"><strong>Important:</strong> Only one provider is active at a time. If the admin switches providers, existing files remain on the old provider. A migration tool is out of scope for v1 but can be added later. The <code>cloud_provider</code> field on each file record tracks which provider stores it, so mixed-provider scenarios work correctly.</div>
+
+<h2 class="sub">6.2.1 Compliance Documents (Static Library)</h2>
+<p>Separate from bid-specific files, the plugin provides a <strong>Compliance Documents</strong> section accessible from the frontend navigation bar. This is a library of standard compliance documents (e.g., BBBEE forms, tax clearance templates, declaration forms) that apply to all bids. Admins upload and manage these once.</p>
+<table>
+<tr><th>Feature</th><th>Detail</th></tr>
+<tr><td>Section title</td><td>Admin can customise the display title (default: &ldquo;Compliance Documents&rdquo;). Can be renamed to e.g. &ldquo;Standard Forms&rdquo;, &ldquo;Required Documents&rdquo;, etc.</td></tr>
+<tr><td>Upload</td><td>Admin uploads files via the same cloud storage pipeline. Each file has a label and optional description.</td></tr>
+<tr><td>Frontend display</td><td>A dedicated page linked in the main navigation: list of documents with label, description, and download button.</td></tr>
+<tr><td>Access</td><td>Publicly downloadable (same as bid documents &mdash; no login required).</td></tr>
+<tr><td>Management</td><td>SCM Manager and SCM Official can add, reorder, and remove compliance documents via WP Admin &rarr; eProcurement &rarr; Compliance Documents.</td></tr>
+</table>
+
+<h2 class="sub">6.3 Contact Persons (SCM + Technical)</h2>
+<p>Each bid can have one SCM contact and one Technical contact. Contacts must be linked to a WordPress user account so they can log in and reply to queries. Their profile cards are displayed on the bid detail page showing: Name, Role type, Click-to-call phone number, and a Query button that opens a query form pre-addressed to that contact.</p>
+
+<h2 class="sub">6.4 Bidder Registration &amp; Email Verification</h2>
+<div class="cl ok"><strong>Key rule:</strong> Document downloads are open to everyone &mdash; no login required. Registration and email verification are only required to <strong>send queries</strong> or <strong>post public Q&amp;A</strong>.</div>
+<table>
+<tr><th>Step</th><th>Action</th><th>System Behaviour</th></tr>
+<tr><td>1</td><td>Guest visits bid detail and downloads files</td><td>Files are available without login. Download is logged with IP address (user_id = NULL).</td></tr>
+<tr><td>2</td><td>Guest clicks &ldquo;Send Query&rdquo; or &ldquo;Ask Public Question&rdquo;</td><td>System prompts: &ldquo;Please register or log in to send queries.&rdquo;</td></tr>
+<tr><td>3</td><td>Bidder fills registration form</td><td>Form captures: Name, Company, Reg No., Phone, Email, Password</td></tr>
+<tr><td>4</td><td>Form submitted</td><td>Account created with status <code>unverified</code>. Verification token generated and stored.</td></tr>
+<tr><td>5</td><td>Verification email sent</td><td>wp_mail() sends email with unique link: <code>/tenders/verify/?token=xxxx</code></td></tr>
+<tr><td>6</td><td>Bidder clicks link</td><td>Token matched, account set to <code>verified</code>, bidder redirected to dashboard</td></tr>
+<tr><td>7</td><td>Bidder tries to query before verifying</td><td>System shows: &ldquo;Please verify your email address before sending queries.&rdquo;</td></tr>
+</table>
+
+<h2 class="sub">6.5 Query &amp; Messaging System</h2>
+<p>A <strong>thread</strong> is created per query. One bidder, one contact person, one bid. The subject is auto-generated: <strong>Query: [Bid Number] &mdash; [Bid Title]</strong>. The bidder selects <strong>Public</strong> or <strong>Private</strong> visibility before submitting.</p>
+<div class="cl ok"><strong>Attachments:</strong> Both queries and replies support file attachments up to <strong>5MB per file</strong>. Supported types: PDF, DOCX, XLSX, JPG, PNG. Files are uploaded to cloud storage (same S3 bucket). Email notifications include the attachment or a download link.</div>
+<div class="cl"><strong>Rich Description:</strong> The bid description field uses a rich text editor (WordPress TinyMCE/Block Editor) that supports <strong>inline JPEG/PNG images</strong>. Admins can paste screenshots directly into the description, which are uploaded to cloud storage and displayed inline on the bid detail page. This enables visual specifications, diagrams, and annotated screenshots to accompany bid text.</div>
+<table>
+<tr><th>Visibility</th><th>Who Can See It</th><th>Where It Appears</th></tr>
+<tr><td><strong>Private</strong></td><td>Only the querying bidder and the assigned contact person</td><td>Bidder dashboard inbox + Admin messaging inbox only</td></tr>
+<tr><td><strong>Public (Q&amp;A)</strong></td><td>All registered (verified) bidders + all staff</td><td>Bid detail page Q&amp;A section + Admin inbox</td></tr>
+</table>
+<div class="cl"><strong>Email notifications:</strong> (1) Contact person notified when new query arrives. (2) Bidder notified when reply is posted. (3) If thread is public, no mass notification to other bidders &mdash; they see it when they visit the bid page.</div>
+
+<h2 class="sub">6.6 Download Audit Log</h2>
+<p>Every file download records: user_id, document_id, supporting_doc_id (which specific file), IP address, and timestamp. SCM Manager can view and export this log per bid. This satisfies procurement audit requirements without building a complex document tracking system.</p>
+
+<h2 class="sub">6.7 Email Notification Events</h2>
+<table>
+<tr><th>Event</th><th>Recipient</th><th>Subject Template</th></tr>
+<tr><td>New bidder registration</td><td>Bidder</td><td>Verify your eProcurement account</td></tr>
+<tr><td>New query submitted</td><td>Assigned contact person</td><td>New Query: [Bid Number] &mdash; [Title]</td></tr>
+<tr><td>Reply posted to query</td><td>Bidder who sent query</td><td>Reply to your query: [Bid Number]</td></tr>
+<tr><td>New bid published</td><td>All verified bidders (optional)</td><td>New Tender Published: [Bid Number] &mdash; [Title]</td></tr>
+<tr><td>Bid status changed</td><td>SCM Manager (admin digest)</td><td>Bid Status Update: [Bid Number] is now [Status]</td></tr>
+</table>
+</div>
+
+<div class="wrap pb" id="s7">
+<h1 class="sec">7. Frontend UI Wireframes</h1>
+<p>The frontend is accessible to the public at a WordPress page using the <code>[eprocurement]</code> shortcode. The plugin renders different views based on the URL path and user login state.</p>
+
+<h2 class="sub">Wireframe 1 &mdash; Public Tender Listing Page (Guest &amp; Logged-in)</h2>
+<div class="wf">
+  <div class="wf-bar">
+    <span class="dot" style="background:#e74c3c"></span>
+    <span class="dot" style="background:#f39c12"></span>
+    <span class="dot" style="background:#27ae60"></span>
+    <span class="wf-url">https://yoursite.com/tenders/</span>
+  </div>
+  <div class="wf-lbl">PUBLIC PAGE &mdash; No login required to view listings</div>
+  <div class="wf-body">
+    <div class="wf-nav">
+      <span class="logo">&#128196; eProcurement Portal</span>
+      <a href="#">Tenders</a>
+      <a href="#">Compliance Documents</a>
+      <a href="#">How to Register</a>
+      <span class="nbtn">Login</span>
+      <span class="nbtn g">Register</span>
+    </div>
+    <div class="hero">
+      <h3>Active Tenders &amp; Bid Opportunities</h3>
+      <p>Browse open tenders. Register a free account to download documents and send queries to procurement officials.</p>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input class="inp" style="margin:0;flex:1" placeholder="&#128269; Search by title, bid number or keyword...">
+      <select style="border:1px solid #ccc;border-radius:3px;padding:4px 8px;font-size:10px;background:#fff">
+        <option>All Statuses</option><option>Open</option><option>Upcoming</option><option>Closed</option>
+      </select>
+      <span class="wbtn bb">Filter</span>
+    </div>
+    <div class="g3">
+      <div class="card">
+        <span class="tag tg">OPEN</span>
+        <h4>RFQ/2025/047 &mdash; Supply of Office Furniture</h4>
+        <p>Supply and delivery of ergonomic office furniture for Head Office.</p>
+        <div style="font-size:9px;color:#999;border-top:1px solid #eee;padding-top:5px;margin-top:5px">
+          Closing: 28 Feb 2025 &bull; SCM: J. Mokoena &bull; 3 docs
+        </div>
+        <span class="wbtn bb">View Details</span>
+      </div>
+      <div class="card">
+        <span class="tag tb">UPCOMING</span>
+        <h4>BID/2025/012 &mdash; IT Infrastructure Upgrade</h4>
+        <p>Provision of network hardware, servers, and installation services.</p>
+        <div style="font-size:9px;color:#999;border-top:1px solid #eee;padding-top:5px;margin-top:5px">
+          Opens: 05 Mar 2025 &bull; SCM: T. Dlamini &bull; 5 docs
+        </div>
+        <span class="wbtn bgr">View Details</span>
+      </div>
+      <div class="card">
+        <span class="tag tr">CLOSED</span>
+        <h4>RFQ/2025/031 &mdash; Security Services</h4>
+        <p>Provision of armed guarding services for all company premises.</p>
+        <div style="font-size:9px;color:#999;border-top:1px solid #eee;padding-top:5px;margin-top:5px">
+          Closed: 10 Jan 2025 &bull; SCM: N. Sithole &bull; 2 docs
+        </div>
+        <span class="wbtn bgr">View Details</span>
+      </div>
+    </div>
+    <div style="text-align:center;font-size:10px;color:#888;margin-top:6px">Showing 3 of 18 tenders &mdash; <a href="#" style="color:#2980b9">Load more</a></div>
+  </div>
+</div>
+
+<h2 class="sub">Wireframe 2 &mdash; Bid Detail Page (Guest or Logged-in)</h2>
+<div class="wf">
+  <div class="wf-bar">
+    <span class="dot" style="background:#e74c3c"></span>
+    <span class="dot" style="background:#f39c12"></span>
+    <span class="dot" style="background:#27ae60"></span>
+    <span class="wf-url">https://yoursite.com/tenders/rfq-2025-047/</span>
+  </div>
+  <div class="wf-lbl">BID DETAIL &mdash; Downloads open to all. Query buttons require login.</div>
+  <div class="wf-body">
+    <div class="wf-nav">
+      <span class="logo">&#128196; eProcurement Portal</span>
+      <a href="#">&#8592; All Tenders</a>
+      <span style="margin-left:auto;font-size:10px;color:#a8c8e8">Logged in: ABC Company (Pty) Ltd</span>
+      <span class="nbtn">My Dashboard</span>
+    </div>
+    <div style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:12px;margin-bottom:8px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <span class="tag tg" style="font-size:10px">OPEN</span>
+          <h3 style="font-size:15px;color:#1e3a5f;margin-top:4px">Supply of Office Furniture</h3>
+          <div style="font-size:10px;color:#888;margin-top:3px">Bid Number: <strong>RFQ/2025/047</strong></div>
+        </div>
+        <div style="font-size:10px;color:#555;text-align:right;line-height:2">
+          <div>Opening: <strong>01 Feb 2025</strong></div>
+          <div>Briefing: <strong>10 Feb 2025</strong></div>
+          <div>Closing: <strong style="color:#e74c3c">28 Feb 2025</strong></div>
+        </div>
+      </div>
+      <p style="font-size:11px;color:#444">Supply and delivery of ergonomic office furniture including chairs, desks, and storage units for the Head Office building. All items must comply with SABS standards.</p>
+    </div>
+    <div class="g21">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#1e3a5f;margin-bottom:6px;text-transform:uppercase">&#128462; Supporting Documents</div>
+        <div class="card" style="margin-bottom:6px">
+          <table class="wt">
+            <tr><th>#</th><th>Document</th><th>Size</th><th>Action</th></tr>
+            <tr><td>1</td><td>Bid Specification Document</td><td>2.3 MB</td><td><span class="wbtn bb" style="padding:2px 8px;font-size:9px">&#8659; Download</span></td></tr>
+            <tr><td>2</td><td>Bill of Quantities</td><td>540 KB</td><td><span class="wbtn bb" style="padding:2px 8px;font-size:9px">&#8659; Download</span></td></tr>
+            <tr><td>3</td><td>Site Visit Register Form</td><td>180 KB</td><td><span class="wbtn bb" style="padding:2px 8px;font-size:9px">&#8659; Download</span></td></tr>
+          </table>
+        </div>
+        <div style="font-size:10px;font-weight:700;color:#1e3a5f;margin:10px 0 6px;text-transform:uppercase">&#128172; Public Q&amp;A</div>
+        <div class="card">
+          <div style="border:1px solid #ddd;border-radius:4px;padding:8px;margin-bottom:6px;background:#fafafa">
+            <div style="font-size:10px;font-weight:700;color:#1e3a5f">Q: Are imported furniture items acceptable?</div>
+            <div style="font-size:9px;color:#888;margin-bottom:4px">Asked by: Registered Bidder &bull; 12 Feb 2025</div>
+            <div style="font-size:10px;color:#27ae60;font-weight:700">A: Yes, provided SABS equivalent certification is submitted with the bid.</div>
+            <div style="font-size:9px;color:#888">Answered by: J. Mokoena (SCM) &bull; 14 Feb 2025</div>
+          </div>
+          <span class="wbtn bb">Ask a Public Question</span>
+          <span class="wbtn" style="background:#8e44ad">Send Private Query</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#1e3a5f;margin-bottom:6px;text-transform:uppercase">&#128100; Contact Persons</div>
+        <div class="cc" style="margin-bottom:8px">
+          <span class="ctype scm">SCM Contact</span>
+          <div class="cname">Jabu Mokoena</div>
+          <div class="cd">
+            &#128222; <a href="tel:+27110000001">011 000 0001</a><br>
+            &#9993; <a href="#">Send Query</a>
+          </div>
+        </div>
+        <div class="cc">
+          <span class="ctype tech">Technical Contact</span>
+          <div class="cname">Sipho Ndlovu</div>
+          <div class="cd">
+            &#128222; <a href="tel:+27110000002">011 000 0002</a><br>
+            &#9993; <a href="#">Send Query</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 class="sub">Wireframe 3 &mdash; Send Query Form (Modal / Inline)</h2>
+<div class="wf">
+  <div class="wf-bar">
+    <span class="dot" style="background:#e74c3c"></span><span class="dot" style="background:#f39c12"></span><span class="dot" style="background:#27ae60"></span>
+    <span class="wf-url">Modal overlay on bid detail page</span>
+  </div>
+  <div class="wf-lbl">QUERY FORM &mdash; Appears when bidder clicks "Send Query" or "Ask a Public Question"</div>
+  <div class="wf-body" style="max-width:520px;margin:0 auto">
+    <div style="background:#fff;border:2px solid #2980b9;border-radius:6px;padding:16px">
+      <div style="font-size:13px;font-weight:700;color:#1e3a5f;margin-bottom:12px;border-bottom:1px solid #eee;padding-bottom:8px">
+        &#9993; Send Query &mdash; RFQ/2025/047
+      </div>
+      <span class="lbl">To (Contact Person)</span>
+      <select style="border:1px solid #ccc;border-radius:3px;padding:4px 8px;font-size:10px;background:#fff;width:100%;margin-bottom:8px">
+        <option>Jabu Mokoena &mdash; SCM Contact</option>
+        <option>Sipho Ndlovu &mdash; Technical Contact</option>
+      </select>
+      <span class="lbl">Subject (auto-filled)</span>
+      <input class="inp" value="Query: RFQ/2025/047 &mdash; Supply of Office Furniture" readonly style="background:#f5f5f5">
+      <span class="lbl">Your Message</span>
+      <textarea style="border:1px solid #ccc;border-radius:3px;padding:6px 8px;font-size:10px;background:#fff;width:100%;height:70px;display:block;margin-bottom:8px" placeholder="Type your question here..."></textarea>
+      <span class="lbl">Attach File (optional, max 5MB)</span>
+      <div style="border:1px dashed #2980b9;border-radius:3px;padding:8px;text-align:center;background:#f7fbff;margin-bottom:8px;font-size:10px;color:#2980b9;cursor:pointer">
+        &#128206; Click to attach a file (PDF, DOCX, XLSX, JPG, PNG)
+      </div>
+      <span class="lbl">Visibility</span>
+      <div style="display:flex;gap:16px;margin-bottom:10px;padding:8px;background:#f7f9fc;border-radius:4px;border:1px solid #ddd">
+        <label style="font-size:10px;display:flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="radio" name="vis" checked> <strong style="color:#8e44ad">Private</strong> &mdash; Only you and the contact can see this
+        </label>
+        <label style="font-size:10px;display:flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="radio" name="vis"> <strong style="color:#2980b9">Public Q&amp;A</strong> &mdash; All registered bidders can see the answer
+        </label>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <span class="wbtn bgr">Cancel</span>
+        <span class="wbtn bb">Send Query</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 class="sub">Wireframe 4 &mdash; Bidder Registration Page</h2>
+<div class="wf">
+  <div class="wf-bar">
+    <span class="dot" style="background:#e74c3c"></span><span class="dot" style="background:#f39c12"></span><span class="dot" style="background:#27ae60"></span>
+    <span class="wf-url">https://yoursite.com/tenders/register/</span>
+  </div>
+  <div class="wf-lbl">BIDDER REGISTRATION &mdash; Public page, no login required</div>
+  <div class="wf-body" style="max-width:560px;margin:0 auto">
+    <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:18px">
+      <h3 style="font-size:14px;color:#1e3a5f;margin-bottom:4px">Create Your Bidder Account</h3>
+      <p style="font-size:10px;color:#888;margin-bottom:14px">Register to download documents and send queries to procurement officials.</p>
+      <div class="g2">
+        <div><span class="lbl">First Name *</span><input class="inp" placeholder="e.g. Thabo"></div>
+        <div><span class="lbl">Last Name *</span><input class="inp" placeholder="e.g. Nkosi"></div>
+      </div>
+      <span class="lbl">Company / Organisation Name *</span>
+      <input class="inp" placeholder="e.g. ABC Construction (Pty) Ltd">
+      <span class="lbl">Company Registration Number</span>
+      <input class="inp" placeholder="e.g. 2010/123456/07">
+      <span class="lbl">Phone Number *</span>
+      <input class="inp" placeholder="e.g. 011 000 0000">
+      <span class="lbl">Email Address * (used for login &amp; verification)</span>
+      <input class="inp" placeholder="e.g. thabo@abcconstruction.co.za">
+      <div class="g2">
+        <div><span class="lbl">Password *</span><input class="inp" type="password" placeholder="Min 8 characters"></div>
+        <div><span class="lbl">Confirm Password *</span><input class="inp" type="password" placeholder="Repeat password"></div>
+      </div>
+      <div style="background:#fef9ec;border:1px solid #f39c12;border-radius:3px;padding:8px;font-size:10px;color:#666;margin-bottom:10px">
+        &#128274; A verification email will be sent to your address. You must verify before downloading documents or sending queries.
+      </div>
+      <span class="wbtn bb" style="width:100%;text-align:center;display:block;padding:7px">Create Account &amp; Send Verification Email</span>
+      <div style="text-align:center;margin-top:8px;font-size:10px;color:#888">Already have an account? <a href="#" style="color:#2980b9">Login here</a></div>
+    </div>
+  </div>
+</div>
+
+<h2 class="sub">Wireframe 5 &mdash; Bidder Dashboard (My Account)</h2>
+<div class="wf">
+  <div class="wf-bar">
+    <span class="dot" style="background:#e74c3c"></span><span class="dot" style="background:#f39c12"></span><span class="dot" style="background:#27ae60"></span>
+    <span class="wf-url">https://yoursite.com/tenders/my-account/</span>
+  </div>
+  <div class="wf-lbl">BIDDER DASHBOARD &mdash; Logged-in verified bidder only</div>
+  <div class="wf-body">
+    <div class="wf-nav">
+      <span class="logo">&#128196; eProcurement Portal</span>
+      <a href="#">All Tenders</a>
+      <span style="margin-left:auto;font-size:10px;color:#a8c8e8">ABC Company (Pty) Ltd</span>
+      <span class="nbtn" style="background:#e74c3c">Logout</span>
+    </div>
+    <div class="tabs">
+      <div class="tab active">My Queries</div>
+      <div class="tab">My Downloads</div>
+      <div class="tab">My Profile</div>
+    </div>
+    <div class="g21">
+      <div>
+        <div class="mi act">
+          <div style="display:flex;justify-content:space-between">
+            <span class="snd">RFQ/2025/047 &mdash; Office Furniture</span>
+            <span class="ppub">PUBLIC</span>
+          </div>
+          <div class="prv">Query to: Jabu Mokoena (SCM) &bull; 12 Feb 2025 &bull; <span style="color:#27ae60">1 reply</span></div>
+        </div>
+        <div class="mi">
+          <div style="display:flex;justify-content:space-between">
+            <span class="snd">BID/2025/012 &mdash; IT Infrastructure</span>
+            <span class="ppriv">PRIVATE</span>
+          </div>
+          <div class="prv">Query to: Sipho Ndlovu (Technical) &bull; 08 Feb 2025 &bull; <span style="color:#e74c3c">Awaiting reply</span></div>
+        </div>
+      </div>
+      <div>
+        <div style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:10px">
+          <div style="font-size:11px;font-weight:700;color:#1e3a5f;border-bottom:1px solid #eee;padding-bottom:6px;margin-bottom:8px">
+            Thread: RFQ/2025/047 &mdash; Office Furniture
+            <span class="ppub" style="margin-left:6px">PUBLIC</span>
+          </div>
+          <div class="bub">
+            <div class="who">You &bull; 12 Feb 2025</div>
+            Are imported furniture items acceptable if they meet SABS equivalent standards?
+          </div>
+          <div class="bub rep">
+            <div class="who">Jabu Mokoena (SCM) &bull; 14 Feb 2025</div>
+            Yes, SABS equivalent certification is acceptable. Include it in your submission.
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <textarea style="border:1px solid #ccc;border-radius:3px;padding:5px;font-size:10px;flex:1;height:40px" placeholder="Reply to this thread..."></textarea>
+            <span class="wbtn bb" style="align-self:flex-end">Send</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="wrap pb" id="s8">
+<h1 class="sec">8. Backend / Admin UI Wireframes</h1>
+<p>All admin screens are accessible via <strong>WordPress Admin &rarr; eProcurement</strong> menu. SCM Manager, SCM Official, and Unit Manager each see only the menu items their role permits.</p>
+
+<h2 class="sub">Wireframe 6 &mdash; Admin Dashboard</h2>
+<div class="wf">
+  <div class="wf-bar">
+    <span class="dot" style="background:#e74c3c"></span><span class="dot" style="background:#f39c12"></span><span class="dot" style="background:#27ae60"></span>
+    <span class="wf-url">wp-admin/admin.php?page=eprocurement-dashboard</span>
+  </div>
+  <div class="wf-lbl">ADMIN DASHBOARD &mdash; SCM Manager / Super Admin view</div>
+  <div class="wf-body">
+    <div style="display:flex;gap:12px">
+      <div style="width:160px;flex-shrink:0;background:#f7f9fc;border-right:1px solid #ddd;padding:10px;font-size:10px;min-height:300px">
+        <div style="font-weight:700;color:#888;font-size:9px;text-transform:uppercase;margin-bottom:8px">eProcurement</div>
+        <div style="background:#2980b9;color:#fff;padding:4px 8px;border-radius:3px;margin-bottom:4px">&#128202; Dashboard</div>
+        <div style="padding:4px 8px;margin-bottom:4px;color:#444">&#128462; All Bids</div>
+        <div style="padding:4px 8px;margin-bottom:4px;color:#444">&#43; Add New Bid</div>
+        <div style="padding:4px 8px;margin-bottom:4px;color:#444">&#128100; Contact Persons</div>
+        <div style="padding:4px 8px;margin-bottom:4px;color:#444;display:flex;justify-content:space-between">&#128172; Messages <span style="background:#e74c3c;color:#fff;border-radius:10px;padding:0 6px;font-size:9px">4</span></div>
+        <div style="padding:4px 8px;margin-bottom:4px;color:#444">&#128101; Bidders</div>
+        <div style="padding:4px 8px;margin-bottom:4px;color:#444">&#128196; Download Log</div>
+        <div style="padding:4px 8px;margin-bottom:4px;color:#444">&#128203; Compliance Docs</div>
+        <div style="padding:4px 8px;color:#444">&#9881; Settings</div>
+      </div>
+      <div style="flex:1">
+        <h3 style="font-size:13px;color:#1e3a5f;margin-bottom:10px">Dashboard Overview</h3>
+        <div class="g3" style="margin-bottom:12px">
+          <div class="sta"><div class="num">18</div><div class="lbl2">Total Bids</div></div>
+          <div class="sta"><div class="num" style="color:#27ae60">6</div><div class="lbl2">Open Bids</div></div>
+          <div class="sta"><div class="num" style="color:#e74c3c">4</div><div class="lbl2">Unread Queries</div></div>
+        </div>
+        <div class="g2" style="margin-bottom:10px">
+          <div class="sta"><div class="num" style="color:#8e44ad">143</div><div class="lbl2">Registered Bidders</div></div>
+          <div class="sta"><div class="num" style="color:#f39c12">317</div><div class="lbl2">Downloads This Month</div></div>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:#1e3a5f;margin-bottom:6px">Recent Activity</div>
+        <table class="wt">
+          <tr><th>Time</th><th>Event</th><th>Bid</th><th>User</th></tr>
+          <tr><td>10 min ago</td><td>New query submitted</td><td>RFQ/2025/047</td><td>abc@company.co.za</td></tr>
+          <tr><td>1 hr ago</td><td>Document downloaded</td><td>BID/2025/012</td><td>xyz@firm.co.za</td></tr>
+          <tr><td>2 hrs ago</td><td>Bid published</td><td>RFQ/2025/051</td><td>J. Mokoena (SCM)</td></tr>
+          <tr><td>Yesterday</td><td>New bidder registered</td><td>&mdash;</td><td>newbidder@mail.com</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 class="sub">Wireframe 7 &mdash; Add / Edit Bid Document</h2>
+<div class="wf">
+  <div class="wf-bar">
+    <span class="dot" style="background:#e74c3c"></span><span class="dot" style="background:#f39c12"></span><span class="dot" style="background:#27ae60"></span>
+    <span class="wf-url">wp-admin/admin.php?page=eprocurement-bid-edit</span>
+  </div>
+  <div class="wf-lbl">ADD / EDIT BID &mdash; SCM Manager &amp; Official only</div>
+  <div class="wf-body">
+    <div class="g21">
+      <div>
+        <h3 style="font-size:12px;color:#1e3a5f;margin-bottom:10px">Bid Information</h3>
+        <span class="lbl">Bid Number * <span style="font-weight:400;color:#888">(must be unique)</span></span>
+        <input class="inp" placeholder="e.g. RFQ/2025/051">
+        <span class="lbl">Bid Title *</span>
+        <input class="inp" placeholder="e.g. Supply of Cleaning Materials">
+        <span class="lbl">Description / Scope of Work *</span>
+        <textarea style="border:1px solid #ccc;border-radius:3px;padding:6px;font-size:10px;width:100%;height:70px;margin-bottom:6px"></textarea>
+        <div class="g3">
+          <div><span class="lbl">Opening Date</span><input class="inp" type="date"></div>
+          <div><span class="lbl">Briefing Date</span><input class="inp" type="date"></div>
+          <div><span class="lbl">Closing Date *</span><input class="inp" type="date"></div>
+        </div>
+        <span class="lbl">Status</span>
+        <select style="border:1px solid #ccc;border-radius:3px;padding:4px 8px;font-size:10px;background:#fff;width:100%;margin-bottom:8px">
+          <option>Draft</option><option>Published</option><option>Open</option><option>Closed</option><option>Cancelled</option>
+        </select>
+        <div class="g2">
+          <div>
+            <span class="lbl">SCM Contact *</span>
+            <select style="border:1px solid #ccc;border-radius:3px;padding:4px 8px;font-size:10px;background:#fff;width:100%;margin-bottom:6px">
+              <option>-- Select SCM Contact --</option>
+              <option>Jabu Mokoena</option>
+              <option>Thandi Sithole</option>
+            </select>
+          </div>
+          <div>
+            <span class="lbl">Technical Contact</span>
+            <select style="border:1px solid #ccc;border-radius:3px;padding:4px 8px;font-size:10px;background:#fff;width:100%;margin-bottom:6px">
+              <option>-- Optional --</option>
+              <option>Sipho Ndlovu</option>
+              <option>Ravi Pillay</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <span class="wbtn bb">Save Draft</span>
+          <span class="wbtn bg">Publish Bid</span>
+          <span class="wbtn bgr" style="margin-left:auto">Delete</span>
+        </div>
+      </div>
+      <div>
+        <h3 style="font-size:12px;color:#1e3a5f;margin-bottom:10px">Supporting Documents</h3>
+        <div style="border:2px dashed #2980b9;border-radius:4px;padding:14px;text-align:center;background:#f7fbff;margin-bottom:8px;font-size:10px;color:#2980b9;cursor:pointer">
+          &#128196; Click to upload or drag files here<br>
+          <span style="font-size:9px;color:#888">PDF, DOCX, XLSX, ZIP &mdash; Max 20MB per file</span>
+        </div>
+        <table class="wt">
+          <tr><th>Label</th><th>File</th><th>Size</th><th></th></tr>
+          <tr>
+            <td><input style="border:1px solid #ccc;border-radius:2px;padding:2px 5px;font-size:9px;width:100%" value="Bid Specification"></td>
+            <td style="font-size:9px">bid-spec-rfq2025047.pdf</td>
+            <td style="font-size:9px">2.3 MB</td>
+            <td><span class="wbtn br" style="padding:1px 6px;font-size:9px">&#215;</span></td>
+          </tr>
+          <tr>
+            <td><input style="border:1px solid #ccc;border-radius:2px;padding:2px 5px;font-size:9px;width:100%" value="Bill of Quantities"></td>
+            <td style="font-size:9px">boq-rfq2025047.xlsx</td>
+            <td style="font-size:9px">540 KB</td>
+            <td><span class="wbtn br" style="padding:1px 6px;font-size:9px">&#215;</span></td>
+          </tr>
+        </table>
+        <p style="font-size:9px;color:#888;margin-top:6px">&#9432; Files are stored in the WordPress Media Library. Drag rows to reorder display.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 class="sub">Wireframe 8 &mdash; Admin Messaging Inbox</h2>
+<div class="wf">
+  <div class="wf-bar">
+    <span class="dot" style="background:#e74c3c"></span><span class="dot" style="background:#f39c12"></span><span class="dot" style="background:#27ae60"></span>
+    <span class="wf-url">wp-admin/admin.php?page=eprocurement-messages</span>
+  </div>
+  <div class="wf-lbl">MESSAGING INBOX &mdash; SCM Manager, SCM Official, Unit Manager</div>
+  <div class="wf-body">
+    <div style="display:flex;gap:10px">
+      <div style="width:230px;flex-shrink:0">
+        <div style="display:flex;gap:4px;margin-bottom:8px">
+          <input class="inp" style="margin:0" placeholder="&#128269; Search queries...">
+        </div>
+        <div class="tabs" style="margin-bottom:6px">
+          <div class="tab active" style="font-size:9px;padding:4px 8px">All (12)</div>
+          <div class="tab" style="font-size:9px;padding:4px 8px">Unread (4)</div>
+          <div class="tab" style="font-size:9px;padding:4px 8px">Public</div>
+        </div>
+        <div class="mi act">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="snd">ABC Company</span>
+            <span class="ppub">PUBLIC</span>
+          </div>
+          <div style="font-weight:700;color:#1e3a5f;font-size:10px">RFQ/2025/047 &mdash; Office Furniture</div>
+          <div class="prv">Imported items acceptable?</div>
+        </div>
+        <div class="mi">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="snd">XYZ Firm</span>
+            <span class="ppriv">PRIVATE</span>
+          </div>
+          <div style="font-weight:700;color:#1e3a5f;font-size:10px">BID/2025/012 &mdash; IT Infrastructure</div>
+          <div class="prv">What are the SLA requirements?</div>
+        </div>
+        <div class="mi">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="snd">DEF Suppliers</span>
+            <span class="ppub">PUBLIC</span>
+          </div>
+          <div style="font-weight:700;color:#1e3a5f;font-size:10px">RFQ/2025/047 &mdash; Office Furniture</div>
+          <div class="prv">Site visit compulsory?</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:10px">
+          <div style="border-bottom:1px solid #eee;padding-bottom:8px;margin-bottom:10px">
+            <div style="font-size:12px;font-weight:700;color:#1e3a5f">Query: RFQ/2025/047 &mdash; Supply of Office Furniture</div>
+            <div style="font-size:10px;color:#888">From: ABC Company (abc@company.co.za) &bull; 12 Feb 2025 &bull; <span class="ppub">PUBLIC Q&amp;A</span></div>
+          </div>
+          <div class="bub">
+            <div class="who">ABC Company &bull; 12 Feb 2025</div>
+            Good day. Are imported furniture items acceptable if they meet SABS equivalent standards?
+          </div>
+          <div class="bub rep">
+            <div class="who">Jabu Mokoena (SCM) &bull; 14 Feb 2025</div>
+            Yes, SABS equivalent certification is acceptable. Please include it with your submission.
+          </div>
+          <div style="margin-top:10px;border-top:1px solid #eee;padding-top:10px">
+            <span class="lbl">Reply as: Jabu Mokoena (SCM Contact)</span>
+            <textarea style="border:1px solid #ccc;border-radius:3px;padding:6px;font-size:10px;width:100%;height:55px;margin-bottom:6px" placeholder="Type your reply here..."></textarea>
+            <div style="display:flex;gap:6px;align-items:center">
+              <span class="wbtn bb">Send Reply</span>
+              <span class="wbtn bgr">Mark Resolved</span>
+              <div style="margin-left:auto;font-size:9px;color:#888">&#9432; Reply will email the bidder and update the thread.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 class="sub">Wireframe 9 &mdash; Contact Persons Management</h2>
+<div class="wf">
+  <div class="wf-bar">
+    <span class="dot" style="background:#e74c3c"></span><span class="dot" style="background:#f39c12"></span><span class="dot" style="background:#27ae60"></span>
+    <span class="wf-url">wp-admin/admin.php?page=eprocurement-contacts</span>
+  </div>
+  <div class="wf-lbl">CONTACT PERSONS &mdash; SCM Manager &amp; SCM Official</div>
+  <div class="wf-body">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h3 style="font-size:13px;color:#1e3a5f">Contact Persons Directory</h3>
+      <span class="wbtn bb">&#43; Add Contact Person</span>
+    </div>
+    <table class="wt">
+      <tr><th>Name</th><th>Type</th><th>Phone</th><th>Email</th><th>Department</th><th>WP User</th><th>Actions</th></tr>
+      <tr>
+        <td><strong>Jabu Mokoena</strong></td>
+        <td><span class="tag tb" style="font-size:9px">SCM</span></td>
+        <td><a href="tel:+27110000001" style="color:#2980b9;font-size:10px">011 000 0001</a></td>
+        <td style="font-size:10px">j.mokoena@org.co.za</td>
+        <td style="font-size:10px">Supply Chain</td>
+        <td style="font-size:10px"><span class="tag tg" style="font-size:8px">Linked</span></td>
+        <td><span class="wbtn bb" style="padding:2px 8px;font-size:9px">Edit</span></td>
+      </tr>
+      <tr>
+        <td><strong>Sipho Ndlovu</strong></td>
+        <td><span class="tag tp" style="font-size:9px">Technical</span></td>
+        <td><a href="tel:+27110000002" style="color:#2980b9;font-size:10px">011 000 0002</a></td>
+        <td style="font-size:10px">s.ndlovu@org.co.za</td>
+        <td style="font-size:10px">IT Department</td>
+        <td style="font-size:10px"><span class="tag tg" style="font-size:8px">Linked</span></td>
+        <td><span class="wbtn bb" style="padding:2px 8px;font-size:9px">Edit</span></td>
+      </tr>
+      <tr>
+        <td><strong>Ravi Pillay</strong></td>
+        <td><span class="tag tp" style="font-size:9px">Technical</span></td>
+        <td><a href="tel:+27110000003" style="color:#2980b9;font-size:10px">011 000 0003</a></td>
+        <td style="font-size:10px">r.pillay@org.co.za</td>
+        <td style="font-size:10px">Engineering</td>
+        <td style="font-size:10px"><span class="tag to" style="font-size:8px">Not linked</span></td>
+        <td><span class="wbtn bb" style="padding:2px 8px;font-size:9px">Edit</span> <span class="wbtn bgr" style="padding:2px 8px;font-size:9px">Link WP User</span></td>
+      </tr>
+    </table>
+    <p style="font-size:10px;color:#888;margin-top:8px">&#9432; Contact persons must be linked to a WordPress user account to reply to queries through the plugin inbox.</p>
+  </div>
+</div>
+
+<h2 class="sub">Wireframe 10 &mdash; Bidder / Subscriber Management</h2>
+<div class="wf">
+  <div class="wf-bar">
+    <span class="dot" style="background:#e74c3c"></span><span class="dot" style="background:#f39c12"></span><span class="dot" style="background:#27ae60"></span>
+    <span class="wf-url">wp-admin/admin.php?page=eprocurement-bidders</span>
+  </div>
+  <div class="wf-lbl">BIDDER MANAGEMENT &mdash; SCM Manager only</div>
+  <div class="wf-body">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h3 style="font-size:13px;color:#1e3a5f">Registered Bidders (143)</h3>
+      <div style="display:flex;gap:6px">
+        <input class="inp" style="margin:0;width:180px" placeholder="&#128269; Search bidder...">
+        <span class="wbtn bb">Export CSV</span>
+      </div>
+    </div>
+    <table class="wt">
+      <tr><th>Company</th><th>Contact Name</th><th>Email</th><th>Phone</th><th>Status</th><th>Registered</th><th>Downloads</th><th>Queries</th></tr>
+      <tr>
+        <td><strong>ABC Company (Pty) Ltd</strong></td>
+        <td>Thabo Nkosi</td>
+        <td style="font-size:10px">thabo@abc.co.za</td>
+        <td style="font-size:10px">011 000 0001</td>
+        <td><span class="tag tg" style="font-size:9px">Verified</span></td>
+        <td style="font-size:10px">01 Feb 2025</td>
+        <td style="text-align:center">7</td>
+        <td style="text-align:center">3</td>
+      </tr>
+      <tr>
+        <td><strong>XYZ Firm CC</strong></td>
+        <td>Priya Govender</td>
+        <td style="font-size:10px">priya@xyz.co.za</td>
+        <td style="font-size:10px">031 000 0002</td>
+        <td><span class="tag tg" style="font-size:9px">Verified</span></td>
+        <td style="font-size:10px">03 Feb 2025</td>
+        <td style="text-align:center">4</td>
+        <td style="text-align:center">1</td>
+      </tr>
+      <tr>
+        <td><strong>New Bidder Ltd</strong></td>
+        <td>John Smith</td>
+        <td style="font-size:10px">john@newbidder.co.za</td>
+        <td style="font-size:10px">021 000 0003</td>
+        <td><span class="tag to" style="font-size:9px">Unverified</span></td>
+        <td style="font-size:10px">18 Feb 2025</td>
+        <td style="text-align:center">0</td>
+        <td style="text-align:center">0</td>
+      </tr>
+    </table>
+  </div>
+</div>
+</div>
+
+<div class="wrap pb" id="s9">
+<h1 class="sec">9. Build Approach, File Structure &amp; Phases</h1>
+
+<h2 class="sub">How I Would Build It</h2>
+<p>The plugin follows the <strong>WordPress Plugin Boilerplate</strong> pattern &mdash; fully Object-Oriented PHP. Cloud storage SDKs (Google, Microsoft, Dropbox, AWS) are managed via <strong>Composer</strong>. All frontend interactivity is handled through <strong>WordPress REST API endpoints</strong> consumed by vanilla JavaScript. No React/Vue required.</p>
+
+<div class="cl ok"><strong>Why Composer?</strong> The cloud storage SDKs (Google API Client, Microsoft Graph, Dropbox SDK, AWS SDK) are industry-standard PHP packages best managed through Composer. The plugin ships with a <code>vendor/</code> directory so the end-user does not need to run Composer manually. Everything else uses core WordPress APIs.</div>
+
+<h2 class="sub">Plugin File Structure</h2>
+<div class="ft">
+<span class="d">eprocurement/</span><br>
+&nbsp;&nbsp;&#9500; <span class="fi">eprocurement.php</span> <span class="cm">&mdash; Main plugin file: header, constants, autoload</span><br>
+&nbsp;&nbsp;&#9500; <span class="fi">uninstall.php</span> <span class="cm">&mdash; Clean up tables and options on uninstall</span><br>
+&nbsp;&nbsp;&#9500; <span class="d">includes/</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-activator.php</span> <span class="cm">&mdash; register_activation_hook handler</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-deactivator.php</span> <span class="cm">&mdash; register_deactivation_hook handler</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-roles.php</span> <span class="cm">&mdash; Custom role definitions and capability maps</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-database.php</span> <span class="cm">&mdash; dbDelta schema, shared query helpers</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-documents.php</span> <span class="cm">&mdash; Bid CRUD, status transitions, metadata</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-contact-persons.php</span> <span class="cm">&mdash; Contact person records linked to WP users</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-messaging.php</span> <span class="cm">&mdash; Thread/message creation, visibility rules</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-bidder.php</span> <span class="cm">&mdash; Registration, email verification token logic</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-downloads.php</span> <span class="cm">&mdash; Secure download endpoint + audit log writes</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-notifications.php</span> <span class="cm">&mdash; All wp_mail() calls, email templates</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-storage-interface.php</span> <span class="cm">&mdash; Abstract: upload(), get_download_url(), delete()</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="d">storage/</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-google-drive.php</span> <span class="cm">&mdash; Google Drive (OAuth 2.0)</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-onedrive.php</span> <span class="cm">&mdash; OneDrive / Microsoft Graph (OAuth 2.0)</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-dropbox.php</span> <span class="cm">&mdash; Dropbox API v2 (OAuth 2.0)</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9492; <span class="fi">class-s3.php</span> <span class="cm">&mdash; AWS S3 / DigitalOcean Spaces / Backblaze B2</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-compliance-docs.php</span> <span class="cm">&mdash; Static compliance document library CRUD</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9492; <span class="fi">class-rest-api.php</span> <span class="cm">&mdash; /wp-json/eprocurement/v1/ endpoints</span><br>
+&nbsp;&nbsp;&#9500; <span class="d">admin/</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-admin.php</span> <span class="cm">&mdash; Admin menu registration, asset enqueue</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="d">partials/</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">dashboard.php</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">bid-list.php</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">bid-edit.php</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">contact-persons.php</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">messages.php</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">bidders.php</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">compliance-docs.php</span> <span class="cm">&mdash; Compliance document library management</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9492; <span class="fi">settings.php</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">admin.js</span> <span class="cm">&mdash; Admin-side interactions (file upload, messaging)</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9492; <span class="fi">admin.css</span><br>
+&nbsp;&nbsp;&#9500; <span class="d">public/</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">class-public.php</span> <span class="cm">&mdash; Shortcode handler, frontend asset enqueue</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="d">partials/</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">tender-listing.php</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">tender-detail.php</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">bidder-register.php</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">bidder-login.php</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">bidder-dashboard.php</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9492; <span class="fi">compliance-docs.php</span> <span class="cm">&mdash; Public compliance documents page</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">frontend.js</span> <span class="cm">&mdash; Listing filters, query form modal, AJAX calls</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9492; <span class="fi">frontend.css</span> <span class="cm">&mdash; Responsive, mobile-first styles</span><br>
+&nbsp;&nbsp;&#9500; <span class="d">templates/email/</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">verification.php</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9500; <span class="fi">new-query.php</span><br>
+&nbsp;&nbsp;&#9474;&nbsp;&nbsp;&#9492; <span class="fi">new-reply.php</span><br>
+&nbsp;&nbsp;&#9492; <span class="d">languages/</span> <span class="cm">&mdash; .pot file for translation</span>
+</div>
+
+<h2 class="sub">Build Phases</h2>
+<div class="phase">
+  <div class="ph"><div class="pn">1</div> Foundation (Week 1)</div>
+  <div class="pb2"><ul>
+    <li>Plugin scaffolding: constants, autoloader, activation/deactivation hooks</li>
+    <li>Database schema: create all 7 tables via dbDelta on activation</li>
+    <li>Custom roles: SCM Manager, SCM Official, Unit Manager, Subscriber/Bidder</li>
+    <li>Admin menu registration and empty page shells</li>
+  </ul></div>
+</div>
+<div class="phase">
+  <div class="ph"><div class="pn">2</div> Bid &amp; Document Management (Week 1-2)</div>
+  <div class="pb2"><ul>
+    <li>Bid CRUD (create, read, update, delete) in admin</li>
+    <li>All bid metadata fields including Bid Number (unique validation)</li>
+    <li>Status workflow (Draft &rarr; Published &rarr; Open &rarr; Closed | Cancelled | Archived)</li>
+    <li>Multi-provider cloud storage: Storage Interface + Google Drive, OneDrive, Dropbox, S3 implementations</li>
+    <li>OAuth 2.0 flow for Google Drive, OneDrive, Dropbox (token storage + auto-refresh)</li>
+    <li>Cloud storage settings page: provider selection, credential entry, connection test button</li>
+    <li>Supporting document upload to cloud storage, junction table, labels</li>
+    <li>Compliance Documents library: admin CRUD, cloud upload, customisable section title</li>
+    <li>Contact person management page and assignment to bids</li>
+  </ul></div>
+</div>
+<div class="phase">
+  <div class="ph"><div class="pn">3</div> Bidder Registration &amp; Frontend (Week 2)</div>
+  <div class="pb2"><ul>
+    <li>Bidder registration form with company profile fields</li>
+    <li>Email verification token generation, email send, token validation endpoint</li>
+    <li>Frontend shortcode [eprocurement] with router (listing / detail / register / dashboard)</li>
+    <li>Public tender listing page with search and status filter</li>
+    <li>Bid detail page: metadata, contact cards with click-to-call, document download list</li>
+    <li>Secure download endpoint: verify login, log download, redirect to file</li>
+  </ul></div>
+</div>
+<div class="phase">
+  <div class="ph"><div class="pn">4</div> Messaging &amp; Q&amp;A System (Week 3)</div>
+  <div class="pb2"><ul>
+    <li>Query form modal with contact selector, visibility toggle, and file attachment (5MB max, cloud-stored)</li>
+    <li>Thread + message creation, auto-generated subject line, attachment support on replies</li>
+    <li>Rich text editor for bid description with inline image paste/upload (images stored on cloud)</li>
+    <li>Public Q&amp;A display on bid detail page (all registered bidders)</li>
+    <li>Bidder dashboard: My Queries tab with thread view and reply</li>
+    <li>Admin messaging inbox with thread list, message view, and reply form</li>
+    <li>Email notifications for all messaging events via wp_mail()</li>
+  </ul></div>
+</div>
+<div class="phase">
+  <div class="ph"><div class="pn">5</div> Polish, Security &amp; Testing (Week 3-4)</div>
+  <div class="pb2"><ul>
+    <li>Full capability checks on every AJAX handler and REST endpoint</li>
+    <li>Nonce verification on all forms</li>
+    <li>Input sanitization audit across all user-facing inputs</li>
+    <li>Responsive CSS for frontend (mobile-first)</li>
+    <li>Admin settings page: SMTP test, notification toggles, frontend page assignments</li>
+    <li>Download log export (CSV) for audit purposes</li>
+    <li>WordPress coding standards (PHPCS) pass</li>
+  </ul></div>
+</div>
+</div>
+
+<div class="wrap pb" id="s10">
+<h1 class="sec">10. Dependencies &amp; Deployment Requirements</h1>
+
+<h2 class="sub">What I Need From You (Before Build Starts)</h2>
+<table>
+<tr><th>Item</th><th>Why Needed</th></tr>
+<tr><td>WordPress site URL and admin access</td><td>To install and test the plugin on a staging environment</td></tr>
+<tr><td>Organisation name and logo</td><td>For branding the frontend portal and email templates</td></tr>
+<tr><td>SMTP email credentials</td><td>wp_mail() must be configured to send verification and notification emails reliably</td></tr>
+<tr><td>Cloud storage credentials (one provider)</td><td><strong>Google Drive:</strong> Google Cloud project with Drive API enabled + OAuth Client ID/Secret<br><strong>OneDrive:</strong> Azure App Registration with Graph API Files.ReadWrite scope<br><strong>Dropbox:</strong> Dropbox App with files.content.write scope<br><strong>S3:</strong> Bucket name, region, access key, secret key</td></tr>
+<tr><td>Agreed frontend page slug</td><td>The WordPress page where [eprocurement] shortcode is placed (e.g., /tenders/)</td></tr>
+<tr><td>Sample bid data (2-3 examples)</td><td>For testing the full workflow end-to-end during development</td></tr>
+</table>
+
+<h2 class="sub">Server &amp; Software Requirements</h2>
+<table>
+<tr><th>Requirement</th><th>Minimum</th><th>Recommended</th></tr>
+<tr><td>WordPress</td><td>6.0</td><td>6.4+</td></tr>
+<tr><td>PHP</td><td>8.0</td><td>8.2+</td></tr>
+<tr><td>MySQL / MariaDB</td><td>MySQL 5.7 / MariaDB 10.3</td><td>MySQL 8.0+</td></tr>
+<tr><td>SMTP Plugin</td><td>WP Mail SMTP (free)</td><td>WP Mail SMTP Pro or FluentSMTP</td></tr>
+<tr><td>Max upload size (php.ini)</td><td>20MB</td><td>50MB+ (for large bid documents)</td></tr>
+<tr><td>Cloud storage account</td><td>Required (one of 4)</td><td>Google Drive, OneDrive, Dropbox, or S3-compatible bucket</td></tr>
+<tr><td>Composer (PHP dependency manager)</td><td>Required</td><td>Installs Google API Client, Microsoft Graph SDK, Dropbox SDK, AWS SDK</td></tr>
+<tr><td>SSL Certificate</td><td>Required</td><td>Required (login + file downloads)</td></tr>
+</table>
+
+<h2 class="sub">What Is NOT Needed</h2>
+<table>
+<tr><th>Item</th><th>Why Not Needed</th></tr>
+<tr><td>Node.js / npm build process</td><td>Frontend uses vanilla JS; no bundler required</td></tr>
+<tr><td>React or Vue</td><td>Plugin JavaScript is lightweight enough for vanilla JS + REST API</td></tr>
+<tr><td>Manual OAuth implementation</td><td>Plugin handles OAuth internally for Google/OneDrive/Dropbox. Admin clicks &ldquo;Connect&rdquo; in settings, completes OAuth, and the token is stored and auto-refreshed. No external OAuth plugins needed.</td></tr>
+<tr><td>Page builder (Elementor, Divi)</td><td>Plugin renders its own frontend via shortcode. No page builder dependency.</td></tr>
+<tr><td>WooCommerce</td><td>No e-commerce functionality is required</td></tr>
+</table>
+
+<h2 class="sub">Security Checklist (Built-in)</h2>
+<table>
+<tr><th>Security Measure</th><th>Implementation</th></tr>
+<tr><td>Nonce verification</td><td>All forms and AJAX calls include wp_create_nonce() / check_ajax_referer()</td></tr>
+<tr><td>Capability checks</td><td>Every AJAX handler and REST endpoint calls current_user_can() before processing</td></tr>
+<tr><td>Input sanitization</td><td>sanitize_text_field(), sanitize_email(), absint(), wp_kses_post() throughout</td></tr>
+<tr><td>Prepared SQL statements</td><td>All database queries use $wpdb-&gt;prepare() or $wpdb insert/update methods with format arrays</td></tr>
+<tr><td>Output escaping</td><td>esc_html(), esc_attr(), esc_url() on all rendered output</td></tr>
+<tr><td>Secure downloads</td><td>Files served through a PHP endpoint that checks login and logs access, not direct URL</td></tr>
+<tr><td>Email verification</td><td>One-time token, deleted after use, 48-hour expiry</td></tr>
+<tr><td>Role isolation</td><td>Each role has only the capabilities it needs, nothing more</td></tr>
+</table>
+
+<div style="margin-top:40px;padding:20px;background:#1e3a5f;color:#fff;border-radius:8px;text-align:center">
+  <div style="font-size:16px;font-weight:700;margin-bottom:8px">eProcurement Plugin &mdash; Technical Specification v1.0</div>
+  <div style="opacity:.7;font-size:12px">Prepared February 2026 &bull; Pre-Build Review Document</div>
+  <div style="opacity:.5;font-size:11px;margin-top:6px">To print this document as PDF: File &rarr; Print &rarr; Save as PDF (set margins to Default, enable Background Graphics)</div>
+</div>
+</div>
+
+</body>
+</html>

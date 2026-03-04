@@ -1,0 +1,538 @@
+/**
+ * eProcurement Admin Styles
+ *
+ * Extends WordPress admin styles for the plugin's custom pages.
+ * Uses WordPress admin color scheme variables where possible.
+ *
+ * @package Eprocurement
+ */
+
+/* ──── Dashboard Stats ──── */
+.eproc-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.eproc-stat-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-left: 4px solid #8b1a2b;
+    border-radius: 2px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.eproc-stat-card.green { border-left-color: #00a32a; }
+.eproc-stat-card.red { border-left-color: #d63638; }
+.eproc-stat-card.orange { border-left-color: #dba617; }
+.eproc-stat-card.purple { border-left-color: #8c5db2; }
+
+.eproc-stat-number {
+    font-size: 32px;
+    font-weight: 600;
+    color: #1d2327;
+    line-height: 1;
+}
+
+.eproc-stat-label {
+    font-size: 13px;
+    color: #646970;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ──── Status Badges ──── */
+.eproc-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.eproc-badge.draft { background: #787c82; }
+.eproc-badge.open { background: #00a32a; }
+.eproc-badge.closed { background: #d63638; }
+.eproc-badge.cancelled { background: #a7aaad; }
+.eproc-badge.archived { background: #646970; }
+.eproc-badge.public { background: #8b1a2b; }
+.eproc-badge.private { background: #8c5db2; }
+.eproc-badge.verified { background: #00a32a; }
+.eproc-badge.unverified { background: #dba617; }
+.eproc-badge.scm { background: #1e3a5f; }
+.eproc-badge.technical { background: #8c5db2; }
+
+/* ──── Two-Panel Layout (Messages) ──── */
+.eproc-two-panel {
+    display: flex;
+    gap: 0;
+    border: 1px solid #c3c4c7;
+    border-radius: 2px;
+    background: #fff;
+    min-height: 500px;
+}
+
+.eproc-panel-left {
+    width: 360px;
+    min-width: 360px;
+    border-right: 1px solid #c3c4c7;
+    overflow-y: auto;
+    max-height: 600px;
+}
+
+.eproc-panel-right {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    max-height: 600px;
+}
+
+a.eproc-thread-item,
+.eproc-thread-item {
+    display: block;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f1;
+    cursor: pointer;
+    transition: background 0.15s;
+    text-decoration: none !important;
+    color: inherit !important;
+}
+
+.eproc-thread-item:hover {
+    background: #f0f6fc;
+}
+
+.eproc-thread-item.active {
+    background: #f0f6fc;
+    border-left: 3px solid #8b1a2b;
+    padding-left: 13px;
+}
+
+.eproc-thread-sender {
+    font-weight: 600;
+    font-size: 13px;
+    color: #1d2327;
+    margin-bottom: 2px;
+}
+
+.eproc-thread-subject {
+    font-size: 12px;
+    color: #646970;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.eproc-thread-meta {
+    font-size: 11px;
+    color: #a7aaad;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.eproc-unread-badge {
+    background: #d63638;
+    color: #fff;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+/* ──── Message Bubbles ──── */
+.eproc-message {
+    margin-bottom: 16px;
+    max-width: 80%;
+}
+
+.eproc-message.staff {
+    margin-left: auto;
+}
+
+.eproc-message-bubble {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #1d2327;
+}
+
+.eproc-message:not(.staff) .eproc-message-bubble {
+    background: #f0f0f1;
+    border-bottom-left-radius: 2px;
+}
+
+.eproc-message.staff .eproc-message-bubble {
+    background: #e7f2fa;
+    border-bottom-right-radius: 2px;
+    text-align: right;
+}
+
+.eproc-message-meta {
+    font-size: 11px;
+    color: #a7aaad;
+    margin-bottom: 4px;
+}
+
+.eproc-message.staff .eproc-message-meta {
+    text-align: right;
+}
+
+/* ──── Reply Form ──── */
+.eproc-reply-form {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f1;
+    display: flex;
+    gap: 8px;
+}
+
+.eproc-reply-form textarea {
+    flex: 1;
+    min-height: 50px;
+    padding: 8px 12px;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    font-size: 13px;
+    resize: vertical;
+}
+
+/* ──── Cards / Panels ──── */
+.eproc-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 2px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.eproc-card h3 {
+    margin-top: 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+/* ──── Two Column Layout ──── */
+.eproc-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.eproc-three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+}
+
+/* ──── File Upload Area ──── */
+.eproc-upload-area {
+    border: 2px dashed #c3c4c7;
+    border-radius: 4px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    margin-bottom: 16px;
+}
+
+.eproc-upload-area:hover,
+.eproc-upload-area.dragover {
+    border-color: #8b1a2b;
+    background: #f0f6fc;
+}
+
+.eproc-upload-area .dashicons {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    color: #a7aaad;
+    margin-bottom: 8px;
+}
+
+.eproc-upload-area p {
+    font-size: 13px;
+    color: #646970;
+    margin: 4px 0 0;
+}
+
+.eproc-upload-progress {
+    height: 4px;
+    background: #f0f0f1;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+    display: none;
+}
+
+.eproc-upload-progress-bar {
+    height: 100%;
+    background: #8b1a2b;
+    border-radius: 2px;
+    transition: width 0.3s;
+    width: 0;
+}
+
+/* ──── Settings Provider Sections ──── */
+.eproc-provider-section {
+    display: none;
+    margin-top: 12px;
+    padding: 16px;
+    background: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.eproc-provider-section.active {
+    display: block;
+}
+
+.eproc-oauth-uri {
+    font-family: monospace;
+    font-size: 12px;
+    background: #f0f0f1;
+    padding: 4px 8px;
+    border-radius: 3px;
+    word-break: break-all;
+}
+
+/* ──── Connection Status ──── */
+.eproc-connection-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.eproc-connection-status.connected {
+    background: #edfaef;
+    color: #00a32a;
+}
+
+.eproc-connection-status.disconnected {
+    background: #fcf0f1;
+    color: #d63638;
+}
+
+/* ──── Modal ──── */
+.eproc-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 100000;
+    align-items: center;
+    justify-content: center;
+}
+
+.eproc-modal-overlay.active {
+    display: flex;
+}
+
+.eproc-modal {
+    background: #fff;
+    border-radius: 4px;
+    padding: 24px;
+    max-width: 560px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.eproc-modal h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+/* ──── Notification / Alert ──── */
+.eproc-notice {
+    padding: 10px 16px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+
+.eproc-notice.success {
+    background: #edfaef;
+    border: 1px solid #00a32a;
+    color: #00a32a;
+}
+
+.eproc-notice.error {
+    background: #fcf0f1;
+    border: 1px solid #d63638;
+    color: #d63638;
+}
+
+.eproc-notice.info {
+    background: #f0f6fc;
+    border: 1px solid #8b1a2b;
+    color: #8b1a2b;
+}
+
+/* ──── Toast Notifications (fixed position) ──── */
+.eproc-toast-notification {
+    position: fixed;
+    top: 40px;
+    right: 20px;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+    opacity: 0;
+    transform: translateX(40px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    max-width: 420px;
+    min-width: 280px;
+}
+
+.eproc-toast-notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.eproc-toast-notification.success {
+    background: #1a7a3f;
+}
+
+.eproc-toast-notification.error {
+    background: #d63638;
+}
+
+.eproc-toast-notification.info {
+    background: #1a1a5e;
+}
+
+.eproc-toast-icon {
+    font-size: 18px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.eproc-toast-message {
+    flex: 1;
+}
+
+.eproc-toast-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 0 0 8px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.eproc-toast-close:hover {
+    color: #fff;
+}
+
+/* ──── Bid Docs File List ──── */
+.eproc-file-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.eproc-file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.eproc-file-item:last-child {
+    border-bottom: none;
+}
+
+.eproc-file-item .file-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.eproc-file-item .file-size {
+    font-size: 12px;
+    color: #a7aaad;
+}
+
+.eproc-file-item .file-remove {
+    color: #d63638;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+/* ──── Button Spinner (Loading State) ──── */
+@keyframes eproc-spin {
+    to { transform: rotate(360deg); }
+}
+
+.eproc-btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.75;
+}
+
+.eproc-btn-loading::after {
+    content: '';
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-left: 8px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: eproc-spin 0.6s linear infinite;
+    vertical-align: middle;
+}
+
+/* ──── Responsive ──── */
+@media screen and (max-width: 960px) {
+    .eproc-stats {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .eproc-two-col,
+    .eproc-three-col {
+        grid-template-columns: 1fr;
+    }
+
+    .eproc-two-panel {
+        flex-direction: column;
+    }
+
+    .eproc-panel-left {
+        width: 100%;
+        min-width: auto;
+        border-right: none;
+        border-bottom: 1px solid #c3c4c7;
+        max-height: 250px;
+    }
+}

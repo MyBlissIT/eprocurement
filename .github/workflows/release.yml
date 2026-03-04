@@ -1,0 +1,58 @@
+name: Build Release ZIP
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Build plugin ZIP
+        run: |
+          # Create a clean copy with only the plugin directory
+          mkdir -p build/eprocurement
+          cp -r eprocurement/* build/eprocurement/
+
+          # Remove dev files that shouldn't be in production
+          rm -f build/eprocurement/composer.json
+          rm -f build/eprocurement/composer.lock
+          rm -rf build/eprocurement/tests
+
+          # Create the ZIP
+          cd build
+          zip -r ../eprocurement.zip eprocurement/
+          cd ..
+
+          echo "ZIP created: $(ls -lh eprocurement.zip)"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: eprocurement.zip
+          generate_release_notes: true
+          name: "eProcurement v${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## eProcurement v${{ steps.version.outputs.VERSION }}
+
+            ### Installation
+            1. Download `eprocurement.zip` below
+            2. Upload to `wp-content/plugins/` and extract
+            3. Activate the plugin in WordPress
+
+            ### Auto-Update
+            Sites with the plugin already installed will see this update automatically in wp-admin.
+
+            ---
+            *Full changelog below (auto-generated from commits)*

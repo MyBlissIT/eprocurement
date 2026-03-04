@@ -1,0 +1,2489 @@
+/**
+ * eProcurement Frontend Styles
+ *
+ * Mobile-first responsive styles for the public-facing portal.
+ * All classes prefixed with .eproc- to avoid conflicts with themes.
+ *
+ * CSS Custom Properties on .eproc-wrap enable multi-tenant color overrides.
+ * Host sites can override any --eproc-* variable on .eproc-wrap to rebrand.
+ *
+ * @package Eprocurement
+ */
+
+/* ──── Reset / Base ──── */
+.eproc-wrap {
+    /* ── Primary (maroon) ── */
+    --eproc-primary: #8b1a2b;
+    --eproc-primary-hover: #6d1522;
+    --eproc-primary-light: #a52040;
+    --eproc-primary-bg: #fdf2f4;
+    --eproc-primary-bg-alt: #fef8f9;
+    --eproc-primary-bubble: #fce4ec;
+
+    /* ── Secondary (navy) ── */
+    --eproc-secondary: #1a1a5e;
+    --eproc-secondary-light: #2d2d7a;
+
+    /* ── Semantic ── */
+    --eproc-success: #16a34a;
+    --eproc-success-dark: #0f7b3f;
+    --eproc-danger: #e74c3c;
+    --eproc-danger-dark: #a93226;
+    --eproc-danger-bg: #fdf0f0;
+    --eproc-warning: #f39c12;
+    --eproc-warning-text: #8a6914;
+    --eproc-warning-bg: #fef9ec;
+    --eproc-warning-bg-alt: #fef9e7;
+    --eproc-warning-text-alt: #b7791f;
+    --eproc-warning-border-alt: #f6e05e;
+
+    /* ── Purple (technical / private) ── */
+    --eproc-purple: #8e44ad;
+    --eproc-purple-bg: #f5eef8;
+    --eproc-purple-border: #d8b4fe;
+
+    /* ── Surfaces ── */
+    --eproc-content-bg: #f1f5f9;
+    --eproc-card-bg: #ffffff;
+    --eproc-surface-light: #f7f9fc;
+    --eproc-surface-alt: #fafafa;
+    --eproc-table-header-bg: #f0f2f5;
+
+    /* ── Text ── */
+    --eproc-text: #334155;
+    --eproc-text-heading: #1e293b;
+    --eproc-text-body: #1d2327;
+    --eproc-text-dark: #333;
+    --eproc-text-medium: #444;
+    --eproc-text-secondary: #555;
+    --eproc-text-dim: #666;
+    --eproc-text-muted: #64748b;
+    --eproc-text-light: #94a3b8;
+    --eproc-text-placeholder: #888;
+    --eproc-text-faint: #999;
+    --eproc-text-excel: #1a7a3f;
+
+    /* ── Borders ── */
+    --eproc-border: #e2e8f0;
+    --eproc-border-light: #f1f5f9;
+    --eproc-border-medium: #e0e0e0;
+    --eproc-border-divider: #f0f0f0;
+    --eproc-border-input: #ccc;
+    --eproc-border-disabled: #ccc;
+    --eproc-border-connector: #d0d5dd;
+    --eproc-border-pink: #f8bbd0;
+
+    /* ── Navbar ── */
+    --eproc-nav-link: #d4a8b0;
+
+    /* ── Misc ── */
+    --eproc-gray: #888;
+    --eproc-bubble-bidder: #f0f0f0;
+
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    color: var(--eproc-text-body);
+    line-height: 1.6;
+}
+
+.eproc-wrap *,
+.eproc-wrap *::before,
+.eproc-wrap *::after {
+    box-sizing: border-box;
+}
+
+/* ──── Navigation Bar (legacy) ──── */
+.eproc-nav {
+    background: var(--eproc-secondary);
+    color: var(--eproc-card-bg);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-radius: 6px 6px 0 0;
+    flex-wrap: wrap;
+}
+
+.eproc-nav-brand {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--eproc-card-bg);
+    text-decoration: none;
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.eproc-nav a {
+    color: var(--eproc-nav-link);
+    text-decoration: none;
+    font-size: 13px;
+    transition: color 0.2s;
+}
+
+.eproc-nav a:hover {
+    color: var(--eproc-card-bg);
+}
+
+.eproc-nav-btn {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--eproc-card-bg);
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s;
+}
+
+.eproc-nav-btn:hover {
+    opacity: 0.9;
+    color: var(--eproc-card-bg);
+}
+
+.eproc-nav-btn.blue { background: var(--eproc-primary); }
+.eproc-nav-btn.green { background: var(--eproc-primary); }
+.eproc-nav-btn.red { background: var(--eproc-danger); }
+
+.eproc-nav-user {
+    font-size: 12px;
+    color: var(--eproc-nav-link);
+}
+
+.eproc-nav-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--eproc-card-bg);
+    font-size: 20px;
+    cursor: pointer;
+}
+
+/* ──── Navbar (current templates) ──── */
+.eproc-navbar {
+    background: var(--eproc-secondary);
+    border-radius: 6px 6px 0 0;
+}
+
+.eproc-navbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 0 20px;
+    min-height: 50px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.eproc-navbar-brand {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--eproc-card-bg);
+    text-decoration: none;
+    white-space: nowrap;
+    padding: 12px 0;
+    min-width: 140px;
+}
+
+.eproc-navbar-brand:hover {
+    color: var(--eproc-card-bg);
+    opacity: 0.9;
+}
+
+.eproc-navbar-links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex: 1;
+}
+
+.eproc-nav-link {
+    display: inline-block;
+    padding: 14px 16px;
+    color: rgba(255, 255, 255, 0.75);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: color 0.2s, background 0.2s;
+    border-bottom: 2px solid transparent;
+}
+
+.eproc-nav-link:hover {
+    color: var(--eproc-card-bg);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.eproc-nav-link.active {
+    color: var(--eproc-card-bg);
+    border-bottom-color: var(--eproc-card-bg);
+}
+
+.eproc-navbar-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    min-width: 140px;
+}
+
+.eproc-btn-outline {
+    display: inline-block;
+    padding: 6px 16px;
+    border: 1px solid var(--eproc-primary);
+    border-radius: 4px;
+    color: var(--eproc-primary);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    background: transparent;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.eproc-btn-outline:hover {
+    border-color: var(--eproc-primary-hover);
+    background: var(--eproc-primary);
+    color: var(--eproc-card-bg);
+}
+
+/* White outline variant for dark backgrounds (navbar) */
+.eproc-navbar-actions .eproc-btn-outline {
+    border-color: rgba(255, 255, 255, 0.4);
+    color: var(--eproc-card-bg);
+}
+
+.eproc-navbar-actions .eproc-btn-outline:hover {
+    border-color: var(--eproc-card-bg);
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--eproc-card-bg);
+}
+
+.eproc-btn-primary {
+    display: inline-block;
+    padding: 6px 16px;
+    background: var(--eproc-primary);
+    border: 1px solid var(--eproc-primary);
+    border-radius: 4px;
+    color: var(--eproc-card-bg);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.eproc-btn-primary:hover {
+    background: var(--eproc-primary-hover);
+    color: var(--eproc-card-bg);
+}
+
+.eproc-navbar-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--eproc-card-bg);
+    padding: 8px;
+    cursor: pointer;
+    margin-left: 8px;
+}
+
+.eproc-navbar-toggle-icon {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: var(--eproc-card-bg);
+    position: relative;
+}
+
+.eproc-navbar-toggle-icon::before,
+.eproc-navbar-toggle-icon::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--eproc-card-bg);
+}
+
+.eproc-navbar-toggle-icon::before { top: -6px; }
+.eproc-navbar-toggle-icon::after { top: 6px; }
+
+/* ──── Hero Section ──── */
+.eproc-hero {
+    background: linear-gradient(135deg, var(--eproc-primary), var(--eproc-secondary));
+    color: var(--eproc-card-bg);
+    padding: 20px 24px;
+    text-align: center;
+}
+
+.eproc-hero h2 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    color: var(--eproc-card-bg);
+}
+
+.eproc-hero p {
+    font-size: 14px;
+    opacity: 0.85;
+    margin: 0;
+}
+
+.eproc-hero--open {
+    background: linear-gradient(135deg, var(--eproc-success-dark), var(--eproc-success));
+}
+
+.eproc-hero--closed {
+    background: linear-gradient(135deg, var(--eproc-primary-hover), var(--eproc-primary));
+}
+
+/* ──── Search / Filter Bar ──── */
+.eproc-filter-bar {
+    display: flex;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--eproc-surface-light);
+    border: 1px solid var(--eproc-border-medium);
+    border-top: none;
+    flex-wrap: wrap;
+}
+
+.eproc-search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 8px 14px;
+    border: 1px solid var(--eproc-border-input);
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.eproc-filter-select {
+    padding: 8px 12px;
+    border: 1px solid var(--eproc-border-input);
+    border-radius: 4px;
+    font-size: 13px;
+    background: var(--eproc-card-bg);
+}
+
+.eproc-filter-btn {
+    padding: 8px 20px;
+    background: var(--eproc-primary);
+    color: var(--eproc-card-bg);
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.eproc-filter-btn:hover {
+    background: var(--eproc-primary-hover);
+}
+
+/* ──── Card Grid ──── */
+.eproc-card-grid {
+    display: grid;
+    gap: 16px;
+    padding: 20px;
+}
+
+.eproc-card-grid--3col {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.eproc-card-grid--2col {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* ──── Bid Card ──── */
+.eproc-bid-card {
+    background: var(--eproc-card-bg);
+    border: 1px solid var(--eproc-border-medium);
+    border-radius: 6px;
+    padding: 16px;
+    transition: box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.eproc-bid-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.eproc-bid-card h4 {
+    font-size: 14px;
+    color: var(--eproc-secondary);
+    margin: 6px 0;
+    font-weight: 700;
+}
+
+.eproc-bid-card p {
+    font-size: 12px;
+    color: var(--eproc-text-dim);
+    margin: 0 0 8px;
+    line-height: 1.5;
+}
+
+.eproc-bid-card-footer {
+    font-size: 11px;
+    color: var(--eproc-text-faint);
+    border-top: 1px solid var(--eproc-border-divider);
+    padding-top: 8px;
+    margin-top: 8px;
+}
+
+/* ──── Status Badge ──── */
+.eproc-status-badge {
+    display: inline-block;
+    padding: 4px 18px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--eproc-card-bg);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ──── Buttons ──── */
+.eproc-btn {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--eproc-card-bg);
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s;
+    text-align: center;
+}
+
+.eproc-btn:hover {
+    opacity: 0.9;
+    color: var(--eproc-card-bg);
+}
+
+.eproc-btn.blue { background: var(--eproc-primary); }
+.eproc-btn.green { background: var(--eproc-primary); }
+.eproc-btn.red { background: var(--eproc-danger); }
+.eproc-btn.gray { background: var(--eproc-gray); }
+.eproc-btn.purple { background: var(--eproc-purple); }
+.eproc-btn.outline {
+    background: transparent;
+    border: 1px solid var(--eproc-primary);
+    color: var(--eproc-primary);
+}
+
+.eproc-btn.full-width {
+    display: block;
+    width: 100%;
+}
+
+.eproc-btn.lg {
+    padding: 10px 24px;
+    font-size: 14px;
+}
+
+/* ──── Bid Detail Page ──── */
+.eproc-detail-header {
+    background: var(--eproc-card-bg);
+    border: 1px solid var(--eproc-border-medium);
+    border-radius: 6px;
+    padding: 14px 20px;
+    margin-bottom: 8px;
+}
+
+.eproc-detail-header--combined {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+}
+
+.eproc-detail-header-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.eproc-detail-header-dates {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.eproc-date-card--compact {
+    padding: 10px 14px;
+    min-width: 120px;
+    text-align: center;
+}
+
+.eproc-date-card--compact .eproc-date-label {
+    margin-bottom: 4px;
+    font-size: 10px;
+}
+
+.eproc-date-card--compact .eproc-date-value {
+    font-size: 12px;
+}
+
+/* Bid Documents + Contact Persons side-by-side row */
+.eproc-detail-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.eproc-docs-contacts-row {
+    grid-template-columns: 3fr 2fr;
+}
+
+.eproc-docs-contacts-row .eproc-contacts-stack {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.eproc-docs-contacts-row .eproc-contact-card {
+    padding: 8px 10px;
+}
+
+.eproc-docs-contacts-row .eproc-contact-card p {
+    margin: 2px 0;
+    font-size: 12px;
+}
+
+.eproc-docs-contacts-row .eproc-contact-name {
+    font-size: 14px !important;
+}
+
+.eproc-docs-contacts-row .eproc-contact-type {
+    font-size: 10px;
+    margin-bottom: 4px;
+}
+
+.eproc-detail-row > .eproc-detail-section {
+    margin-bottom: 0;
+}
+
+.eproc-contacts-stack {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.eproc-contacts-stack .eproc-contact-card {
+    margin-bottom: 0;
+}
+
+.eproc-detail-header h2 {
+    font-size: 20px;
+    color: var(--eproc-secondary);
+    margin: 6px 0;
+}
+
+.eproc-detail-meta {
+    font-size: 12px;
+    color: var(--eproc-text-placeholder);
+}
+
+.eproc-dates {
+    display: flex;
+    gap: 20px;
+    font-size: 13px;
+    color: var(--eproc-text-secondary);
+    margin-top: 10px;
+}
+
+.eproc-dates strong {
+    color: var(--eproc-secondary);
+}
+
+.eproc-detail-body {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+}
+
+.eproc-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--eproc-secondary);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+/* ──── Documents Table ──── */
+.eproc-doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.eproc-doc-table th {
+    background: var(--eproc-table-header-bg);
+    color: var(--eproc-text-dark);
+    padding: 8px 12px;
+    border: 1px solid var(--eproc-border-medium);
+    font-weight: 600;
+    font-size: 12px;
+    text-align: left;
+}
+
+.eproc-doc-table td {
+    padding: 8px 12px;
+    border: 1px solid var(--eproc-border-medium);
+    color: var(--eproc-text-medium);
+    font-size: 12px;
+}
+
+.eproc-doc-table tr:nth-child(even) td {
+    background: var(--eproc-surface-alt);
+}
+
+/* ──── Contact Cards ──── */
+.eproc-contact-card {
+    background: var(--eproc-card-bg);
+    border: 1px solid var(--eproc-border-medium);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+}
+
+.eproc-contact-card .type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    color: var(--eproc-card-bg);
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.eproc-contact-card .type-badge.scm { background: var(--eproc-secondary); }
+.eproc-contact-card .type-badge.technical { background: var(--eproc-purple); }
+
+.eproc-contact-card .name {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--eproc-secondary);
+    margin-bottom: 4px;
+}
+
+.eproc-contact-card .detail {
+    font-size: 12px;
+    color: var(--eproc-text-secondary);
+    line-height: 2;
+}
+
+.eproc-contact-card .detail a {
+    color: var(--eproc-primary);
+    text-decoration: none;
+}
+
+/* ──── Q&A Section ──── */
+.eproc-qa-item {
+    border: 1px solid var(--eproc-border-medium);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: var(--eproc-surface-alt);
+}
+
+.eproc-qa-question {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--eproc-secondary);
+    margin-bottom: 4px;
+}
+
+.eproc-qa-meta {
+    font-size: 11px;
+    color: var(--eproc-text-placeholder);
+    margin-bottom: 6px;
+}
+
+.eproc-qa-answer {
+    font-size: 13px;
+    color: var(--eproc-primary);
+    font-weight: 600;
+}
+
+/* ──── Query Modal ──── */
+.eproc-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99999;
+    align-items: center;
+    justify-content: center;
+}
+
+.eproc-modal-overlay.active {
+    display: flex;
+}
+
+.eproc-modal {
+    background: var(--eproc-card-bg);
+    border: 2px solid var(--eproc-primary);
+    border-radius: 8px;
+    padding: 24px;
+    max-width: 520px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.eproc-modal h3 {
+    font-size: 16px;
+    color: var(--eproc-secondary);
+    margin: 0 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--eproc-border-divider);
+}
+
+/* ──── Forms ──── */
+.eproc-form-group {
+    margin-bottom: 14px;
+}
+
+.eproc-form-label {
+    display: block;
+    font-size: 12px;
+    color: var(--eproc-text-secondary);
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.eproc-form-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--eproc-border-input);
+    border-radius: 4px;
+    font-size: 13px;
+    transition: border-color 0.2s;
+}
+
+.eproc-form-input:focus {
+    border-color: var(--eproc-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(139, 26, 43, 0.1); /* based on --eproc-primary */
+}
+
+.eproc-form-textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--eproc-border-input);
+    border-radius: 4px;
+    font-size: 13px;
+    min-height: 80px;
+    resize: vertical;
+}
+
+.eproc-form-select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--eproc-border-input);
+    border-radius: 4px;
+    font-size: 13px;
+    background: var(--eproc-card-bg);
+}
+
+.eproc-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* ──── Auth Pages ──── */
+.eproc-auth-container {
+    max-width: 520px;
+    margin: 20px auto;
+}
+
+.eproc-auth-box {
+    background: var(--eproc-card-bg);
+    border: 1px solid var(--eproc-border-medium);
+    border-radius: 8px;
+    padding: 28px;
+}
+
+.eproc-auth-box h3 {
+    font-size: 18px;
+    color: var(--eproc-secondary);
+    margin: 0 0 6px;
+}
+
+.eproc-auth-box .subtitle {
+    font-size: 12px;
+    color: var(--eproc-text-placeholder);
+    margin-bottom: 20px;
+}
+
+.eproc-auth-footer {
+    text-align: center;
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--eproc-text-placeholder);
+}
+
+.eproc-auth-footer a {
+    color: var(--eproc-primary);
+    text-decoration: none;
+}
+
+.eproc-link-muted {
+    color: var(--eproc-text-placeholder);
+    font-size: 12px;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.eproc-link-muted:hover {
+    color: var(--eproc-primary);
+    text-decoration: underline;
+}
+
+/* ──── Info / Warning Boxes ──── */
+.eproc-info-box {
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-bottom: 16px;
+}
+
+.eproc-info-box.yellow {
+    background: var(--eproc-warning-bg);
+    border: 1px solid var(--eproc-warning);
+    color: var(--eproc-warning-text);
+}
+
+.eproc-info-box.green {
+    background: var(--eproc-primary-bg);
+    border: 1px solid var(--eproc-primary);
+    color: var(--eproc-primary-hover);
+}
+
+.eproc-info-box.red {
+    background: var(--eproc-danger-bg);
+    border: 1px solid var(--eproc-danger);
+    color: var(--eproc-danger-dark);
+}
+
+.eproc-info-box.blue {
+    background: var(--eproc-primary-bg);
+    border: 1px solid var(--eproc-primary);
+    color: var(--eproc-primary-hover);
+}
+
+/* ──── Dashboard Tabs ──── */
+.eproc-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--eproc-primary);
+    margin-bottom: 16px;
+}
+
+.eproc-tab {
+    padding: 8px 20px;
+    font-size: 13px;
+    color: var(--eproc-text-dim);
+    cursor: pointer;
+    border-radius: 4px 4px 0 0;
+    transition: background 0.2s;
+    text-decoration: none;
+}
+
+.eproc-tab:hover {
+    background: var(--eproc-primary-bg);
+}
+
+.eproc-tab.active {
+    background: var(--eproc-primary);
+    color: var(--eproc-card-bg);
+}
+
+.eproc-tab-content {
+    display: none;
+}
+
+.eproc-tab-content.active {
+    display: block;
+}
+
+/* ──── Thread List (Dashboard) ──── */
+.eproc-thread-list-item {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--eproc-border-divider);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.eproc-thread-list-item:hover {
+    background: var(--eproc-surface-light);
+}
+
+.eproc-thread-list-item.active {
+    background: var(--eproc-primary-bg);
+    border-left: 3px solid var(--eproc-primary);
+}
+
+.eproc-thread-sender {
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--eproc-secondary);
+}
+
+.eproc-thread-preview {
+    font-size: 11px;
+    color: var(--eproc-text-placeholder);
+}
+
+.eproc-visibility-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--eproc-card-bg);
+}
+
+.eproc-visibility-badge.public { background: var(--eproc-primary); }
+.eproc-visibility-badge.private { background: var(--eproc-purple); }
+
+/* ──── Message Bubbles ──── */
+.eproc-message-bubble {
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    max-width: 80%;
+    font-size: 13px;
+}
+
+.eproc-message-bubble.bidder {
+    background: var(--eproc-bubble-bidder);
+    border-bottom-left-radius: 2px;
+}
+
+.eproc-message-bubble.staff {
+    background: var(--eproc-primary-bubble);
+    margin-left: auto;
+    text-align: right;
+    border-bottom-right-radius: 2px;
+}
+
+.eproc-message-who {
+    font-size: 11px;
+    color: var(--eproc-text-placeholder);
+    margin-bottom: 3px;
+}
+
+/* ──── Visibility Radio Group ──── */
+.eproc-visibility-group {
+    display: flex;
+    gap: 16px;
+    padding: 10px;
+    background: var(--eproc-surface-light);
+    border-radius: 4px;
+    border: 1px solid var(--eproc-border-medium);
+}
+
+.eproc-visibility-group label {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+/* ──── File Attachment Upload ──── */
+.eproc-attach-area {
+    border: 1px dashed var(--eproc-primary);
+    border-radius: 4px;
+    padding: 12px;
+    text-align: center;
+    background: var(--eproc-primary-bg-alt);
+    font-size: 12px;
+    color: var(--eproc-primary);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.eproc-attach-area:hover {
+    background: var(--eproc-primary-bg);
+}
+
+/* ──── Pagination ──── */
+.eproc-pagination {
+    text-align: center;
+    padding: 16px;
+    font-size: 13px;
+    color: var(--eproc-text-placeholder);
+}
+
+.eproc-load-more {
+    display: inline-block;
+    padding: 8px 24px;
+    background: var(--eproc-primary);
+    color: var(--eproc-card-bg);
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.eproc-load-more:hover {
+    background: var(--eproc-primary-hover);
+}
+
+.eproc-load-more:disabled {
+    background: var(--eproc-border-disabled);
+    cursor: not-allowed;
+}
+
+/* ──── SCM Docs Page ──── */
+.eproc-compliance-list {
+    padding: 20px;
+}
+
+.eproc-compliance-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--eproc-border-divider);
+    background: var(--eproc-card-bg);
+}
+
+.eproc-compliance-item:last-child {
+    border-bottom: none;
+}
+
+.eproc-compliance-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--eproc-primary-bg);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.eproc-compliance-info {
+    flex: 1;
+}
+
+.eproc-compliance-info .label {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--eproc-secondary);
+}
+
+.eproc-compliance-info .desc {
+    font-size: 12px;
+    color: var(--eproc-text-dim);
+    margin-top: 2px;
+}
+
+.eproc-compliance-info .size {
+    font-size: 11px;
+    color: var(--eproc-text-faint);
+    margin-top: 2px;
+}
+
+/* ──── Empty State ──── */
+.eproc-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--eproc-text-placeholder);
+    font-size: 14px;
+}
+
+.eproc-empty-state .dashicons,
+.eproc-empty-state .icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    opacity: 0.4;
+}
+
+/* ──── Nav User (in navbar actions) ──── */
+.eproc-nav-user {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-right: 4px;
+}
+
+/* ──── Hero Section (extended) ──── */
+.eproc-hero-inner {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.eproc-hero h1,
+.eproc-hero-title {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    color: var(--eproc-card-bg);
+}
+
+.eproc-hero-subtitle {
+    font-size: 14px;
+    opacity: 0.85;
+    margin: 0;
+}
+
+/* ──── Generic Inputs ──── */
+.eproc-input,
+.eproc-select,
+.eproc-textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--eproc-border-input);
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+    background: var(--eproc-card-bg);
+}
+
+.eproc-input:focus,
+.eproc-select:focus,
+.eproc-textarea:focus {
+    border-color: var(--eproc-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(139, 26, 43, 0.1); /* based on --eproc-primary */
+}
+
+.eproc-textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.eproc-label {
+    display: block;
+    font-size: 12px;
+    color: var(--eproc-text-secondary);
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+/* ──── Filter Bar (extended) ──── */
+.eproc-filter-form {
+    width: 100%;
+}
+
+.eproc-filter-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.eproc-search-field {
+    flex: 1;
+    min-width: 200px;
+}
+
+.eproc-filter-field {
+    min-width: 140px;
+}
+
+.eproc-filter-action {
+    flex-shrink: 0;
+}
+
+.eproc-results-meta {
+    padding: 10px 20px;
+    background: var(--eproc-card-bg);
+    border: 1px solid var(--eproc-border-medium);
+    border-top: none;
+}
+
+.eproc-results-count {
+    font-size: 12px;
+    color: var(--eproc-text-placeholder);
+    margin: 0;
+}
+
+/* ──── Bid Card (extended) ──── */
+.eproc-card {
+    background: var(--eproc-card-bg);
+    border: 1px solid var(--eproc-border-medium);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.eproc-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.eproc-bid-card .eproc-card-header {
+    padding: 12px 16px 0;
+}
+
+.eproc-bid-card .eproc-card-body {
+    padding: 4px 16px 8px;
+    flex: 1;
+}
+
+.eproc-bid-number {
+    font-size: 11px;
+    color: var(--eproc-text-placeholder);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    margin: 0 0 2px;
+}
+
+.eproc-bid-title {
+    font-size: 14px;
+    color: var(--eproc-secondary);
+    margin: 0 0 4px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.eproc-bid-excerpt {
+    font-size: 12px;
+    color: var(--eproc-text-dim);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.eproc-card-meta {
+    padding: 8px 16px;
+    border-top: 1px solid var(--eproc-border-divider);
+    margin-top: auto;
+}
+
+.eproc-meta-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    padding: 2px 0;
+}
+
+.eproc-meta-label {
+    color: var(--eproc-text-placeholder);
+}
+
+.eproc-meta-value {
+    color: var(--eproc-text-dark);
+    font-weight: 600;
+}
+
+.eproc-card-footer {
+    padding: 10px 16px 14px;
+}
+
+/* ──── Button Variants ──── */
+.eproc-btn-block {
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+.eproc-btn-sm {
+    padding: 4px 10px;
+    font-size: 11px;
+}
+
+.eproc-btn-lg {
+    padding: 10px 24px;
+    font-size: 14px;
+}
+
+.eproc-pagination-info {
+    font-size: 12px;
+    color: var(--eproc-text-placeholder);
+    margin-top: 8px;
+}
+
+/* ──── Bid Detail Page (extended) ──── */
+.eproc-detail-header-inner {
+    /* Inner container for detail header */
+}
+
+.eproc-detail-title {
+    font-size: 22px;
+    color: var(--eproc-secondary);
+    margin: 6px 0 2px;
+    font-weight: 700;
+    line-height: 1.3;
+    text-align: center;
+}
+
+.eproc-detail-bid-number {
+    font-size: 13px;
+    color: var(--eproc-text-placeholder);
+    margin: 0;
+    font-weight: 500;
+}
+
+.eproc-detail-section {
+    background: var(--eproc-card-bg);
+    border: 1px solid var(--eproc-border-medium);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+}
+
+.eproc-dates-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.eproc-date-card {
+    background: var(--eproc-surface-light);
+    border: 1px solid var(--eproc-border);
+    border-radius: 6px;
+    padding: 14px;
+    text-align: center;
+}
+
+.eproc-date-label {
+    display: block;
+    font-size: 11px;
+    color: var(--eproc-text-placeholder);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.eproc-date-value {
+    display: block;
+    font-size: 14px;
+    color: var(--eproc-secondary);
+    font-weight: 700;
+}
+
+.eproc-description-content {
+    font-size: 13px;
+    color: var(--eproc-text-medium);
+    line-height: 1.6;
+}
+
+.eproc-description-content p {
+    margin: 0 0 6px;
+}
+
+.eproc-description-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 4px 0;
+}
+
+.eproc-muted {
+    color: var(--eproc-text-placeholder);
+    font-size: 13px;
+}
+
+/* ──── Table (generic frontend table) ──── */
+.eproc-table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.eproc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.eproc-table th {
+    background: var(--eproc-table-header-bg);
+    color: var(--eproc-text-dark);
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 12px;
+    text-align: left;
+    border-bottom: 2px solid var(--eproc-border-medium);
+}
+
+.eproc-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--eproc-border-divider);
+    color: var(--eproc-text-medium);
+    font-size: 13px;
+}
+
+.eproc-table tr:hover td {
+    background: var(--eproc-surface-light);
+}
+
+.eproc-table a {
+    color: var(--eproc-primary);
+    text-decoration: none;
+}
+
+.eproc-table a:hover {
+    text-decoration: underline;
+}
+
+.eproc-file-label {
+    font-weight: 600;
+    color: var(--eproc-secondary);
+}
+
+/* ──── Contact Cards (detail page) ──── */
+.eproc-contacts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.eproc-contact-type {
+    font-size: 11px;
+    color: var(--eproc-text-placeholder);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 8px;
+}
+
+.eproc-contact-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--eproc-secondary);
+    margin: 0 0 4px;
+}
+
+.eproc-contact-dept {
+    font-size: 13px;
+    color: var(--eproc-text-dim);
+    margin: 0 0 4px;
+}
+
+.eproc-contact-phone {
+    font-size: 13px;
+    margin: 0 0 10px;
+}
+
+.eproc-contact-email,
+.eproc-contact-phone {
+    font-size: 13px;
+    margin: 0 0 4px;
+}
+
+.eproc-contact-email a,
+.eproc-contact-phone a {
+    color: var(--eproc-primary);
+    text-decoration: none;
+}
+
+.eproc-contact-email a:hover,
+.eproc-contact-phone a:hover {
+    text-decoration: underline;
+}
+
+/* ──── Q&A Section (detail page) ──── */
+.eproc-qa-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.eproc-qa-thread {
+    border: 1px solid var(--eproc-border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.eproc-qa-thread--hidden {
+    display: none;
+}
+
+.eproc-qa-show-more {
+    margin-top: 12px;
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 8px 16px;
+}
+
+.eproc-qa-message {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--eproc-border-divider);
+}
+
+.eproc-qa-message:last-child {
+    border-bottom: none;
+}
+
+.eproc-qa-question {
+    background: var(--eproc-surface-alt);
+    border-left: 3px solid var(--eproc-primary);
+}
+
+.eproc-qa-answer {
+    background: var(--eproc-primary-bg);
+    margin-left: 20px;
+    border-left: 3px solid var(--eproc-secondary);
+    position: relative;
+}
+
+.eproc-qa-answer::before {
+    content: '';
+    position: absolute;
+    left: -21px;
+    top: 14px;
+    width: 18px;
+    height: 1px;
+    background: var(--eproc-border-connector);
+}
+
+.eproc-qa-message-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+
+.eproc-qa-sender {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--eproc-secondary);
+}
+
+.eproc-qa-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--eproc-card-bg);
+}
+
+.eproc-qa-badge--staff {
+    background: var(--eproc-secondary);
+}
+
+.eproc-qa-badge--bidder {
+    background: var(--eproc-primary);
+}
+
+.eproc-qa-date {
+    font-size: 11px;
+    color: var(--eproc-text-faint);
+    margin-left: auto;
+}
+
+.eproc-qa-message-body {
+    font-size: 13px;
+    color: var(--eproc-text-medium);
+    line-height: 1.6;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.eproc-qa-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--eproc-border-divider);
+}
+
+/* Make Q&A action buttons always visible with solid backgrounds */
+.eproc-qa-actions .eproc-btn-outline {
+    background: var(--eproc-card-bg);
+    border: 2px solid var(--eproc-primary);
+    color: var(--eproc-primary);
+    font-weight: 700;
+    padding: 8px 20px;
+    font-size: 12px;
+}
+
+.eproc-qa-actions .eproc-btn-outline:hover {
+    background: var(--eproc-primary);
+    color: var(--eproc-card-bg);
+}
+
+/* ──── Modal (detail page query modal) ──── */
+.eproc-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 99999;
+    align-items: center;
+    justify-content: center;
+}
+
+.eproc-modal .eproc-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+}
+
+.eproc-modal-dialog {
+    position: relative;
+    background: var(--eproc-card-bg);
+    border-radius: 8px;
+    max-width: 520px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+    z-index: 1;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    margin: auto;
+}
+
+.eproc-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--eproc-border-divider);
+}
+
+.eproc-modal-title {
+    font-size: 16px;
+    color: var(--eproc-secondary);
+    margin: 0;
+    font-weight: 700;
+}
+
+.eproc-modal-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: var(--eproc-text-placeholder);
+    cursor: pointer;
+    padding: 4px 8px;
+    line-height: 1;
+}
+
+.eproc-modal-close:hover {
+    color: var(--eproc-text-dark);
+}
+
+.eproc-modal-body {
+    padding: 20px;
+}
+
+.eproc-modal-info {
+    font-size: 13px;
+    color: var(--eproc-text-secondary);
+    margin: 0 0 12px;
+}
+
+.eproc-modal-visibility {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin-bottom: 14px;
+}
+
+.eproc-visibility-public {
+    background: var(--eproc-primary-bg);
+    color: var(--eproc-primary);
+    border: 1px solid var(--eproc-border-pink);
+}
+
+.eproc-visibility-warning {
+    background: var(--eproc-warning-bg-alt);
+    color: var(--eproc-warning-text-alt);
+    border: 1px solid var(--eproc-warning-border-alt);
+}
+
+.eproc-visibility-private {
+    background: var(--eproc-purple-bg);
+    color: var(--eproc-purple);
+    border: 1px solid var(--eproc-purple-border);
+}
+
+/* ──── Visibility Chooser (query modal) ──── */
+.eproc-visibility-chooser {
+    margin-bottom: 12px;
+}
+
+.eproc-visibility-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.eproc-visibility-option {
+    cursor: pointer;
+    display: block;
+}
+
+.eproc-visibility-option input[type="radio"] {
+    display: none;
+}
+
+.eproc-visibility-option-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border: 2px solid var(--eproc-border-medium);
+    border-radius: 6px;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.eproc-visibility-option-inner strong {
+    font-size: 13px;
+    color: var(--eproc-text-dark);
+}
+
+.eproc-visibility-option-inner small {
+    font-size: 11px;
+    color: var(--eproc-text-placeholder);
+}
+
+.eproc-visibility-option input[type="radio"]:checked + .eproc-vis-public {
+    border-color: var(--eproc-primary);
+    background: var(--eproc-primary-bg);
+}
+
+.eproc-visibility-option input[type="radio"]:checked + .eproc-vis-public strong {
+    color: var(--eproc-primary);
+}
+
+.eproc-visibility-option input[type="radio"]:checked + .eproc-vis-private {
+    border-color: var(--eproc-purple);
+    background: var(--eproc-purple-bg);
+}
+
+.eproc-visibility-option input[type="radio"]:checked + .eproc-vis-private strong {
+    color: var(--eproc-purple);
+}
+
+/* ──── Form Actions & Feedback ──── */
+.eproc-form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.eproc-form-feedback {
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-top: 12px;
+}
+
+.eproc-feedback-success {
+    background: var(--eproc-primary-bg);
+    border: 1px solid var(--eproc-primary);
+    color: var(--eproc-primary-hover);
+}
+
+.eproc-feedback-error {
+    background: var(--eproc-danger-bg);
+    border: 1px solid var(--eproc-danger);
+    color: var(--eproc-danger-dark);
+}
+
+.eproc-required {
+    color: var(--eproc-danger);
+    font-weight: 700;
+}
+
+.eproc-optional {
+    color: var(--eproc-text-faint);
+    font-weight: 400;
+    font-size: 11px;
+}
+
+.eproc-form-hint {
+    display: block;
+    font-size: 11px;
+    color: var(--eproc-text-faint);
+    margin-top: 3px;
+}
+
+.eproc-form .eproc-form-group {
+    margin-bottom: 16px;
+}
+
+.eproc-form-row--2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* ──── Auth Section ──── */
+.eproc-auth-section {
+    padding: 30px 20px;
+}
+
+.eproc-auth-title {
+    font-size: 22px;
+    color: var(--eproc-secondary);
+    margin: 0 0 4px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.eproc-auth-subtitle {
+    font-size: 13px;
+    color: var(--eproc-text-placeholder);
+    margin: 0 0 20px;
+    text-align: center;
+}
+
+/* ──── Info Box Variants (BEM-style) ──── */
+.eproc-info-box--warning {
+    background: var(--eproc-warning-bg);
+    border: 1px solid var(--eproc-warning);
+    color: var(--eproc-warning-text);
+}
+
+.eproc-info-box--success {
+    background: var(--eproc-primary-bg);
+    border: 1px solid var(--eproc-primary);
+    color: var(--eproc-primary-hover);
+}
+
+.eproc-info-box--error {
+    background: var(--eproc-danger-bg);
+    border: 1px solid var(--eproc-danger);
+    color: var(--eproc-danger-dark);
+}
+
+/* ──── Dashboard (bidder) ──── */
+.eproc-dashboard-header {
+    background: var(--eproc-surface-light);
+    border: 1px solid var(--eproc-border-medium);
+    border-top: none;
+    padding: 20px 24px;
+    text-align: center;
+}
+
+.eproc-dashboard-title {
+    font-size: 20px;
+    color: var(--eproc-secondary);
+    margin: 0;
+    font-weight: 700;
+}
+
+/* ──── Tabs (bidder dashboard) ──── */
+.eproc-tabs-nav {
+    display: flex;
+    background: var(--eproc-card-bg);
+    border: 1px solid var(--eproc-border-medium);
+    border-top: none;
+    padding: 0 16px;
+}
+
+.eproc-tab-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--eproc-text-dim);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.eproc-tab-link:hover {
+    color: var(--eproc-primary);
+}
+
+.eproc-tab-link--active {
+    color: var(--eproc-primary);
+    border-bottom-color: var(--eproc-primary);
+}
+
+.eproc-tab-count {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    background: var(--eproc-primary-bubble);
+    color: var(--eproc-primary);
+    font-weight: 700;
+}
+
+.eproc-tab-panel {
+    display: none;
+    background: var(--eproc-card-bg);
+    border: 1px solid var(--eproc-border-medium);
+    border-top: none;
+    padding: 20px;
+}
+
+.eproc-tab-panel--active {
+    display: block;
+}
+
+/* ──── Thread List (dashboard) ──── */
+.eproc-thread-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.eproc-thread-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--eproc-border-divider);
+    transition: background 0.15s;
+}
+
+.eproc-thread-item:last-child {
+    border-bottom: none;
+}
+
+.eproc-thread-item:hover {
+    background: var(--eproc-surface-light);
+}
+
+.eproc-thread-item-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 160px;
+}
+
+.eproc-thread-bid-ref {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--eproc-secondary);
+}
+
+.eproc-visibility-badge--private {
+    background: var(--eproc-purple);
+}
+
+.eproc-visibility-badge--public {
+    background: var(--eproc-primary);
+}
+
+.eproc-unread-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--eproc-card-bg);
+    background: var(--eproc-danger);
+}
+
+.eproc-thread-item-body {
+    flex: 1;
+}
+
+.eproc-thread-subject {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--eproc-text-dark);
+    margin: 0 0 2px;
+}
+
+.eproc-thread-meta {
+    font-size: 11px;
+    color: var(--eproc-text-placeholder);
+    margin: 0;
+}
+
+.eproc-thread-item-action {
+    flex-shrink: 0;
+}
+
+/* ──── Thread Detail (dashboard) ──── */
+.eproc-thread-detail-header h3 {
+    font-size: 16px;
+    color: var(--eproc-secondary);
+    margin: 12px 0 6px;
+}
+
+.eproc-conversation {
+    padding: 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.eproc-bubble {
+    padding: 12px 16px;
+    border-radius: 8px;
+    max-width: 85%;
+    font-size: 13px;
+}
+
+.eproc-bubble--bidder {
+    background: var(--eproc-bubble-bidder);
+    align-self: flex-start;
+    border-bottom-left-radius: 2px;
+}
+
+.eproc-bubble--staff {
+    background: var(--eproc-primary-bubble);
+    align-self: flex-end;
+    border-bottom-right-radius: 2px;
+}
+
+.eproc-bubble-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.eproc-bubble-sender {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--eproc-secondary);
+}
+
+.eproc-bubble-date {
+    font-size: 10px;
+    color: var(--eproc-text-faint);
+    margin-left: auto;
+}
+
+.eproc-bubble-body {
+    line-height: 1.6;
+    color: var(--eproc-text-dark);
+}
+
+.eproc-bubble-attachments {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.eproc-attachment-link {
+    display: inline-block;
+    font-size: 11px;
+    color: var(--eproc-primary);
+    text-decoration: none;
+    margin-right: 10px;
+}
+
+.eproc-attachment-link:hover {
+    text-decoration: underline;
+}
+
+.eproc-reply-form {
+    border-top: 1px solid var(--eproc-border-medium);
+    padding-top: 16px;
+    margin-top: 8px;
+}
+
+/* ──── Verification Status ──── */
+.eproc-verification-status {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.eproc-verification-status--verified {
+    background: var(--eproc-primary-bg);
+    color: var(--eproc-primary);
+    border: 1px solid var(--eproc-primary);
+}
+
+.eproc-verification-status--pending {
+    background: var(--eproc-warning-bg);
+    color: var(--eproc-warning);
+    border: 1px solid var(--eproc-warning);
+}
+
+/* ──── Page Header (SCM docs, etc.) ──── */
+.eproc-page-header {
+    background: linear-gradient(135deg, var(--eproc-primary), var(--eproc-secondary));
+    color: var(--eproc-card-bg);
+    padding: 20px 24px;
+    text-align: center;
+}
+
+.eproc-page-title {
+    font-size: 20px;
+    color: var(--eproc-card-bg);
+    margin: 0 0 6px;
+    font-weight: 700;
+}
+
+.eproc-page-description {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0;
+}
+
+/* ──── Document List (public SCM docs) ──── */
+.eproc-doc-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.eproc-doc-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--eproc-border-divider);
+    background: var(--eproc-card-bg);
+    transition: background 0.15s;
+}
+
+.eproc-doc-item:last-child {
+    border-bottom: none;
+}
+
+.eproc-doc-item:hover {
+    background: var(--eproc-surface-light);
+}
+
+.eproc-doc-item-icon {
+    width: 44px;
+    height: 44px;
+    background: var(--eproc-primary-bg);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.eproc-file-icon {
+    display: block;
+    width: 20px;
+    height: 24px;
+    position: relative;
+}
+
+.eproc-file-icon::before {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: var(--eproc-primary);
+    border-radius: 2px;
+    opacity: 0.3;
+}
+
+.eproc-file-icon::after {
+    content: 'DOC';
+    position: absolute;
+    bottom: 1px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 6px;
+    font-weight: 900;
+    color: var(--eproc-primary);
+    letter-spacing: 0.5px;
+}
+
+.eproc-file-icon[data-type*="pdf"]::after { content: 'PDF'; color: var(--eproc-danger); }
+.eproc-file-icon[data-type*="pdf"]::before { background: var(--eproc-danger); }
+.eproc-file-icon[data-type*="sheet"]::after,
+.eproc-file-icon[data-type*="xls"]::after { content: 'XLS'; color: var(--eproc-text-excel); }
+.eproc-file-icon[data-type*="sheet"]::before,
+.eproc-file-icon[data-type*="xls"]::before { background: var(--eproc-text-excel); }
+.eproc-file-icon[data-type*="zip"]::after { content: 'ZIP'; color: var(--eproc-warning); }
+.eproc-file-icon[data-type*="zip"]::before { background: var(--eproc-warning); }
+.eproc-file-icon[data-type*="image"]::after,
+.eproc-file-icon[data-type*="jpg"]::after,
+.eproc-file-icon[data-type*="png"]::after { content: 'IMG'; color: var(--eproc-purple); }
+.eproc-file-icon[data-type*="image"]::before,
+.eproc-file-icon[data-type*="jpg"]::before,
+.eproc-file-icon[data-type*="png"]::before { background: var(--eproc-purple); }
+
+.eproc-doc-item-info {
+    flex: 1;
+}
+
+.eproc-doc-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--eproc-secondary);
+    margin: 0 0 2px;
+}
+
+.eproc-doc-description {
+    font-size: 12px;
+    color: var(--eproc-text-dim);
+    margin: 0 0 2px;
+}
+
+.eproc-doc-size {
+    font-size: 11px;
+    color: var(--eproc-text-faint);
+}
+
+.eproc-doc-item-action {
+    flex-shrink: 0;
+}
+
+/* ──── Button Spinner (Loading State) ──── */
+@keyframes eproc-spin {
+    to { transform: rotate(360deg); }
+}
+
+.eproc-btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.75;
+}
+
+.eproc-btn-loading::after {
+    content: '';
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-left: 8px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: eproc-spin 0.6s linear infinite;
+    vertical-align: middle;
+}
+
+/* ──── Responsive ──── */
+@media screen and (max-width: 768px) {
+
+    /* Navbar: collapse to hamburger */
+    .eproc-navbar-toggle {
+        display: block;
+    }
+
+    .eproc-navbar-inner {
+        flex-wrap: wrap;
+    }
+
+    .eproc-navbar-links {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        order: 10;
+        padding: 6px 0 10px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .eproc-navbar-links.open {
+        display: flex;
+    }
+
+    .eproc-nav-link {
+        padding: 8px 0;
+        border-bottom: none;
+    }
+
+    .eproc-navbar-actions {
+        display: none;
+        width: 100%;
+        order: 11;
+        padding: 6px 0 10px;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .eproc-navbar-actions.open {
+        display: flex;
+    }
+
+    .eproc-navbar-brand {
+        flex: 1;
+    }
+
+    /* Card grid */
+    .eproc-card-grid--3col {
+        grid-template-columns: 1fr;
+    }
+
+    .eproc-card-grid--2col {
+        grid-template-columns: 1fr;
+    }
+
+    /* Detail page */
+    .eproc-detail-header--combined {
+        flex-direction: column;
+    }
+
+    .eproc-detail-header-dates {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .eproc-detail-row {
+        grid-template-columns: 1fr;
+    }
+
+    .eproc-detail-body {
+        grid-template-columns: 1fr;
+    }
+
+    .eproc-dates-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .eproc-dates {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .eproc-contacts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .eproc-contacts-stack {
+        grid-template-columns: 1fr;
+    }
+
+    /* Forms */
+    .eproc-form-row,
+    .eproc-form-row--2col {
+        grid-template-columns: 1fr;
+    }
+
+    .eproc-filter-row {
+        flex-direction: column;
+    }
+
+    .eproc-search-field {
+        min-width: 0;
+    }
+
+    .eproc-filter-bar {
+        flex-direction: column;
+    }
+
+    /* Legacy nav */
+    .eproc-nav {
+        flex-wrap: wrap;
+    }
+
+    .eproc-nav-toggle {
+        display: block;
+    }
+
+    .eproc-nav-links {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        gap: 8px;
+        padding-top: 10px;
+    }
+
+    .eproc-nav-links.open {
+        display: flex;
+    }
+
+    /* Other */
+    .eproc-visibility-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .eproc-hero h2,
+    .eproc-hero-title {
+        font-size: 18px;
+    }
+
+    .eproc-modal-dialog {
+        width: 95%;
+    }
+
+    .eproc-tabs-nav {
+        flex-wrap: wrap;
+        gap: 0;
+    }
+
+    .eproc-tab-link {
+        flex: 1;
+        text-align: center;
+        justify-content: center;
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    .eproc-tabs {
+        flex-wrap: wrap;
+    }
+
+    .eproc-tab {
+        flex: 1;
+        text-align: center;
+        padding: 8px 10px;
+    }
+
+    /* Thread list */
+    .eproc-thread-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .eproc-thread-item-header {
+        min-width: 0;
+    }
+
+    .eproc-qa-actions {
+        flex-direction: column;
+    }
+
+    .eproc-form-actions {
+        flex-direction: column;
+    }
+
+    .eproc-detail-title {
+        font-size: 18px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .eproc-wrap {
+        font-size: 13px;
+    }
+
+    .eproc-auth-box {
+        padding: 18px;
+    }
+
+    .eproc-auth-container {
+        padding: 0 8px;
+    }
+
+    .eproc-bid-card {
+        padding: 12px;
+    }
+
+    .eproc-detail-section {
+        padding: 14px;
+    }
+
+    .eproc-bubble {
+        max-width: 95%;
+    }
+}
+
+/* Footer styling is handled by the MU-plugin (sme-admin-customizations.php) */

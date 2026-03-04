@@ -1,0 +1,63 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: eproc-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: eproc_wp
+      MYSQL_USER: wpuser
+      MYSQL_PASSWORD: wppassword
+    volumes:
+      - eproc_db_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+
+  wp:
+    image: wordpress:6.7-php8.2-apache
+    container_name: eproc-wp
+    restart: unless-stopped
+    depends_on:
+      - db
+      - mailpit
+    ports:
+      - "8190:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wpuser
+      WORDPRESS_DB_PASSWORD: wppassword
+      WORDPRESS_DB_NAME: eproc_wp
+      WORDPRESS_DEBUG: "1"
+    volumes:
+      - eproc_wp_data:/var/www/html
+      - ./eprocurement:/var/www/html/wp-content/plugins/eprocurement
+      - ./mu-plugins:/var/www/html/wp-content/mu-plugins
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: eproc-mailpit
+    restart: unless-stopped
+    ports:
+      - "8191:8025"
+      - "1025:1025"
+
+  cli:
+    image: wordpress:cli
+    container_name: eproc-cli
+    depends_on:
+      - db
+      - wp
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wpuser
+      WORDPRESS_DB_PASSWORD: wppassword
+      WORDPRESS_DB_NAME: eproc_wp
+    volumes:
+      - eproc_wp_data:/var/www/html
+      - ./eprocurement:/var/www/html/wp-content/plugins/eprocurement
+    entrypoint: wp
+    command: "--info"
+
+volumes:
+  eproc_db_data:
+  eproc_wp_data:

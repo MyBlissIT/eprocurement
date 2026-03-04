@@ -1,0 +1,22 @@
+{
+    "name": "mybliss/eprocurement",
+    "description": "eProcurement WordPress plugin — cloud storage dependencies",
+    "type": "wordpress-plugin",
+    "require": {
+        "php": ">=8.1",
+        "google/apiclient": "^2.15",
+        "aws/aws-sdk-php": "^3.300"
+    },
+    "autoload": {
+        "classmap": [
+            "includes/",
+            "admin/",
+            "public/"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true,
+        "preferred-install": "dist"
+    }
+}
