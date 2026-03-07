@@ -66,6 +66,7 @@ Full file tree with annotations: [docs/architecture.md](docs/architecture.md)
 |--------|-------|
 | Repo | `MyBlissIT/eprocurement` (public) |
 | Branch | `master` |
+| Current tag | `v2.11.0` |
 | CI/CD | `.github/workflows/release.yml` — auto-builds ZIP on tag push |
 
 ### Release Flow
@@ -83,7 +84,9 @@ git push origin v2.x.x      # Triggers CI → clients see update within 12h
 
 ## Live Site
 
-Deployment details (SSH, credentials, caching notes) are in `.claude/deploy.md` (gitignored — not committed to public repo).
+Production receives updates via the self-updater when a tag is pushed to GitHub. Flow: tag → push tag → GitHub Actions builds ZIP → live site sees "Update Available" in wp-admin → Plugins within 12h (or update immediately from wp-admin).
+
+VPS SSH config is in `~/.ssh/config` under `my-vps` (72.62.124.131, root, port 22).
 
 ## Current Status
 
@@ -92,7 +95,7 @@ Deployment details (SSH, credentials, caching notes) are in `.claude/deploy.md` 
 
 Full "What's Working" list: [docs/architecture.md](docs/architecture.md)
 
-### Recent Changes (v2.10.4)
+### Recent Changes (v2.11.0)
 - **14 composite DB indexes** across 6 tables (documents, threads, messages, downloads, bidder_profiles, supporting_docs)
 - **Weekly Digest notification** — cron fires every Monday, emails admins + SCM Managers a 7-day activity summary. Toggle in Settings > Notifications.
 - **Download count badge** — maroon pill next to Bid No. in Download Log showing total downloads per bid
