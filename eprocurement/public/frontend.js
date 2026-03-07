@@ -54,7 +54,7 @@
     // ──── Show Notice ────
     function showNotice(message, type) {
         type = type || 'blue';
-        const $notice = $('<div class="eproc-info-box ' + type + '">' + message + '</div>');
+        const $notice = $('<div class="eproc-info-box"></div>').addClass(type).text(message);
         $('.eproc-wrap').prepend($notice);
         setTimeout(function () {
             $notice.fadeOut(300, function () { $(this).remove(); });

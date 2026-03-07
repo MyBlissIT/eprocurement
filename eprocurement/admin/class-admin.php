@@ -363,6 +363,12 @@ class Eprocurement_Admin {
             $data['opening_date']         = self::parse_date_input( $_POST['opening_date'] ?? '' );
             $data['briefing_date']        = self::parse_date_input( $_POST['briefing_date'] ?? '' );
             $data['closing_date']         = self::parse_date_input( $_POST['closing_date'] ?? '' );
+
+            // Validate date order: opening must be before closing
+            if ( $data['opening_date'] && $data['closing_date']
+                 && strtotime( $data['opening_date'] ) >= strtotime( $data['closing_date'] ) ) {
+                wp_send_json_error( [ 'message' => __( 'Opening date must be before closing date.', 'eprocurement' ) ] );
+            }
         }
 
         // Validate bid number uniqueness (scoped to category)

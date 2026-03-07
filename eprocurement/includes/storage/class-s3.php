@@ -76,7 +76,7 @@ class Eprocurement_S3 extends Eprocurement_Storage_Interface {
                 'Bucket'      => $bucket,
                 'Key'         => $key,
                 'SourceFile'  => $local_path,
-                'ContentType' => mime_content_type( $local_path ),
+                'ContentType' => wp_check_filetype( $local_path )['type'] ?: 'application/octet-stream',
                 'ACL'         => 'private',
             ] );
 

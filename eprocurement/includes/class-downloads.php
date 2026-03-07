@@ -49,6 +49,9 @@ class Eprocurement_Downloads {
         }
 
         $type = sanitize_text_field( $_GET['type'] ?? 'supporting' );
+        if ( ! in_array( $type, [ 'supporting', 'compliance', 'attachment' ], true ) ) {
+            wp_die( esc_html__( 'Invalid download type.', 'eprocurement' ), 400 );
+        }
         $id   = absint( $_GET['id'] ?? 0 );
 
         if ( ! $id ) {

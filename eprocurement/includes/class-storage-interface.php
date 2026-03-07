@@ -140,7 +140,10 @@ abstract class Eprocurement_Storage_Interface {
      */
     public static function decrypt( string $data ): string {
         $key  = self::get_encryption_key();
-        $raw  = base64_decode( $data ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+        $raw  = base64_decode( $data, true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+        if ( $raw === false || strlen( $raw ) < 16 ) {
+            return '';
+        }
         $iv   = substr( $raw, 0, 16 );
         $data = substr( $raw, 16 );
 
