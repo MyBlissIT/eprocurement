@@ -199,7 +199,7 @@ class Eprocurement_Database {
      */
     private static function get_table_columns( string $table ): array {
         $columns = [
-            'documents'           => [ 'id', 'bid_number', 'title', 'description', 'status', 'category', 'scm_contact_id', 'technical_contact_id', 'opening_date', 'briefing_date', 'closing_date', 'created_by', 'created_at', 'updated_at' ],
+            'documents'           => [ 'id', 'bid_number', 'title', 'description', 'status', 'category', 'scm_contact_id', 'technical_contact_id', 'opening_date', 'briefing_date', 'closing_date', 'allow_late_submissions', 'briefing_compulsory', 'created_by', 'created_at', 'updated_at' ],
             'contact_persons'     => [ 'id', 'user_id', 'type', 'name', 'phone', 'email', 'department', 'created_at' ],
             'supporting_docs'     => [ 'id', 'document_id', 'file_name', 'file_size', 'file_type', 'cloud_provider', 'cloud_key', 'cloud_url', 'label', 'sort_order', 'uploaded_by', 'created_at' ],
             'compliance_docs'     => [ 'id', 'file_name', 'file_size', 'file_type', 'cloud_provider', 'cloud_key', 'cloud_url', 'label', 'description', 'sort_order', 'uploaded_by', 'created_at' ],
@@ -207,7 +207,9 @@ class Eprocurement_Database {
             'messages'            => [ 'id', 'thread_id', 'sender_id', 'message', 'is_read', 'created_at' ],
             'message_attachments' => [ 'id', 'message_id', 'file_name', 'file_size', 'file_type', 'cloud_provider', 'cloud_key', 'cloud_url', 'created_at' ],
             'downloads'           => [ 'id', 'document_id', 'supporting_doc_id', 'user_id', 'ip_address', 'user_agent', 'downloaded_at' ],
-            'bidder_profiles'     => [ 'id', 'user_id', 'company_name', 'company_reg', 'phone', 'verified', 'verification_token', 'token_expires_at', 'created_at' ],
+            'bidder_profiles'     => [ 'id', 'user_id', 'company_name', 'company_reg', 'phone', 'verified', 'notify_replies', 'verification_token', 'token_expires_at', 'created_at' ],
+            'bid_submissions'     => [ 'id', 'document_id', 'user_id', 'file_name', 'file_size', 'file_type', 'cloud_provider', 'cloud_key', 'cloud_url', 'status', 'is_late', 'submitted_at', 'original_submitted_at', 'backdated_by', 'cancelled_at', 'created_at' ],
+            'briefing_attendees'  => [ 'id', 'document_id', 'user_id', 'bidder_email', 'company_name', 'token', 'invited_at', 'used_at' ],
         ];
 
         return $columns[ $table ] ?? [ 'id' ];

@@ -30,6 +30,8 @@ class Eprocurement_Notifications {
         add_action( 'eprocurement_bid_published', [ $this, 'notify_new_bid' ], 10, 1 );
         add_action( 'eprocurement_visibility_changed', [ $this, 'notify_visibility_change' ], 10, 4 );
         add_action( 'eprocurement_weekly_digest', [ $this, 'send_weekly_digest' ] );
+        add_action( 'eprocurement_bid_submitted', [ $this, 'notify_bid_submitted' ], 10, 2 );
+        add_action( 'eprocurement_bid_cancelled', [ $this, 'notify_bid_cancelled' ], 10, 2 );
     }
 
     /**
@@ -347,6 +349,173 @@ class Eprocurement_Notifications {
     }
 
     /**
+     * Notify SCM Managers when a bid is submitted.
+     *
+     * Sealed bid: only reveals the count, not the bidder identity or file name.
+     * Also sends an in-system private message to each SCM Manager.
+     *
+     * @param int $submission_id Submission ID.
+     * @param int $document_id   Document ID.
+     */
+    public function notify_bid_submitted( int $submission_id, int $document_id ): void {
+        if ( ! $this->is_enabled( 'bid_submission_notify' ) ) {
+            return;
+        }
+
+        $document = Eprocurement_Database::get_by_id( 'documents', $document_id );
+        if ( ! $document ) {
+            return;
+        }
+
+        // Count active submissions
+        $submissions = new Eprocurement_Bid_Submissions();
+        $count       = $submissions->get_submission_count( $document_id );
+
+        $managers = get_users( [ 'role' => 'eprocurement_scm_manager' ] );
+        $slug     = get_option( 'eprocurement_frontend_page_slug', 'tenders' );
+
+        foreach ( $managers as $manager ) {
+            $subject = sprintf(
+                /* translators: 1: Bid number */
+                __( 'New Bid Submission Received: %1$s', 'eprocurement' ),
+                $document->bid_number
+            );
+
+            $body = sprintf(
+                __(
+                    "Hello %1\$s,\n\n" .
+                    "A new bid submission has been received for:\n\n" .
+                    "Bid Number: %2\$s\n" .
+                    "Title: %3\$s\n\n" .
+                    "Total submissions received: %4\$d\n\n" .
+                    "View submissions:\n%5\$s\n\n" .
+                    "Regards,\neProcurement System",
+                    'eprocurement'
+                ),
+                $manager->display_name,
+                $document->bid_number,
+                $document->title,
+                $count,
+                home_url( "/{$slug}/manage/bids/?action=edit&id=" . $document_id )
+            );
+
+            wp_mail( $manager->user_email, $subject, $body );
+
+            // In-system private message
+            $this->send_system_message(
+                $document_id,
+                (int) $manager->ID,
+                sprintf(
+                    __( 'System: Bid Submission Received — %s', 'eprocurement' ),
+                    $document->bid_number
+                ),
+                sprintf(
+                    __( 'A new bid submission has been received for %1$s — %2$s. Total submissions: %3$d.', 'eprocurement' ),
+                    $document->bid_number,
+                    $document->title,
+                    $count
+                )
+            );
+        }
+    }
+
+    /**
+     * Notify SCM Managers when a bid submission is cancelled.
+     *
+     * @param int $submission_id Submission ID.
+     * @param int $document_id   Document ID.
+     */
+    public function notify_bid_cancelled( int $submission_id, int $document_id ): void {
+        if ( ! $this->is_enabled( 'bid_submission_notify' ) ) {
+            return;
+        }
+
+        $document = Eprocurement_Database::get_by_id( 'documents', $document_id );
+        if ( ! $document ) {
+            return;
+        }
+
+        $submissions = new Eprocurement_Bid_Submissions();
+        $count       = $submissions->get_submission_count( $document_id );
+
+        $managers = get_users( [ 'role' => 'eprocurement_scm_manager' ] );
+        $slug     = get_option( 'eprocurement_frontend_page_slug', 'tenders' );
+
+        foreach ( $managers as $manager ) {
+            $subject = sprintf(
+                /* translators: 1: Bid number */
+                __( 'Bid Submission Cancelled: %1$s', 'eprocurement' ),
+                $document->bid_number
+            );
+
+            $body = sprintf(
+                __(
+                    "Hello %1\$s,\n\n" .
+                    "A bid submission for %2\$s — %3\$s has been cancelled by the bidder.\n\n" .
+                    "Remaining active submissions: %4\$d\n\n" .
+                    "View submissions:\n%5\$s\n\n" .
+                    "Regards,\neProcurement System",
+                    'eprocurement'
+                ),
+                $manager->display_name,
+                $document->bid_number,
+                $document->title,
+                $count,
+                home_url( "/{$slug}/manage/bids/?action=edit&id=" . $document_id )
+            );
+
+            wp_mail( $manager->user_email, $subject, $body );
+
+            // In-system private message
+            $this->send_system_message(
+                $document_id,
+                (int) $manager->ID,
+                sprintf(
+                    __( 'System: Bid Submission Cancelled — %s', 'eprocurement' ),
+                    $document->bid_number
+                ),
+                sprintf(
+                    __( 'A bid submission for %1$s — %2$s has been cancelled. Remaining active submissions: %3$d.', 'eprocurement' ),
+                    $document->bid_number,
+                    $document->title,
+                    $count
+                )
+            );
+        }
+    }
+
+    /**
+     * Send an in-system private message (dual-channel notification).
+     *
+     * Creates a private thread with a system message, using the existing
+     * messaging infrastructure so it appears in the user's inbox.
+     *
+     * @param int    $document_id Document ID.
+     * @param int    $user_id     Recipient user ID.
+     * @param string $subject     Thread subject.
+     * @param string $message     Message body.
+     */
+    private function send_system_message( int $document_id, int $user_id, string $subject, string $message ): void {
+        $messaging = new Eprocurement_Messaging();
+
+        // Use a "system" sender ID (0 = system)
+        $thread_id = Eprocurement_Database::insert( 'threads', [
+            'document_id' => $document_id,
+            'bidder_id'   => $user_id, // Recipient shows it in their inbox
+            'contact_id'  => 0,
+            'subject'     => sanitize_text_field( $subject ),
+            'visibility'  => 'private',
+            'status'      => 'open',
+            'created_at'  => current_time( 'mysql' ),
+            'updated_at'  => current_time( 'mysql' ),
+        ] );
+
+        if ( $thread_id ) {
+            $messaging->add_message( $thread_id, 0, $message ); // sender_id 0 = system
+        }
+    }
+
+    /**
      * Send weekly digest to administrators.
      */
     public function send_weekly_digest(): void {
@@ -386,6 +555,11 @@ class Eprocurement_Notifications {
             "SELECT COUNT(*) FROM {$bp_table} WHERE created_at >= %s", $week_ago // phpcs:ignore
         ) );
 
+        $sub_table       = Eprocurement_Database::table( 'bid_submissions' );
+        $new_submissions = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$sub_table} WHERE created_at >= %s AND status = 'submitted'", $week_ago // phpcs:ignore
+        ) );
+
         // Get total open bids.
         $total_open = (int) $wpdb->get_var(
             "SELECT COUNT(*) FROM {$doc_table} WHERE status = 'open'" // phpcs:ignore
@@ -423,12 +597,14 @@ class Eprocurement_Notifications {
                 "  New queries:          %7\$d\n" .
                 "  Messages exchanged:   %8\$d\n" .
                 "  Unresolved queries:   %9\$d\n\n" .
+                "SUBMISSIONS\n" .
+                "  Bid submissions:     %10\$d\n\n" .
                 "ACTIVITY\n" .
-                "  Document downloads:   %10\$d\n" .
-                "  New bidder signups:   %11\$d\n\n" .
+                "  Document downloads:   %11\$d\n" .
+                "  New bidder signups:   %12\$d\n\n" .
                 "─────────────────────────────\n" .
-                "View dashboard: %12\$s\n\n" .
-                "Regards,\n%13\$s",
+                "View dashboard: %13\$s\n\n" .
+                "Regards,\n%14\$s",
                 'eprocurement'
             ),
             $week_start,
@@ -440,6 +616,7 @@ class Eprocurement_Notifications {
             $new_queries,
             $new_messages,
             $unresolved,
+            $new_submissions,
             $downloads,
             $new_bidders,
             $admin_url,

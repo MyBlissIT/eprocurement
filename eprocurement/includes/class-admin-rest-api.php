@@ -308,6 +308,57 @@ class Eprocurement_Admin_Rest_Api {
                 'permission_callback' => fn() => is_super_admin(),
             ],
         ] );
+
+        // --- Bid Submissions (Admin) ---
+        register_rest_route( self::NAMESPACE, '/admin/bids/(?P<bid_id>\d+)/submissions', [
+            'methods'             => 'GET',
+            'callback'            => [ $this, 'list_submissions' ],
+            'permission_callback' => fn() => current_user_can( 'eproc_view_dashboard' ),
+        ] );
+
+        register_rest_route( self::NAMESPACE, '/admin/bids/(?P<bid_id>\d+)/submissions/download', [
+            'methods'             => 'GET',
+            'callback'            => [ $this, 'download_submissions_zip' ],
+            'permission_callback' => fn() => current_user_can( 'eproc_view_dashboard' ),
+        ] );
+
+        register_rest_route( self::NAMESPACE, '/admin/submissions/(?P<id>\d+)/download', [
+            'methods'             => 'GET',
+            'callback'            => [ $this, 'download_single_submission' ],
+            'permission_callback' => fn() => current_user_can( 'eproc_view_dashboard' ),
+        ] );
+
+        register_rest_route( self::NAMESPACE, '/admin/submissions/(?P<id>\d+)/backdate', [
+            'methods'             => 'PATCH',
+            'callback'            => [ $this, 'backdate_submission' ],
+            'permission_callback' => fn() => is_super_admin(),
+        ] );
+
+        // --- Briefing Attendees (Admin) ---
+        register_rest_route( self::NAMESPACE, '/admin/bids/(?P<bid_id>\d+)/attendees', [
+            [
+                'methods'             => 'GET',
+                'callback'            => [ $this, 'list_attendees' ],
+                'permission_callback' => fn() => current_user_can( 'eproc_view_dashboard' ),
+            ],
+            [
+                'methods'             => 'POST',
+                'callback'            => [ $this, 'add_attendee' ],
+                'permission_callback' => fn() => current_user_can( 'eproc_edit_bids' ),
+            ],
+        ] );
+
+        register_rest_route( self::NAMESPACE, '/admin/attendees/(?P<id>\d+)', [
+            'methods'             => 'DELETE',
+            'callback'            => [ $this, 'remove_attendee' ],
+            'permission_callback' => fn() => current_user_can( 'eproc_edit_bids' ),
+        ] );
+
+        register_rest_route( self::NAMESPACE, '/admin/bids/(?P<bid_id>\d+)/attendees/invite', [
+            'methods'             => 'POST',
+            'callback'            => [ $this, 'send_attendee_invites' ],
+            'permission_callback' => fn() => current_user_can( 'eproc_edit_bids' ),
+        ] );
     }
 
     // =========================================================================
@@ -1149,5 +1200,346 @@ class Eprocurement_Admin_Rest_Api {
             return $dt->format( 'Y-m-d H:i:s' );
         }
         return null;
+    }
+
+    // =========================================================================
+    // Bid Submissions (Admin)
+    // =========================================================================
+
+    /**
+     * GET /admin/bids/{bid_id}/submissions — List all submissions for a bid.
+     */
+    public function list_submissions( \WP_REST_Request $request ): \WP_REST_Response {
+        $bid_id = (int) $request->get_param( 'bid_id' );
+
+        $bid = Eprocurement_Database::get_by_id( 'documents', $bid_id );
+        if ( ! $bid ) {
+            return new \WP_REST_Response( [ 'error' => __( 'Bid not found.', 'eprocurement' ) ], 404 );
+        }
+
+        $submissions = new Eprocurement_Bid_Submissions();
+        $rows        = $submissions->get_submissions_for_document( $bid_id );
+
+        $items = array_map( function ( $sub ) {
+            $backdated_visible = ! empty( $sub->backdated_by );
+
+            return [
+                'id'            => (int) $sub->id,
+                'user_id'       => (int) $sub->user_id,
+                'company_name'  => $sub->company_name ?? '',
+                'display_name'  => $sub->display_name ?? '',
+                'user_email'    => $sub->user_email ?? '',
+                'file_name'     => $sub->file_name,
+                'file_size'     => (int) $sub->file_size,
+                'file_type'     => $sub->file_type,
+                'status'        => $sub->status,
+                'is_late'       => (bool) $sub->is_late,
+                'submitted_at'  => $sub->submitted_at,
+                'is_backdated'  => $backdated_visible,
+                'original_submitted_at' => $backdated_visible ? $sub->original_submitted_at : null,
+                'created_at'    => $sub->created_at,
+            ];
+        }, $rows );
+
+        return new \WP_REST_Response( [
+            'items' => $items,
+            'total' => count( $items ),
+            'bid'   => [
+                'id'            => (int) $bid->id,
+                'bid_number'    => $bid->bid_number,
+                'title'         => $bid->title,
+                'status'        => $bid->status,
+                'closing_date'  => $bid->closing_date,
+                'allow_late_submissions' => (bool) ( $bid->allow_late_submissions ?? 0 ),
+                'briefing_compulsory'    => (bool) ( $bid->briefing_compulsory ?? 0 ),
+            ],
+        ] );
+    }
+
+    /**
+     * GET /admin/bids/{bid_id}/submissions/download — Download all submissions as ZIP.
+     */
+    public function download_submissions_zip( \WP_REST_Request $request ): \WP_REST_Response {
+        $bid_id = (int) $request->get_param( 'bid_id' );
+
+        $submissions = new Eprocurement_Bid_Submissions();
+        $zip_path    = $submissions->generate_submissions_zip( $bid_id );
+
+        if ( is_wp_error( $zip_path ) ) {
+            $status = $zip_path->get_error_data()['status'] ?? 400;
+            return new \WP_REST_Response( [ 'error' => $zip_path->get_error_message() ], $status );
+        }
+
+        // Serve the ZIP file as a download.
+        $zip_name = basename( $zip_path );
+        $zip_size = filesize( $zip_path );
+
+        header( 'Content-Type: application/zip' );
+        header( 'Content-Disposition: attachment; filename="' . $zip_name . '"' );
+        header( 'Content-Length: ' . $zip_size );
+        header( 'Pragma: public' );
+        header( 'Cache-Control: no-store' );
+
+        readfile( $zip_path ); // phpcs:ignore
+        @unlink( $zip_path ); // phpcs:ignore
+        exit;
+    }
+
+    /**
+     * GET /admin/submissions/{id}/download — Download a single submission file.
+     */
+    public function download_single_submission( \WP_REST_Request $request ): \WP_REST_Response {
+        $submission_id = (int) $request->get_param( 'id' );
+
+        $submissions = new Eprocurement_Bid_Submissions();
+        $submission  = $submissions->get_submission( $submission_id );
+
+        if ( ! $submission ) {
+            return new \WP_REST_Response( [ 'error' => __( 'Submission not found.', 'eprocurement' ) ], 404 );
+        }
+
+        $provider = Eprocurement_Storage_Interface::get_active_provider();
+        if ( ! $provider ) {
+            return new \WP_REST_Response( [ 'error' => __( 'No storage provider configured.', 'eprocurement' ) ], 500 );
+        }
+
+        try {
+            $download_url = $provider->get_download_url( $submission->cloud_key );
+            return new \WP_REST_Response( [
+                'download_url' => $download_url,
+                'file_name'    => $submission->file_name,
+            ] );
+        } catch ( \RuntimeException $e ) {
+            return new \WP_REST_Response( [ 'error' => __( 'Failed to generate download link.', 'eprocurement' ) ], 500 );
+        }
+    }
+
+    /**
+     * PATCH /admin/submissions/{id}/backdate — Backdate a submission (Super Admin).
+     *
+     * Body:
+     * - submitted_at (string) — New datetime (Y-m-d H:i:s or Y-m-d\TH:i)
+     * - visible (bool)        — true = show "Backdated" indicator, false = hide
+     */
+    public function backdate_submission( \WP_REST_Request $request ): \WP_REST_Response {
+        $submission_id = (int) $request->get_param( 'id' );
+        $new_datetime  = $request->get_param( 'submitted_at' );
+        $visible       = (bool) $request->get_param( 'visible' );
+
+        if ( empty( $new_datetime ) ) {
+            return new \WP_REST_Response( [ 'error' => __( 'New datetime is required.', 'eprocurement' ) ], 400 );
+        }
+
+        $submissions = new Eprocurement_Bid_Submissions();
+        $result      = $submissions->backdate( $submission_id, $new_datetime, get_current_user_id(), $visible );
+
+        if ( is_wp_error( $result ) ) {
+            $status = $result->get_error_data()['status'] ?? 400;
+            return new \WP_REST_Response( [
+                'error' => $result->get_error_message(),
+                'code'  => $result->get_error_code(),
+            ], $status );
+        }
+
+        return new \WP_REST_Response( [
+            'success' => true,
+            'message' => $visible
+                ? __( 'Submission backdated. "Backdated" indicator will be visible.', 'eprocurement' )
+                : __( 'Submission backdated. Change is hidden from audit.', 'eprocurement' ),
+        ] );
+    }
+
+    // =========================================================================
+    // Briefing Attendees (Admin)
+    // =========================================================================
+
+    /**
+     * GET /admin/bids/{bid_id}/attendees — List briefing attendees.
+     */
+    public function list_attendees( \WP_REST_Request $request ): \WP_REST_Response {
+        $bid_id = (int) $request->get_param( 'bid_id' );
+
+        $bid = Eprocurement_Database::get_by_id( 'documents', $bid_id );
+        if ( ! $bid ) {
+            return new \WP_REST_Response( [ 'error' => __( 'Bid not found.', 'eprocurement' ) ], 404 );
+        }
+
+        $submissions = new Eprocurement_Bid_Submissions();
+        $attendees   = $submissions->get_attendees( $bid_id );
+
+        $items = array_map( function ( $att ) {
+            return [
+                'id'           => (int) $att->id,
+                'bidder_email' => $att->bidder_email,
+                'company_name' => $att->company_name,
+                'user_id'      => $att->user_id ? (int) $att->user_id : null,
+                'invited_at'   => $att->invited_at,
+                'used_at'      => $att->used_at,
+            ];
+        }, $attendees );
+
+        return new \WP_REST_Response( [
+            'attendees'           => $items,
+            'total'               => count( $items ),
+            'briefing_compulsory' => (bool) ( $bid->briefing_compulsory ?? 0 ),
+        ] );
+    }
+
+    /**
+     * POST /admin/bids/{bid_id}/attendees — Add a briefing attendee.
+     *
+     * Body:
+     * - email (string)        — Bidder email address
+     * - company_name (string) — Company name
+     */
+    public function add_attendee( \WP_REST_Request $request ): \WP_REST_Response {
+        $bid_id       = (int) $request->get_param( 'bid_id' );
+        $email        = sanitize_email( $request->get_param( 'email' ) ?? '' );
+        $company_name = sanitize_text_field( $request->get_param( 'company_name' ) ?? '' );
+
+        if ( empty( $email ) ) {
+            return new \WP_REST_Response( [ 'error' => __( 'Email is required.', 'eprocurement' ) ], 400 );
+        }
+
+        if ( empty( $company_name ) ) {
+            return new \WP_REST_Response( [ 'error' => __( 'Company name is required.', 'eprocurement' ) ], 400 );
+        }
+
+        // Check if email belongs to an existing WP user.
+        $user    = get_user_by( 'email', $email );
+        $user_id = $user ? $user->ID : null;
+
+        $submissions = new Eprocurement_Bid_Submissions();
+        $result      = $submissions->add_attendee( $bid_id, $email, $company_name, $user_id );
+
+        if ( is_wp_error( $result ) ) {
+            $status = $result->get_error_data()['status'] ?? 400;
+            return new \WP_REST_Response( [
+                'error' => $result->get_error_message(),
+                'code'  => $result->get_error_code(),
+            ], $status );
+        }
+
+        return new \WP_REST_Response( [
+            'success' => true,
+            'id'      => $result,
+            'message' => __( 'Attendee added successfully.', 'eprocurement' ),
+        ], 201 );
+    }
+
+    /**
+     * DELETE /admin/attendees/{id} — Remove a briefing attendee.
+     */
+    public function remove_attendee( \WP_REST_Request $request ): \WP_REST_Response {
+        $attendee_id = (int) $request->get_param( 'id' );
+
+        $submissions = new Eprocurement_Bid_Submissions();
+        $result      = $submissions->remove_attendee( $attendee_id );
+
+        if ( is_wp_error( $result ) ) {
+            $status = $result->get_error_data()['status'] ?? 400;
+            return new \WP_REST_Response( [
+                'error' => $result->get_error_message(),
+                'code'  => $result->get_error_code(),
+            ], $status );
+        }
+
+        return new \WP_REST_Response( [
+            'success' => true,
+            'message' => __( 'Attendee removed.', 'eprocurement' ),
+        ] );
+    }
+
+    /**
+     * POST /admin/bids/{bid_id}/attendees/invite — Send briefing invite emails.
+     *
+     * Sends an email to each attendee with their unique submission link.
+     */
+    public function send_attendee_invites( \WP_REST_Request $request ): \WP_REST_Response {
+        $bid_id = (int) $request->get_param( 'bid_id' );
+
+        $bid = Eprocurement_Database::get_by_id( 'documents', $bid_id );
+        if ( ! $bid ) {
+            return new \WP_REST_Response( [ 'error' => __( 'Bid not found.', 'eprocurement' ) ], 404 );
+        }
+
+        $submissions = new Eprocurement_Bid_Submissions();
+        $attendees   = $submissions->get_attendees( $bid_id );
+
+        if ( empty( $attendees ) ) {
+            return new \WP_REST_Response( [ 'error' => __( 'No attendees to invite.', 'eprocurement' ) ], 400 );
+        }
+
+        $slug        = get_option( 'eprocurement_frontend_page_slug', 'tenders' );
+        $sent_count  = 0;
+
+        foreach ( $attendees as $att ) {
+            $submit_url = home_url( "/{$slug}/bid/{$bid_id}/?token=" . urlencode( $att->token ) );
+
+            $subject = sprintf(
+                /* translators: 1: Bid number, 2: Bid title */
+                __( 'Briefing Invite: %1$s — %2$s', 'eprocurement' ),
+                $bid->bid_number,
+                $bid->title
+            );
+
+            // Try to load the email template, fall back to plain text
+            $template_path = EPROC_PLUGIN_DIR . 'templates/email/briefing-invite.php';
+            if ( file_exists( $template_path ) ) {
+                $bidder_name   = $att->company_name ?: $att->bidder_email;
+                $bid_number    = $bid->bid_number;
+                $bid_title     = $bid->title;
+                $briefing_date = $bid->briefing_date
+                    ? wp_date( 'j F Y, H:i', strtotime( $bid->briefing_date ) )
+                    : __( 'TBC', 'eprocurement' );
+                $register_url  = home_url( "/{$slug}/register/" );
+
+                ob_start();
+                include $template_path;
+                $body = ob_get_clean();
+
+                // Send as HTML
+                add_filter( 'wp_mail_content_type', function() { return 'text/html'; } );
+                $sent = wp_mail( $att->bidder_email, $subject, $body );
+                remove_filter( 'wp_mail_content_type', function() { return 'text/html'; } );
+            } else {
+                $body = sprintf(
+                    __(
+                        "Hello %1\$s,\n\n" .
+                        "You are invited to submit a bid for:\n\n" .
+                        "Bid Number: %2\$s\n" .
+                        "Title: %3\$s\n" .
+                        "Briefing Date: %4\$s\n\n" .
+                        "Submit your bid here:\n%5\$s\n\n" .
+                        "If you don't have an account yet, register here:\n%6\$s\n\n" .
+                        "Regards,\neProcurement System",
+                        'eprocurement'
+                    ),
+                    $att->company_name ?: $att->bidder_email,
+                    $bid->bid_number,
+                    $bid->title,
+                    $bid->briefing_date ? wp_date( 'j F Y, H:i', strtotime( $bid->briefing_date ) ) : __( 'TBC', 'eprocurement' ),
+                    $submit_url,
+                    home_url( "/{$slug}/register/" )
+                );
+                $sent = wp_mail( $att->bidder_email, $subject, $body );
+            }
+
+            if ( $sent ) {
+                $sent_count++;
+            }
+        }
+
+        return new \WP_REST_Response( [
+            'success' => true,
+            'sent'    => $sent_count,
+            'total'   => count( $attendees ),
+            'message' => sprintf(
+                /* translators: 1: sent count, 2: total count */
+                __( 'Sent %1$d of %2$d invite emails.', 'eprocurement' ),
+                $sent_count,
+                count( $attendees )
+            ),
+        ] );
     }
 }

@@ -28,6 +28,10 @@ $downloads_model = new Eprocurement_Downloads();
 $threads = $messaging_model->get_threads_for_bidder( $user_id );
 $profile = $bidder_model->get_profile( $user_id );
 
+// Bid submissions for "My Submissions" tab
+$bid_submissions_model = new Eprocurement_Bid_Submissions();
+$my_submissions        = $bid_submissions_model->get_submissions_for_user( $user_id );
+
 // Get download log for this user
 global $wpdb;
 $downloads_table = Eprocurement_Database::table( 'downloads' );
@@ -54,7 +58,7 @@ $logout_url = wp_nonce_url(
 
 // Active tab
 $active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'queries';
-if ( ! in_array( $active_tab, [ 'queries', 'downloads', 'profile' ], true ) ) {
+if ( ! in_array( $active_tab, [ 'queries', 'submissions', 'downloads', 'profile' ], true ) ) {
     $active_tab = 'queries';
 }
 
@@ -104,6 +108,16 @@ $profile_updated = isset( $_GET['profile_updated'] ) && $_GET['profile_updated']
                 <?php echo esc_html__( 'My Queries', 'eprocurement' ); ?>
                 <?php if ( ! empty( $threads ) ) : ?>
                     <span class="eproc-tab-count"><?php echo esc_html( count( $threads ) ); ?></span>
+                <?php endif; ?>
+            </a>
+            <a
+                href="<?php echo esc_url( add_query_arg( 'tab', 'submissions', home_url( "/{$slug}/my-account/" ) ) ); ?>"
+                class="eproc-tab-link <?php echo $active_tab === 'submissions' ? 'eproc-tab-link--active' : ''; ?>"
+                data-tab="submissions"
+            >
+                <?php echo esc_html__( 'My Submissions', 'eprocurement' ); ?>
+                <?php if ( ! empty( $my_submissions ) ) : ?>
+                    <span class="eproc-tab-count"><?php echo esc_html( count( $my_submissions ) ); ?></span>
                 <?php endif; ?>
             </a>
             <a
@@ -220,6 +234,63 @@ $profile_updated = isset( $_GET['profile_updated'] ) && $_GET['profile_updated']
                 </form>
             </div>
 
+        </div>
+
+        <!-- ======================== -->
+        <!-- TAB: My Submissions      -->
+        <!-- ======================== -->
+        <div class="eproc-tab-panel <?php echo $active_tab === 'submissions' ? 'eproc-tab-panel--active' : ''; ?>" id="eproc-tab-submissions">
+            <?php if ( empty( $my_submissions ) ) : ?>
+                <div class="eproc-empty-state">
+                    <p><?php echo esc_html__( 'You have not submitted any bids yet.', 'eprocurement' ); ?></p>
+                    <a href="<?php echo esc_url( home_url( "/{$slug}/" ) ); ?>" class="eproc-btn eproc-btn-primary">
+                        <?php echo esc_html__( 'Browse Tenders', 'eprocurement' ); ?>
+                    </a>
+                </div>
+            <?php else : ?>
+                <div class="eproc-table-responsive">
+                    <table class="eproc-table">
+                        <thead>
+                            <tr>
+                                <th><?php echo esc_html__( 'Bid Reference', 'eprocurement' ); ?></th>
+                                <th><?php echo esc_html__( 'Bid Title', 'eprocurement' ); ?></th>
+                                <th><?php echo esc_html__( 'File', 'eprocurement' ); ?></th>
+                                <th><?php echo esc_html__( 'Submitted', 'eprocurement' ); ?></th>
+                                <th><?php echo esc_html__( 'Status', 'eprocurement' ); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ( $my_submissions as $sub ) : ?>
+                                <tr>
+                                    <td>
+                                        <a href="<?php echo esc_url( Eprocurement_Public::bid_url( (int) $sub->document_id ) ); ?>">
+                                            <?php echo esc_html( $sub->bid_number ?? __( 'N/A', 'eprocurement' ) ); ?>
+                                        </a>
+                                    </td>
+                                    <td><?php echo esc_html( $sub->bid_title ?? '' ); ?></td>
+                                    <td>
+                                        <span class="eproc-file-label"><?php echo esc_html( $sub->file_name ); ?></span>
+                                        <span class="eproc-text-muted">(<?php echo esc_html( Eprocurement_Public::format_file_size( (int) $sub->file_size ) ); ?>)</span>
+                                    </td>
+                                    <td>
+                                        <?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $sub->submitted_at ) ) ); ?>
+                                    </td>
+                                    <td>
+                                        <?php if ( $sub->status === 'cancelled' ) : ?>
+                                            <span class="eproc-badge eproc-badge--cancelled"><?php echo esc_html__( 'Cancelled', 'eprocurement' ); ?></span>
+                                        <?php else : ?>
+                                            <span class="eproc-badge eproc-badge--submitted"><?php echo esc_html__( 'Submitted', 'eprocurement' ); ?></span>
+                                            <?php if ( (int) $sub->is_late ) : ?>
+                                                <span class="eproc-badge-late"><?php echo esc_html__( 'Late', 'eprocurement' ); ?></span>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- ======================== -->

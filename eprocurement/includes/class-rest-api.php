@@ -15,6 +15,10 @@
  * - GET    /compliance-docs    List SCM docs (public)
  * - POST   /upload             Upload file to cloud (authenticated staff)
  * - POST   /profile            Update bidder profile (authenticated bidder)
+ * - POST   /submissions        Submit bid document (verified bidder)
+ * - DELETE /submissions/{id}   Cancel bid submission (verified bidder)
+ * - GET    /submissions        List bidder's own submissions (verified bidder)
+ * - GET    /submissions/check  Check submission eligibility (verified bidder)
  *
  * @package Eprocurement
  */
@@ -115,6 +119,39 @@ class Eprocurement_Rest_Api {
             'methods'             => 'POST',
             'callback'            => [ $this, 'update_profile' ],
             'permission_callback' => [ $this, 'is_bidder' ],
+        ] );
+
+        // --- Bid Submissions (bidder-facing) ---
+
+        // Bidder: Submit a bid document / List own submissions
+        register_rest_route( self::NAMESPACE, '/submissions', [
+            [
+                'methods'             => 'POST',
+                'callback'            => [ $this, 'submit_bid' ],
+                'permission_callback' => [ $this, 'is_verified_bidder' ],
+            ],
+            [
+                'methods'             => 'GET',
+                'callback'            => [ $this, 'get_my_submissions' ],
+                'permission_callback' => [ $this, 'is_verified_bidder' ],
+            ],
+        ] );
+
+        // Bidder: Cancel own submission
+        register_rest_route( self::NAMESPACE, '/submissions/(?P<id>\d+)', [
+            'methods'             => 'DELETE',
+            'callback'            => [ $this, 'cancel_submission' ],
+            'permission_callback' => [ $this, 'is_verified_bidder' ],
+        ] );
+
+        // Bidder: Check if eligible to submit for a bid
+        register_rest_route( self::NAMESPACE, '/submissions/check', [
+            'methods'             => 'GET',
+            'callback'            => [ $this, 'check_submission_eligibility' ],
+            'permission_callback' => [ $this, 'is_verified_bidder' ],
+            'args'                => [
+                'document_id' => [ 'type' => 'integer', 'required' => true ],
+            ],
         ] );
     }
 
@@ -658,6 +695,133 @@ class Eprocurement_Rest_Api {
         } catch ( \Exception $e ) {
             return new \WP_REST_Response( [ 'error' => $e->getMessage() ], 500 );
         }
+    }
+
+    // --- Bid Submission Handlers ---
+
+    /**
+     * POST /submissions — Submit a bid document.
+     *
+     * Expects multipart/form-data with:
+     * - document_id (int) — Bid/tender ID
+     * - file (file)       — The bid document (PDF, XLS, XLSX, or CSV, max 10MB)
+     */
+    public function submit_bid( \WP_REST_Request $request ): \WP_REST_Response {
+        $document_id = absint( $request->get_param( 'document_id' ) );
+        if ( ! $document_id ) {
+            return new \WP_REST_Response( [ 'error' => __( 'Missing document ID.', 'eprocurement' ) ], 400 );
+        }
+
+        $files = $request->get_file_params();
+        if ( empty( $files['file'] ) ) {
+            return new \WP_REST_Response( [ 'error' => __( 'No file provided.', 'eprocurement' ) ], 400 );
+        }
+
+        $submissions = new Eprocurement_Bid_Submissions();
+        $result      = $submissions->submit( $document_id, get_current_user_id(), $files['file'] );
+
+        if ( is_wp_error( $result ) ) {
+            $status = $result->get_error_data()['status'] ?? 400;
+            return new \WP_REST_Response( [
+                'error' => $result->get_error_message(),
+                'code'  => $result->get_error_code(),
+            ], $status );
+        }
+
+        return new \WP_REST_Response( [
+            'success'       => true,
+            'submission_id' => $result,
+            'message'       => __( 'Your bid has been submitted successfully.', 'eprocurement' ),
+        ], 201 );
+    }
+
+    /**
+     * DELETE /submissions/{id} — Cancel a bid submission.
+     */
+    public function cancel_submission( \WP_REST_Request $request ): \WP_REST_Response {
+        $submission_id = (int) $request->get_param( 'id' );
+
+        $submissions = new Eprocurement_Bid_Submissions();
+        $result      = $submissions->cancel( $submission_id, get_current_user_id() );
+
+        if ( is_wp_error( $result ) ) {
+            $status = $result->get_error_data()['status'] ?? 400;
+            return new \WP_REST_Response( [
+                'error' => $result->get_error_message(),
+                'code'  => $result->get_error_code(),
+            ], $status );
+        }
+
+        return new \WP_REST_Response( [
+            'success' => true,
+            'message' => __( 'Your submission has been cancelled. You may resubmit.', 'eprocurement' ),
+        ] );
+    }
+
+    /**
+     * GET /submissions — List the current bidder's submissions across all bids.
+     */
+    public function get_my_submissions( \WP_REST_Request $request ): \WP_REST_Response {
+        $submissions = new Eprocurement_Bid_Submissions();
+        $rows        = $submissions->get_submissions_for_user( get_current_user_id() );
+
+        $items = array_map( function ( $sub ) {
+            return [
+                'id'           => (int) $sub->id,
+                'document_id'  => (int) $sub->document_id,
+                'bid_number'   => $sub->bid_number ?? '',
+                'bid_title'    => $sub->bid_title ?? '',
+                'bid_status'   => $sub->bid_status ?? '',
+                'file_name'    => $sub->file_name,
+                'file_size'    => (int) $sub->file_size,
+                'file_type'    => $sub->file_type,
+                'status'       => $sub->status,
+                'is_late'      => (bool) $sub->is_late,
+                'submitted_at' => $sub->submitted_at,
+            ];
+        }, $rows );
+
+        return new \WP_REST_Response( [ 'items' => $items ] );
+    }
+
+    /**
+     * GET /submissions/check?document_id={id} — Check if bidder is eligible to submit.
+     *
+     * Returns eligibility status, existing submission (if any), and bid details.
+     */
+    public function check_submission_eligibility( \WP_REST_Request $request ): \WP_REST_Response {
+        $document_id = absint( $request->get_param( 'document_id' ) );
+        $user_id     = get_current_user_id();
+
+        $submissions = new Eprocurement_Bid_Submissions();
+        $can_submit  = $submissions->can_submit( $document_id, $user_id );
+
+        // Get existing active submission if any.
+        $existing = $submissions->get_active_submission( $document_id, $user_id );
+
+        $response = [
+            'eligible'    => ! is_wp_error( $can_submit ),
+            'has_existing' => $existing !== null,
+        ];
+
+        if ( is_wp_error( $can_submit ) ) {
+            $response['reason'] = $can_submit->get_error_message();
+            $response['code']   = $can_submit->get_error_code();
+        }
+
+        if ( $existing ) {
+            $response['existing'] = [
+                'id'           => (int) $existing->id,
+                'file_name'    => $existing->file_name,
+                'submitted_at' => $existing->submitted_at,
+                'is_late'      => (bool) $existing->is_late,
+            ];
+        }
+
+        // Check if briefing is compulsory.
+        $response['briefing_compulsory'] = $submissions->is_briefing_compulsory( $document_id );
+
+        return new \WP_REST_Response( $response );
     }
 
     // --- Permission Callbacks ---

@@ -68,6 +68,13 @@ if ( $is_bidder ) {
     $bidder_model    = new Eprocurement_Bidder();
     $bidder_verified = $bidder_model->is_verified( $current_user->ID );
 }
+
+// Bid submission data
+$bid_submissions   = new Eprocurement_Bid_Submissions();
+$existing_sub      = ( $is_bidder && $bidder_verified ) ? $bid_submissions->get_active_submission( $bid_id, $current_user->ID ) : null;
+$can_submit_result = ( $is_bidder && $bidder_verified ) ? $bid_submissions->can_submit( $bid_id, $current_user->ID ) : null;
+$can_cancel_result = $existing_sub ? $bid_submissions->can_cancel( $bid_id ) : null;
+$is_briefing_req   = $bid_submissions->is_briefing_compulsory( $bid_id );
 ?>
 <div class="eproc-wrap">
 
@@ -282,6 +289,133 @@ if ( $is_bidder ) {
             </div>
         </section>
     </div><!-- .eproc-docs-contacts-row -->
+
+    <!-- ═══════════════════════════════════ -->
+    <!-- Submit Your Bid Section             -->
+    <!-- ═══════════════════════════════════ -->
+    <?php if ( $document->category === 'bid' ) : // Only for regular bids ?>
+    <section class="eproc-detail-section eproc-submission-section">
+        <h2 class="eproc-section-title"><?php echo esc_html__( 'Submit Your Bid', 'eprocurement' ); ?></h2>
+
+        <?php if ( ! $is_logged_in ) : ?>
+            <!-- Not logged in -->
+            <div class="eproc-submission-notice eproc-submission-notice--info">
+                <p><?php echo esc_html__( 'You must be logged in to submit a bid.', 'eprocurement' ); ?></p>
+                <a href="<?php echo esc_url( home_url( "/{$slug}/login/?redirect_to=" . rawurlencode( $_SERVER['REQUEST_URI'] ?? '' ) ) ); ?>" class="eproc-btn eproc-btn-primary eproc-btn-sm">
+                    <?php echo esc_html__( 'Login', 'eprocurement' ); ?>
+                </a>
+                <a href="<?php echo esc_url( home_url( "/{$slug}/register/" ) ); ?>" class="eproc-btn eproc-btn-outline eproc-btn-sm">
+                    <?php echo esc_html__( 'Register', 'eprocurement' ); ?>
+                </a>
+            </div>
+
+        <?php elseif ( ! $is_bidder ) : ?>
+            <!-- Logged in but not a bidder role -->
+            <div class="eproc-submission-notice eproc-submission-notice--warning">
+                <p><?php echo esc_html__( 'Only registered bidders can submit bids.', 'eprocurement' ); ?></p>
+            </div>
+
+        <?php elseif ( ! $bidder_verified ) : ?>
+            <!-- Not verified -->
+            <div class="eproc-submission-notice eproc-submission-notice--warning">
+                <p><?php echo esc_html__( 'Please verify your email address before submitting a bid.', 'eprocurement' ); ?></p>
+            </div>
+
+        <?php elseif ( $document->status === 'closed' && empty( $document->allow_late_submissions ) ) : ?>
+            <!-- Closed, no late submissions -->
+            <div class="eproc-submission-notice eproc-submission-notice--closed">
+                <p><?php echo esc_html__( 'Submissions for this tender are closed.', 'eprocurement' ); ?></p>
+                <?php if ( $existing_sub ) : ?>
+                    <p class="eproc-text-muted"><?php echo esc_html__( 'You submitted a bid before the closing date.', 'eprocurement' ); ?></p>
+                <?php endif; ?>
+            </div>
+
+        <?php elseif ( $is_briefing_req && ! $bid_submissions->get_attendee_by_email( $bid_id, $current_user->user_email ) ) : ?>
+            <!-- Briefing compulsory, bidder not on attendee list -->
+            <div class="eproc-submission-notice eproc-submission-notice--warning">
+                <p>
+                    <strong><?php echo esc_html__( 'Compulsory Briefing Attendance Required', 'eprocurement' ); ?></strong><br>
+                    <?php echo esc_html__( 'This tender requires attendance at the briefing session before you can submit a bid. If you attended the briefing, please contact the SCM contact to be added to the attendee list.', 'eprocurement' ); ?>
+                </p>
+            </div>
+
+        <?php elseif ( $existing_sub ) : ?>
+            <!-- Already submitted -->
+            <div class="eproc-submission-card">
+                <div class="eproc-submission-card-header">
+                    <span class="eproc-submission-icon">&#10003;</span>
+                    <h3><?php echo esc_html__( 'Bid Submitted', 'eprocurement' ); ?></h3>
+                </div>
+                <div class="eproc-submission-card-body">
+                    <div class="eproc-submission-file-info">
+                        <span class="eproc-submission-file-name"><?php echo esc_html( $existing_sub->file_name ); ?></span>
+                        <span class="eproc-submission-file-size"><?php echo esc_html( Eprocurement_Public::format_file_size( (int) $existing_sub->file_size ) ); ?></span>
+                    </div>
+                    <div class="eproc-submission-meta">
+                        <span class="eproc-submission-date">
+                            <?php
+                            printf(
+                                /* translators: %s: submission date */
+                                esc_html__( 'Submitted: %s', 'eprocurement' ),
+                                esc_html( date_i18n( 'j M Y, H:i', strtotime( $existing_sub->submitted_at ) ) )
+                            );
+                            ?>
+                        </span>
+                        <?php if ( (int) $existing_sub->is_late ) : ?>
+                            <span class="eproc-badge-late"><?php echo esc_html__( 'Late Submission', 'eprocurement' ); ?></span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php if ( $can_cancel_result === true ) : ?>
+                    <div class="eproc-submission-card-actions">
+                        <button type="button" class="eproc-btn eproc-btn-outline eproc-btn-sm" id="eproc-cancel-submission" data-id="<?php echo esc_attr( (int) $existing_sub->id ); ?>">
+                            <?php echo esc_html__( 'Cancel & Resubmit', 'eprocurement' ); ?>
+                        </button>
+                        <small class="eproc-text-muted"><?php echo esc_html__( 'Your current submission will be removed so you can upload a new one.', 'eprocurement' ); ?></small>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+        <?php else : ?>
+            <!-- Can submit — show upload zone -->
+            <?php
+            $is_closing_passed = $document->closing_date && strtotime( $document->closing_date ) < time();
+            ?>
+            <?php if ( $is_closing_passed && ! empty( $document->allow_late_submissions ) ) : ?>
+                <div class="eproc-submission-notice eproc-submission-notice--warning" style="margin-bottom:16px;">
+                    <p><?php echo esc_html__( 'The closing date has passed. Your submission will be marked as a late submission.', 'eprocurement' ); ?></p>
+                </div>
+            <?php endif; ?>
+
+            <div class="eproc-upload-zone eproc-submission-upload" id="eproc-submission-upload-zone">
+                <div class="eproc-upload-icon">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.5;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                </div>
+                <p class="eproc-upload-text">
+                    <?php echo esc_html__( 'Drag and drop your bid document here, or click to select a file', 'eprocurement' ); ?>
+                </p>
+                <p class="eproc-upload-hint">
+                    <?php echo esc_html__( 'Allowed: PDF, XLS, XLSX, CSV — max 10MB', 'eprocurement' ); ?>
+                </p>
+                <input type="file" id="eproc-submission-file-input" accept=".pdf,.xls,.xlsx,.csv" style="display:none;" />
+            </div>
+
+            <!-- Upload Progress -->
+            <div id="eproc-submission-progress" class="eproc-upload-progress" style="display:none;">
+                <div class="eproc-progress-track">
+                    <div id="eproc-submission-progress-bar" class="eproc-progress-fill" style="width:0%;"></div>
+                </div>
+                <p id="eproc-submission-status" class="eproc-upload-status-text"></p>
+            </div>
+
+            <div class="eproc-form-feedback" id="eproc-submission-feedback" style="display:none;"></div>
+        <?php endif; ?>
+    </section>
+    <?php endif; // category === 'bid' ?>
 
         <?php if ( $is_open_bid || ! empty( $public_threads ) ) : // Hide entire Q&A section on closed bids with no threads ?>
         <section class="eproc-detail-section eproc-qa-section">
@@ -639,6 +773,129 @@ document.addEventListener('DOMContentLoaded', function() {
                 el.classList.remove('eproc-qa-thread--hidden');
             });
             qaToggle.style.display = 'none';
+        });
+    }
+
+    // =====================
+    // Bid Submission Upload
+    // =====================
+    var subUploadZone = document.getElementById('eproc-submission-upload-zone');
+    var subFileInput  = document.getElementById('eproc-submission-file-input');
+
+    if (subUploadZone && subFileInput) {
+        subUploadZone.addEventListener('click', function(e) {
+            if (e.target === subFileInput) return;
+            subFileInput.click();
+        });
+
+        subUploadZone.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('dragover'); });
+        subUploadZone.addEventListener('dragenter', function(e) { e.preventDefault(); this.classList.add('dragover'); });
+        subUploadZone.addEventListener('dragleave', function(e) { e.preventDefault(); this.classList.remove('dragover'); });
+
+        subUploadZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                uploadSubmission(e.dataTransfer.files[0]);
+            }
+        });
+
+        subFileInput.addEventListener('change', function() {
+            if (this.files.length) {
+                uploadSubmission(this.files[0]);
+                this.value = '';
+            }
+        });
+    }
+
+    function uploadSubmission(file) {
+        var progressEl  = document.getElementById('eproc-submission-progress');
+        var progressBar = document.getElementById('eproc-submission-progress-bar');
+        var statusText  = document.getElementById('eproc-submission-status');
+        var feedbackEl  = document.getElementById('eproc-submission-feedback');
+
+        feedbackEl.style.display = 'none';
+        progressEl.style.display = 'block';
+        statusText.textContent   = '<?php echo esc_js( __( 'Uploading...', 'eprocurement' ) ); ?> ' + file.name;
+
+        var formData = new FormData();
+        formData.append('document_id', <?php echo wp_json_encode( $bid_id ); ?>);
+        formData.append('file', file);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', eprocFrontend.restUrl + 'submissions', true);
+        xhr.setRequestHeader('X-WP-Nonce', eprocFrontend.nonce);
+
+        xhr.upload.addEventListener('progress', function(e) {
+            if (e.lengthComputable) {
+                var pct = Math.round((e.loaded / e.total) * 100);
+                progressBar.style.width = pct + '%';
+            }
+        });
+
+        xhr.onload = function() {
+            try {
+                var data = JSON.parse(xhr.responseText);
+                if (xhr.status >= 200 && xhr.status < 300 && data.id) {
+                    feedbackEl.className = 'eproc-form-feedback eproc-feedback-success';
+                    feedbackEl.textContent = '<?php echo esc_js( __( 'Bid submitted successfully! Refreshing...', 'eprocurement' ) ); ?>';
+                    feedbackEl.style.display = 'block';
+                    progressEl.style.display = 'none';
+                    setTimeout(function() { location.reload(); }, 1500);
+                } else {
+                    feedbackEl.className = 'eproc-form-feedback eproc-feedback-error';
+                    feedbackEl.textContent = data.message || '<?php echo esc_js( __( 'Upload failed. Please try again.', 'eprocurement' ) ); ?>';
+                    feedbackEl.style.display = 'block';
+                    progressEl.style.display = 'none';
+                }
+            } catch (err) {
+                feedbackEl.className = 'eproc-form-feedback eproc-feedback-error';
+                feedbackEl.textContent = '<?php echo esc_js( __( 'An error occurred.', 'eprocurement' ) ); ?>';
+                feedbackEl.style.display = 'block';
+                progressEl.style.display = 'none';
+            }
+        };
+
+        xhr.onerror = function() {
+            feedbackEl.className = 'eproc-form-feedback eproc-feedback-error';
+            feedbackEl.textContent = '<?php echo esc_js( __( 'Network error. Please try again.', 'eprocurement' ) ); ?>';
+            feedbackEl.style.display = 'block';
+            progressEl.style.display = 'none';
+        };
+
+        xhr.send(formData);
+    }
+
+    // Cancel submission
+    var cancelBtn = document.getElementById('eproc-cancel-submission');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            if (!confirm('<?php echo esc_js( __( 'Are you sure you want to cancel your submission? Your uploaded file will be removed.', 'eprocurement' ) ); ?>')) {
+                return;
+            }
+            var subId = this.getAttribute('data-id');
+            cancelBtn.disabled = true;
+            cancelBtn.textContent = '<?php echo esc_js( __( 'Cancelling...', 'eprocurement' ) ); ?>';
+
+            fetch(eprocFrontend.restUrl + 'submissions/' + subId, {
+                method: 'DELETE',
+                headers: { 'X-WP-Nonce': eprocFrontend.nonce }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || '<?php echo esc_js( __( 'Failed to cancel. Please try again.', 'eprocurement' ) ); ?>');
+                    cancelBtn.disabled = false;
+                    cancelBtn.textContent = '<?php echo esc_js( __( 'Cancel & Resubmit', 'eprocurement' ) ); ?>';
+                }
+            })
+            .catch(function() {
+                alert('<?php echo esc_js( __( 'Network error.', 'eprocurement' ) ); ?>');
+                cancelBtn.disabled = false;
+                cancelBtn.textContent = '<?php echo esc_js( __( 'Cancel & Resubmit', 'eprocurement' ) ); ?>';
+            });
         });
     }
 });

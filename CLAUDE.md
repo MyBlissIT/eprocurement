@@ -29,9 +29,9 @@ docker exec eproc-wp wp rewrite flush --allow-root
 
 ## Key Architecture
 
-- **9 custom tables** prefixed `wp_eproc_*` — see [docs/architecture.md](docs/architecture.md) for full schema
+- **11 custom tables** prefixed `wp_eproc_*` — see [docs/architecture.md](docs/architecture.md) for full schema
 - **4 custom roles**: SCM Manager, SCM Official, Unit Manager, Bidder
-- **38 REST endpoints** (10 public + 28 admin) — see [docs/architecture.md](docs/architecture.md)
+- **50 REST endpoints** (13 public + 37 admin) — see [docs/architecture.md](docs/architecture.md)
 - **17 AJAX handlers** — see [docs/architecture.md](docs/architecture.md)
 - **5 cloud storage providers**: Google Drive, OneDrive, Dropbox, S3, Local (fallback)
 - **Frontend routing** via `[eprocurement]` shortcode on `/tenders/` page with WP rewrite rules
@@ -51,10 +51,10 @@ docker exec eproc-wp wp rewrite flush --allow-root
 ```
 eprocurement/
 ├── eprocurement.php          # Main file, constants, autoloader
-├── includes/                 # Core logic (17 classes + storage/)
+├── includes/                 # Core logic (18 classes + storage/)
 ├── admin/                    # Custom admin UI (class-admin.php, CSS, JS, partials/)
 ├── public/                   # Frontend UI (class-public.php, CSS, JS, partials/)
-├── templates/email/          # Email templates (verification, query, reply)
+├── templates/email/          # Email templates (verification, query, reply, briefing-invite)
 └── bundled-mu/               # MU-plugin (auto-installed on activation)
 ```
 
@@ -66,7 +66,7 @@ Full file tree with annotations: [docs/architecture.md](docs/architecture.md)
 |--------|-------|
 | Repo | `MyBlissIT/eprocurement` (public) |
 | Branch | `master` |
-| Current tag | `v2.11.0` |
+| Current tag | `v2.12.0` |
 | CI/CD | `.github/workflows/release.yml` — auto-builds ZIP on tag push |
 
 ### Release Flow
@@ -95,7 +95,21 @@ VPS SSH config is in `~/.ssh/config` under `my-vps` (72.62.124.131, root, port 2
 
 Full "What's Working" list: [docs/architecture.md](docs/architecture.md)
 
-### Recent Changes (v2.11.0)
+### Recent Changes (v2.12.0 — Bid Submission)
+- **Sealed-bid document submission** — bidders upload PDF, Excel (.xls/.xlsx), or CSV (max 10 MB) via drag-and-drop on tender detail page
+- **2 new DB tables**: `wp_eproc_bid_submissions` (submissions + lifecycle), `wp_eproc_briefing_attendees` (compulsory briefing gate)
+- **2 new columns on `documents`**: `allow_late_submissions`, `briefing_compulsory`
+- **12 new REST endpoints** (3 public + 9 admin) for submit/cancel/list/download/backdate/attendees/invites
+- **Compulsory briefing gate** — SCM adds attendees by email, sends invite emails with UUID token links; only listed bidders can submit
+- **Late submission toggle** — per-bid flag allows submissions after closing date (marked with orange "Late" badge)
+- **Super Admin backdate** — "Replace & Show" (visible indicator) or "Replace & Hide" (invisible, `original_submitted_at` always stored)
+- **Admin submissions card** — bid edit page shows submissions table, Download All (ZIP) button
+- **"My Submissions" dashboard tab** — bidder sees all submissions across bids with status badges
+- **Dual-channel notifications** — bid submitted/cancelled sends email to SCM Managers AND creates in-system private thread/message
+- **Briefing invite email template** (`templates/email/briefing-invite.php`) — includes token-based submission link
+- **Weekly digest updated** — includes new submissions count section
+
+### Previous Release (v2.11.0)
 - **14 composite DB indexes** across 6 tables (documents, threads, messages, downloads, bidder_profiles, supporting_docs)
 - **Weekly Digest notification** — cron fires every Monday, emails admins + SCM Managers a 7-day activity summary. Toggle in Settings > Notifications.
 - **Download count badge** — maroon pill next to Bid No. in Download Log showing total downloads per bid
@@ -111,14 +125,24 @@ Full "What's Working" list: [docs/architecture.md](docs/architecture.md)
 1. `get_recent_activity()` UNION query may need optimization at scale
 2. Bidder dashboard uses vanilla JS (not jQuery) — minor inconsistency
 
+### Bid Submission Architecture Notes
+- **One submission per bidder per bid** — cancel to resubmit (before closing date)
+- **Enforcement order in `can_submit()`**: bid open → verified → closing date → briefing gate → file validation → duplicate check
+- **Cloud storage**: uses existing `Eprocurement_Storage_Interface` (upload/download/delete)
+- **ZIP download naming**: `{Bid No} - {Title} - {Date}.zip`, files inside: `{company_name}_{timestamp}.{ext}`
+- **Token link flow**: `/tenders/bid/{id}/submit/?token={uuid}` → login redirect if needed → marks `used_at` → strips token from URL
+- **Backdate DB pattern**: `$wpdb->update()` can't set NULL — raw query needed for `backdated_by = NULL` (hidden mode)
+- **Notifications**: `send_system_message()` helper creates private threads via existing messaging system (sender_id=0 for system)
+
 ### What's Next
 **Should Do:**
-1. Deploy to shared hosting + configure WP Mail SMTP
-2. MainWP dashboard for centralized client management
-3. Test cloud storage with a real provider (S3 recommended)
+1. Deploy v2.12.0 to shared hosting + verify bid submission flow end-to-end
+2. Test cloud storage with a real provider (S3 recommended)
+3. MainWP dashboard for centralized client management
 
 **Nice to Have:**
-- Unit tests for core business logic
+- Unit tests for bid submission business logic
+- Playwright tests for bid submission UI flows
 - Document multi-tenant CSS variable override process
 
 ## Reference Documents (`docs/`)

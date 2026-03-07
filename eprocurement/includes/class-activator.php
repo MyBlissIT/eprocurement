@@ -41,33 +41,37 @@ class Eprocurement_Activator {
         // Register rewrite rules before flushing — on activation, the init
         // hook has already fired so the rules from class-public.php aren't
         // registered yet in this request. We must register them explicitly.
-        $slug = get_option( 'eprocurement_frontend_page_slug', 'tenders' );
+        // Guard: $wp_rewrite is not available during plugins_loaded (upgrade path).
+        global $wp_rewrite;
+        if ( $wp_rewrite ) {
+            $slug = get_option( 'eprocurement_frontend_page_slug', 'tenders' );
 
-        add_rewrite_rule(
-            '^' . preg_quote( $slug, '/' ) . '/manage/([^/]*)/?$',
-            'index.php?pagename=' . $slug . '&eproc_route=manage&eproc_manage_page=$matches[1]',
-            'top'
-        );
-        add_rewrite_rule(
-            '^' . preg_quote( $slug, '/' ) . '/bid/(\d+)/?$',
-            'index.php?pagename=' . $slug . '&eproc_route=bid&eproc_bid_id=$matches[1]',
-            'top'
-        );
-        add_rewrite_rule(
-            '^' . preg_quote( $slug, '/' ) . '/([^/]+)/?$',
-            'index.php?pagename=' . $slug . '&eproc_route=$matches[1]',
-            'top'
-        );
+            add_rewrite_rule(
+                '^' . preg_quote( $slug, '/' ) . '/manage/([^/]*)/?$',
+                'index.php?pagename=' . $slug . '&eproc_route=manage&eproc_manage_page=$matches[1]',
+                'top'
+            );
+            add_rewrite_rule(
+                '^' . preg_quote( $slug, '/' ) . '/bid/(\d+)/?$',
+                'index.php?pagename=' . $slug . '&eproc_route=bid&eproc_bid_id=$matches[1]',
+                'top'
+            );
+            add_rewrite_rule(
+                '^' . preg_quote( $slug, '/' ) . '/([^/]+)/?$',
+                'index.php?pagename=' . $slug . '&eproc_route=$matches[1]',
+                'top'
+            );
 
-        add_rewrite_tag( '%eproc_route%', '([^&]+)' );
-        add_rewrite_tag( '%eproc_manage_page%', '([^&]+)' );
-        add_rewrite_tag( '%eproc_bid_id%', '(\d+)' );
+            add_rewrite_tag( '%eproc_route%', '([^&]+)' );
+            add_rewrite_tag( '%eproc_manage_page%', '([^&]+)' );
+            add_rewrite_tag( '%eproc_bid_id%', '(\d+)' );
 
-        flush_rewrite_rules();
+            flush_rewrite_rules();
+        }
     }
 
     /**
-     * Create all 9 custom database tables via dbDelta.
+     * Create all 11 custom database tables via dbDelta.
      */
     private static function create_tables(): void {
         global $wpdb;
@@ -90,6 +94,8 @@ class Eprocurement_Activator {
             opening_date DATETIME DEFAULT NULL,
             briefing_date DATETIME DEFAULT NULL,
             closing_date DATETIME DEFAULT NULL,
+            allow_late_submissions TINYINT(1) NOT NULL DEFAULT 0,
+            briefing_compulsory TINYINT(1) NOT NULL DEFAULT 0,
             created_by BIGINT(20) UNSIGNED NOT NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -254,6 +260,51 @@ class Eprocurement_Activator {
             KEY verified_created (verified, created_at)
         ) {$charset_collate};";
         dbDelta( $sql );
+
+        // 10. Bid Submissions (sealed-bid documents from bidders)
+        $sql = "CREATE TABLE {$prefix}bid_submissions (
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            document_id BIGINT(20) UNSIGNED NOT NULL,
+            user_id BIGINT(20) UNSIGNED NOT NULL,
+            file_name VARCHAR(255) NOT NULL,
+            file_size BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
+            file_type VARCHAR(100) NOT NULL DEFAULT '',
+            cloud_provider VARCHAR(50) NOT NULL DEFAULT '',
+            cloud_key VARCHAR(500) NOT NULL DEFAULT '',
+            cloud_url VARCHAR(500) NOT NULL DEFAULT '',
+            status ENUM('submitted','cancelled') NOT NULL DEFAULT 'submitted',
+            is_late TINYINT(1) NOT NULL DEFAULT 0,
+            submitted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            original_submitted_at DATETIME DEFAULT NULL,
+            backdated_by BIGINT(20) UNSIGNED DEFAULT NULL,
+            cancelled_at DATETIME DEFAULT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY document_id (document_id),
+            KEY user_id (user_id),
+            KEY status (status),
+            KEY doc_user (document_id, user_id),
+            KEY doc_status (document_id, status)
+        ) {$charset_collate};";
+        dbDelta( $sql );
+
+        // 11. Briefing Attendees (allowlist for compulsory briefing gate)
+        $sql = "CREATE TABLE {$prefix}briefing_attendees (
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            document_id BIGINT(20) UNSIGNED NOT NULL,
+            user_id BIGINT(20) UNSIGNED DEFAULT NULL,
+            bidder_email VARCHAR(255) NOT NULL,
+            company_name VARCHAR(255) NOT NULL DEFAULT '',
+            token VARCHAR(255) NOT NULL DEFAULT '',
+            invited_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            used_at DATETIME DEFAULT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY doc_email (document_id, bidder_email),
+            KEY document_id (document_id),
+            KEY user_id (user_id),
+            KEY token (token)
+        ) {$charset_collate};";
+        dbDelta( $sql );
     }
 
     /**
@@ -315,6 +366,7 @@ class Eprocurement_Activator {
             'reply_notify_bidder'     => false,
             'status_change_notify'    => false,
             'weekly_digest_notify'    => false,
+            'bid_submission_notify'   => true,
         ] ) );
 
         // SMTP, External DB, and CORS — empty by default

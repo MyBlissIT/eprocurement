@@ -369,6 +369,10 @@ class Eprocurement_Admin {
                  && strtotime( $data['opening_date'] ) >= strtotime( $data['closing_date'] ) ) {
                 wp_send_json_error( [ 'message' => __( 'Opening date must be before closing date.', 'eprocurement' ) ] );
             }
+
+            // Submission settings
+            $data['allow_late_submissions'] = absint( $_POST['allow_late_submissions'] ?? 0 ) ? 1 : 0;
+            $data['briefing_compulsory']    = absint( $_POST['briefing_compulsory'] ?? 0 ) ? 1 : 0;
         }
 
         // Validate bid number uniqueness (scoped to category)

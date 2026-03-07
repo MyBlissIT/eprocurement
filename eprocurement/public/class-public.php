@@ -35,6 +35,7 @@ class Eprocurement_Public {
         add_action( 'init', [ $this, 'handle_login' ] );
         add_action( 'init', [ $this, 'handle_logout' ] );
         add_action( 'template_redirect', [ $this, 'maybe_redirect_home' ] );
+        add_action( 'template_redirect', [ $this, 'handle_briefing_token' ] );
         add_filter( 'template_include', [ $this, 'override_page_template' ] );
         add_filter( 'show_admin_bar', [ $this, 'control_admin_bar' ] );
         add_action( 'wp_head', [ $this, 'output_standalone_reset' ], 1 );
@@ -68,6 +69,52 @@ class Eprocurement_Public {
 
         $slug = get_option( 'eprocurement_frontend_page_slug', 'tenders' );
         wp_redirect( home_url( '/' . $slug . '/' ), 302 );
+        exit;
+    }
+
+    /**
+     * Handle briefing invite token in URL.
+     *
+     * When a bidder clicks the invite link: /tenders/bid/{id}/?token={uuid}
+     * - If logged in + email matches attendee → mark token used, continue to bid page
+     * - If not logged in → redirect to login with redirect_to back to this URL
+     */
+    public function handle_briefing_token(): void {
+        if ( empty( $_GET['token'] ) ) {
+            return;
+        }
+
+        $token = sanitize_text_field( wp_unslash( $_GET['token'] ) );
+        $slug  = get_option( 'eprocurement_frontend_page_slug', 'tenders' );
+
+        // Check we're on a bid detail page
+        $raw_path = wp_parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH );
+        if ( strpos( $raw_path, "/{$slug}/bid/" ) === false ) {
+            return;
+        }
+
+        $bid_submissions = new Eprocurement_Bid_Submissions();
+        $attendee        = $bid_submissions->get_attendee_by_token( $token );
+
+        if ( ! $attendee ) {
+            return; // Invalid token — just show the bid page normally
+        }
+
+        if ( ! is_user_logged_in() ) {
+            // Redirect to login, then back here
+            wp_redirect( home_url( "/{$slug}/login/?redirect_to=" . rawurlencode( $_SERVER['REQUEST_URI'] ) ) );
+            exit;
+        }
+
+        // Logged in — mark token as used if email matches
+        $current_user = wp_get_current_user();
+        if ( strtolower( $current_user->user_email ) === strtolower( $attendee->bidder_email ) ) {
+            $bid_submissions->mark_token_used( (int) $attendee->id );
+        }
+
+        // Strip the token param and redirect to clean URL (avoids token leaking in logs/referrer)
+        $clean_url = remove_query_arg( 'token' );
+        wp_redirect( $clean_url );
         exit;
     }
 
@@ -434,12 +481,13 @@ class Eprocurement_Public {
                 true
             );
             wp_localize_script( 'eprocurement-frontend-admin', 'eprocManage', [
-                'restUrl' => rest_url( 'eprocurement/v1/' ),
-                'nonce'   => wp_create_nonce( 'wp_rest' ),
-                'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-                'ajaxNonce' => wp_create_nonce( 'eproc_admin_nonce' ),
-                'slug'    => $page_slug,
-                'strings' => [
+                'restUrl'      => rest_url( 'eprocurement/v1/' ),
+                'nonce'        => wp_create_nonce( 'wp_rest' ),
+                'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+                'ajaxNonce'    => wp_create_nonce( 'eproc_admin_nonce' ),
+                'slug'         => $page_slug,
+                'isSuperAdmin' => is_super_admin(),
+                'strings'      => [
                     'confirm_delete'  => __( 'Are you sure you want to delete this?', 'eprocurement' ),
                     'saving'          => __( 'Saving...', 'eprocurement' ),
                     'saved'           => __( 'Saved successfully.', 'eprocurement' ),

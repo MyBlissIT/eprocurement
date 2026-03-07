@@ -3,7 +3,7 @@
  * Plugin Name: eProcurement
  * Plugin URI:  https://www.myblisstech.com/eprocurement
  * Description: A mini-CRM WordPress plugin for procurement processes. Manages bid/tender notices, structured communication between procurement officials and prospective bidders, cloud-based document storage, and role-based access control.
- * Version:     2.11.0
+ * Version:     2.12.0
  * Author:      MyBliss Tech
  * Author URI:  https://www.myblisstech.com
  * License:     GPL-2.0+
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin constants
  */
-define( 'EPROC_VERSION', '2.11.0' );
+define( 'EPROC_VERSION', '2.12.0' );
 define( 'EPROC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EPROC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'EPROC_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -159,6 +159,22 @@ function eprocurement_maybe_upgrade(): void {
         }
     }
 
+    // v2.12.0: Add bid submission columns to documents table.
+    if ( version_compare( $installed_version, '2.12.0', '<' ) ) {
+        global $wpdb;
+        $doc_table = $wpdb->prefix . EPROC_TABLE_PREFIX . 'documents';
+
+        $col1 = $wpdb->get_var( "SHOW COLUMNS FROM {$doc_table} LIKE 'allow_late_submissions'" ); // phpcs:ignore
+        if ( ! $col1 ) {
+            $wpdb->query( "ALTER TABLE {$doc_table} ADD COLUMN allow_late_submissions TINYINT(1) NOT NULL DEFAULT 0 AFTER closing_date" ); // phpcs:ignore
+        }
+
+        $col2 = $wpdb->get_var( "SHOW COLUMNS FROM {$doc_table} LIKE 'briefing_compulsory'" ); // phpcs:ignore
+        if ( ! $col2 ) {
+            $wpdb->query( "ALTER TABLE {$doc_table} ADD COLUMN briefing_compulsory TINYINT(1) NOT NULL DEFAULT 0 AFTER allow_late_submissions" ); // phpcs:ignore
+        }
+    }
+
     update_option( 'eprocurement_version', EPROC_VERSION );
 }
 
@@ -182,9 +198,10 @@ function eprocurement_init(): void {
     $downloads      = new Eprocurement_Downloads();
     $notifications  = new Eprocurement_Notifications();
     $compliance     = new Eprocurement_Compliance_Docs();
-    $rest_api       = new Eprocurement_Rest_Api();
-    $access_control = new Eprocurement_Access_Control();
-    $admin_rest_api = new Eprocurement_Admin_Rest_Api();
+    $bid_submissions = new Eprocurement_Bid_Submissions();
+    $rest_api        = new Eprocurement_Rest_Api();
+    $access_control  = new Eprocurement_Access_Control();
+    $admin_rest_api  = new Eprocurement_Admin_Rest_Api();
 
     // SMTP configuration
     $smtp = new Eprocurement_Smtp();

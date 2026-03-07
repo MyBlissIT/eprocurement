@@ -16,8 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-$documents = new Eprocurement_Documents();
-$contacts  = new Eprocurement_Contact_Persons();
+$documents       = new Eprocurement_Documents();
+$contacts        = new Eprocurement_Contact_Persons();
+$bid_submissions = new Eprocurement_Bid_Submissions();
 
 // URL bases
 $slug         = get_option( 'eprocurement_frontend_page_slug', 'tenders' );
@@ -185,6 +186,43 @@ $page_title = $is_edit
                     </table>
                 </div>
             </div>
+
+            <?php if ( $is_edit && $is_regular_bid ) : ?>
+            <!-- Bid Submissions -->
+            <div class="eproc-card" id="eproc-submissions-card">
+                <div class="eproc-card-header">
+                    <h2>
+                        <?php esc_html_e( 'Bid Submissions', 'eprocurement' ); ?>
+                        <span class="eproc-tab-count" id="eproc-submission-count">0</span>
+                    </h2>
+                    <button type="button" class="eproc-btn eproc-btn-sm eproc-btn-outline" id="eproc-download-submissions-zip" style="display:none;" title="<?php esc_attr_e( 'Download All as ZIP', 'eprocurement' ); ?>">
+                        <?php esc_html_e( 'Download ZIP', 'eprocurement' ); ?>
+                    </button>
+                </div>
+                <div class="eproc-card-body">
+                    <div id="eproc-submissions-loading" class="eproc-text-center">
+                        <p class="eproc-muted"><?php esc_html_e( 'Loading submissions...', 'eprocurement' ); ?></p>
+                    </div>
+                    <div id="eproc-submissions-empty" style="display:none;">
+                        <p class="eproc-muted"><?php esc_html_e( 'No bid submissions have been received yet.', 'eprocurement' ); ?></p>
+                    </div>
+                    <div class="eproc-table-responsive" id="eproc-submissions-table-wrap" style="display:none;">
+                        <table class="eproc-table">
+                            <thead>
+                                <tr>
+                                    <th><?php esc_html_e( 'Company', 'eprocurement' ); ?></th>
+                                    <th><?php esc_html_e( 'File', 'eprocurement' ); ?></th>
+                                    <th><?php esc_html_e( 'Submitted', 'eprocurement' ); ?></th>
+                                    <th><?php esc_html_e( 'Status', 'eprocurement' ); ?></th>
+                                    <th class="eproc-col-action"><?php esc_html_e( 'Download', 'eprocurement' ); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody id="eproc-submissions-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
 
         <!-- Right Column: Status, Contacts, Dates -->
@@ -333,6 +371,76 @@ $page_title = $is_edit
                     </div>
                 </div>
             </div>
+            <!-- Submission Settings -->
+            <div class="eproc-card">
+                <div class="eproc-card-header">
+                    <h2><?php esc_html_e( 'Submission Settings', 'eprocurement' ); ?></h2>
+                </div>
+                <div class="eproc-card-body">
+                    <div class="eproc-form-group">
+                        <label class="eproc-checkbox-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;">
+                            <input type="checkbox" name="allow_late_submissions" id="allow_late_submissions" value="1"
+                                <?php checked( $bid && ! empty( $bid->allow_late_submissions ) ); ?>
+                                style="width:auto;margin:0;" />
+                            <span><?php esc_html_e( 'Allow Late Submissions', 'eprocurement' ); ?></span>
+                        </label>
+                        <span class="eproc-form-hint"><?php esc_html_e( 'Bidders can submit after the closing date (marked as late).', 'eprocurement' ); ?></span>
+                    </div>
+                    <div class="eproc-form-group">
+                        <label class="eproc-checkbox-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;">
+                            <input type="checkbox" name="briefing_compulsory" id="briefing_compulsory" value="1"
+                                <?php checked( $bid && ! empty( $bid->briefing_compulsory ) ); ?>
+                                style="width:auto;margin:0;" />
+                            <span><?php esc_html_e( 'Compulsory Briefing Attendance', 'eprocurement' ); ?></span>
+                        </label>
+                        <span class="eproc-form-hint"><?php esc_html_e( 'Only bidders on the attendees list can submit.', 'eprocurement' ); ?></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Briefing Attendees (shown via JS when compulsory is checked) -->
+            <div class="eproc-card" id="eproc-attendees-card" style="<?php echo ( $bid && ! empty( $bid->briefing_compulsory ) ) ? '' : 'display:none;'; ?>">
+                <div class="eproc-card-header">
+                    <h2><?php esc_html_e( 'Briefing Attendees', 'eprocurement' ); ?></h2>
+                </div>
+                <div class="eproc-card-body">
+                    <?php if ( $is_edit ) : ?>
+                    <div class="eproc-form-row eproc-form-row--2col" style="margin-bottom:12px;">
+                        <div class="eproc-form-group" style="margin-bottom:0;">
+                            <input type="email" id="eproc-attendee-email" class="eproc-input" placeholder="<?php esc_attr_e( 'Email address', 'eprocurement' ); ?>" />
+                        </div>
+                        <div class="eproc-form-group" style="margin-bottom:0;">
+                            <input type="text" id="eproc-attendee-company" class="eproc-input" placeholder="<?php esc_attr_e( 'Company name', 'eprocurement' ); ?>" />
+                        </div>
+                    </div>
+                    <button type="button" class="eproc-btn eproc-btn-sm eproc-btn-primary" id="eproc-add-attendee" style="margin-bottom:12px;">
+                        <?php esc_html_e( 'Add Attendee', 'eprocurement' ); ?>
+                    </button>
+                    <button type="button" class="eproc-btn eproc-btn-sm eproc-btn-outline" id="eproc-send-invites" style="margin-bottom:12px;display:none;">
+                        <?php esc_html_e( 'Send Invite Emails', 'eprocurement' ); ?>
+                    </button>
+
+                    <div id="eproc-attendees-loading" class="eproc-text-center">
+                        <p class="eproc-muted"><?php esc_html_e( 'Loading...', 'eprocurement' ); ?></p>
+                    </div>
+                    <div class="eproc-table-responsive" id="eproc-attendees-table-wrap" style="display:none;">
+                        <table class="eproc-table">
+                            <thead>
+                                <tr>
+                                    <th><?php esc_html_e( 'Email', 'eprocurement' ); ?></th>
+                                    <th><?php esc_html_e( 'Company', 'eprocurement' ); ?></th>
+                                    <th class="eproc-col-action"><?php esc_html_e( 'Remove', 'eprocurement' ); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody id="eproc-attendees-list"></tbody>
+                        </table>
+                    </div>
+                    <?php else : ?>
+                        <p class="eproc-muted"><?php esc_html_e( 'Save the bid first, then manage attendees.', 'eprocurement' ); ?></p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <?php endif; // $is_regular_bid ?>
         </div>
     </form>
@@ -407,6 +515,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (openingDate)  formData.opening_date  = openingDate.value;
             if (briefingDate) formData.briefing_date  = briefingDate.value;
             if (closingDate)  formData.closing_date   = closingDate.value;
+
+            // Submission settings
+            var lateCheck = document.getElementById('allow_late_submissions');
+            var briefCheck = document.getElementById('briefing_compulsory');
+            if (lateCheck)  formData.allow_late_submissions = lateCheck.checked ? 1 : 0;
+            if (briefCheck) formData.briefing_compulsory    = briefCheck.checked ? 1 : 0;
         }
 
         // Include pending doc IDs for new bids
@@ -744,5 +858,303 @@ document.addEventListener('DOMContentLoaded', function() {
             removeBtn.disabled = false;
         });
     });
+
+    // =========================================================================
+    // Compulsory Briefing toggle — show/hide attendees card
+    // =========================================================================
+
+    var briefingCheck  = document.getElementById('briefing_compulsory');
+    var attendeesCard  = document.getElementById('eproc-attendees-card');
+
+    if (briefingCheck && attendeesCard) {
+        briefingCheck.addEventListener('change', function() {
+            attendeesCard.style.display = this.checked ? '' : 'none';
+            if (this.checked && bidId) {
+                loadAttendees();
+            }
+        });
+    }
+
+    // =========================================================================
+    // Load submissions (edit mode, regular bids only)
+    // =========================================================================
+
+    if (isEdit && category === 'bid') {
+        loadSubmissions();
+        if (briefingCheck && briefingCheck.checked) {
+            loadAttendees();
+        }
+    }
+
+    function loadSubmissions() {
+        var countEl    = document.getElementById('eproc-submission-count');
+        var loadingEl  = document.getElementById('eproc-submissions-loading');
+        var emptyEl    = document.getElementById('eproc-submissions-empty');
+        var tableWrap  = document.getElementById('eproc-submissions-table-wrap');
+        var tbody      = document.getElementById('eproc-submissions-list');
+        var zipBtn     = document.getElementById('eproc-download-submissions-zip');
+        if (!loadingEl) return;
+
+        window.eprocAPI.get('admin/bids/' + bidId + '/submissions')
+            .then(function(data) {
+                loadingEl.style.display = 'none';
+                if (!data.submissions || data.submissions.length === 0) {
+                    emptyEl.style.display = '';
+                    countEl.textContent = '0';
+                    return;
+                }
+
+                countEl.textContent = data.submissions.length;
+                zipBtn.style.display = '';
+                tableWrap.style.display = '';
+                tbody.innerHTML = '';
+
+                data.submissions.forEach(function(sub) {
+                    var row = document.createElement('tr');
+                    var lateHtml = sub.is_late == 1 ? ' <span class="eproc-badge-late">Late</span>' : '';
+                    var backdateHtml = '';
+                    if (sub.backdated_by) {
+                        backdateHtml = ' <span class="eproc-badge-late" title="' + escHtml('Original: ' + (sub.original_submitted_at || '')) + '">Backdated</span>';
+                    }
+
+                    var timestampCell = '<td>' + escHtml(sub.submitted_at) + lateHtml + backdateHtml;
+
+                    // Super Admin backdate: make timestamp clickable
+                    if (eprocManage.isSuperAdmin) {
+                        timestampCell = '<td class="eproc-backdate-cell" data-sub-id="' + sub.id + '">' +
+                            '<span class="eproc-backdate-trigger" title="' + escHtml(<?php echo wp_json_encode( __( 'Click to backdate', 'eprocurement' ) ); ?>) + '">' +
+                            escHtml(sub.submitted_at) + '</span>' +
+                            lateHtml + backdateHtml;
+                    }
+                    timestampCell += '</td>';
+
+                    row.innerHTML =
+                        '<td>' + escHtml(sub.company_name || sub.display_name || 'Unknown') + '</td>' +
+                        '<td>' + escHtml(sub.file_name) + '</td>' +
+                        timestampCell +
+                        '<td>' + escHtml(sub.status) + '</td>' +
+                        '<td><a href="' + eprocManage.restUrl + 'admin/submissions/' + sub.id + '/download" class="eproc-btn eproc-btn-sm eproc-btn-outline" target="_blank">Download</a></td>';
+
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(function() {
+                loadingEl.innerHTML = '<p class="eproc-text-muted">' + eprocManage.strings.error + '</p>';
+            });
+    }
+
+    // Download ZIP
+    var zipBtn = document.getElementById('eproc-download-submissions-zip');
+    if (zipBtn) {
+        zipBtn.addEventListener('click', function() {
+            window.open(eprocManage.restUrl + 'admin/bids/' + bidId + '/submissions/download?_wpnonce=' + eprocManage.nonce, '_blank');
+        });
+    }
+
+    // =========================================================================
+    // Backdate UI (Super Admin only) — delegated click
+    // =========================================================================
+
+    document.addEventListener('click', function(e) {
+        var trigger = e.target.closest('.eproc-backdate-trigger');
+        if (!trigger || !eprocManage.isSuperAdmin) return;
+
+        var cell  = trigger.closest('.eproc-backdate-cell');
+        var subId = cell.getAttribute('data-sub-id');
+
+        // Replace text with datetime input
+        var currentDt = trigger.textContent.trim();
+        var inputVal  = currentDt.replace(' ', 'T').replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1');
+        // Try to parse into datetime-local format
+        var d = new Date(currentDt);
+        if (!isNaN(d.getTime())) {
+            inputVal = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + 'T' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+        }
+
+        cell.innerHTML =
+            '<input type="datetime-local" class="eproc-input eproc-backdate-input" value="' + inputVal + '" style="width:180px;font-size:12px;" />' +
+            '<div style="margin-top:6px;display:flex;gap:4px;">' +
+                '<button type="button" class="eproc-btn eproc-btn-sm eproc-btn-primary eproc-backdate-visible" data-sub-id="' + subId + '">' + escHtml(<?php echo wp_json_encode( __( 'Show', 'eprocurement' ) ); ?>) + '</button>' +
+                '<button type="button" class="eproc-btn eproc-btn-sm eproc-btn-outline eproc-backdate-hidden" data-sub-id="' + subId + '">' + escHtml(<?php echo wp_json_encode( __( 'Hide', 'eprocurement' ) ); ?>) + '</button>' +
+                '<button type="button" class="eproc-btn eproc-btn-sm eproc-backdate-cancel">' + escHtml(<?php echo wp_json_encode( __( 'Cancel', 'eprocurement' ) ); ?>) + '</button>' +
+            '</div>';
+    });
+
+    // Backdate: visible or hidden
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.eproc-backdate-visible, .eproc-backdate-hidden');
+        if (!btn) return;
+
+        var visible = btn.classList.contains('eproc-backdate-visible');
+        var subId   = btn.getAttribute('data-sub-id');
+        var cell    = btn.closest('.eproc-backdate-cell');
+        var input   = cell.querySelector('.eproc-backdate-input');
+        var newDt   = input ? input.value : '';
+
+        if (!newDt) {
+            alert(<?php echo wp_json_encode( __( 'Please select a date and time.', 'eprocurement' ) ); ?>);
+            return;
+        }
+
+        btn.disabled = true;
+        var confirmMsg = visible
+            ? <?php echo wp_json_encode( __( 'Backdate with visible indicator? Staff will see "Backdated" badge.', 'eprocurement' ) ); ?>
+            : <?php echo wp_json_encode( __( 'Backdate and hide? No one will see this was changed.', 'eprocurement' ) ); ?>;
+
+        if (!window.eprocConfirm(confirmMsg)) {
+            btn.disabled = false;
+            return;
+        }
+
+        window.eprocAPI.patch('admin/submissions/' + subId + '/backdate', {
+            submitted_at: newDt.replace('T', ' ') + ':00',
+            visible: visible
+        })
+        .then(function(data) {
+            if (data.success) {
+                if (window.eprocToast) window.eprocToast(<?php echo wp_json_encode( __( 'Timestamp updated.', 'eprocurement' ) ); ?>, 'success');
+                loadSubmissions(); // Refresh table
+            } else {
+                alert(data.message || eprocManage.strings.error);
+            }
+        })
+        .catch(function() {
+            alert(eprocManage.strings.error);
+        })
+        .finally(function() {
+            btn.disabled = false;
+        });
+    });
+
+    // Backdate: cancel
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.eproc-backdate-cancel')) {
+            loadSubmissions(); // Just reload
+        }
+    });
+
+    // =========================================================================
+    // Briefing Attendees
+    // =========================================================================
+
+    function loadAttendees() {
+        var loadingEl = document.getElementById('eproc-attendees-loading');
+        var tableWrap = document.getElementById('eproc-attendees-table-wrap');
+        var tbody     = document.getElementById('eproc-attendees-list');
+        var inviteBtn = document.getElementById('eproc-send-invites');
+        if (!loadingEl || !bidId) return;
+
+        loadingEl.style.display = '';
+        tableWrap.style.display = 'none';
+
+        window.eprocAPI.get('admin/bids/' + bidId + '/attendees')
+            .then(function(data) {
+                loadingEl.style.display = 'none';
+                if (!data.attendees || data.attendees.length === 0) {
+                    tableWrap.style.display = 'none';
+                    if (inviteBtn) inviteBtn.style.display = 'none';
+                    return;
+                }
+
+                tableWrap.style.display = '';
+                if (inviteBtn) inviteBtn.style.display = '';
+                tbody.innerHTML = '';
+
+                data.attendees.forEach(function(att) {
+                    var row = document.createElement('tr');
+                    row.setAttribute('data-id', att.id);
+                    row.innerHTML =
+                        '<td>' + escHtml(att.bidder_email) + '</td>' +
+                        '<td>' + escHtml(att.company_name || '') + '</td>' +
+                        '<td><button type="button" class="eproc-btn eproc-btn-sm eproc-btn-danger eproc-remove-attendee" data-id="' + att.id + '">&times;</button></td>';
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(function() {
+                loadingEl.innerHTML = '<p class="eproc-text-muted">' + eprocManage.strings.error + '</p>';
+            });
+    }
+
+    // Add attendee
+    var addAttendeeBtn = document.getElementById('eproc-add-attendee');
+    if (addAttendeeBtn) {
+        addAttendeeBtn.addEventListener('click', function() {
+            var emailEl   = document.getElementById('eproc-attendee-email');
+            var companyEl = document.getElementById('eproc-attendee-company');
+            var email   = emailEl.value.trim();
+            var company = companyEl.value.trim();
+
+            if (!email) {
+                alert(<?php echo wp_json_encode( __( 'Please enter an email address.', 'eprocurement' ) ); ?>);
+                return;
+            }
+
+            window.eprocSetLoading(addAttendeeBtn, true);
+
+            window.eprocAPI.post('admin/bids/' + bidId + '/attendees', {
+                email: email,
+                company_name: company
+            })
+            .then(function(data) {
+                if (data.id) {
+                    emailEl.value = '';
+                    companyEl.value = '';
+                    if (window.eprocToast) window.eprocToast(<?php echo wp_json_encode( __( 'Attendee added.', 'eprocurement' ) ); ?>, 'success');
+                    loadAttendees();
+                } else {
+                    alert(data.message || eprocManage.strings.error);
+                }
+            })
+            .catch(function() { alert(eprocManage.strings.error); })
+            .finally(function() { window.eprocSetLoading(addAttendeeBtn, false); });
+        });
+    }
+
+    // Remove attendee (delegated)
+    document.addEventListener('click', function(e) {
+        var removeBtn = e.target.closest('.eproc-remove-attendee');
+        if (!removeBtn) return;
+
+        if (!window.eprocConfirm(eprocManage.strings.confirm_delete)) return;
+
+        var attId = removeBtn.getAttribute('data-id');
+        removeBtn.disabled = true;
+
+        window.eprocAPI.del('admin/attendees/' + attId)
+            .then(function(data) {
+                if (data.success) {
+                    if (window.eprocToast) window.eprocToast(<?php echo wp_json_encode( __( 'Attendee removed.', 'eprocurement' ) ); ?>, 'success');
+                    loadAttendees();
+                } else {
+                    alert(data.message || eprocManage.strings.error);
+                    removeBtn.disabled = false;
+                }
+            })
+            .catch(function() {
+                alert(eprocManage.strings.error);
+                removeBtn.disabled = false;
+            });
+    });
+
+    // Send invite emails
+    var sendInvitesBtn = document.getElementById('eproc-send-invites');
+    if (sendInvitesBtn) {
+        sendInvitesBtn.addEventListener('click', function() {
+            if (!window.eprocConfirm(<?php echo wp_json_encode( __( 'Send briefing invite emails to all attendees?', 'eprocurement' ) ); ?>)) return;
+
+            window.eprocSetLoading(sendInvitesBtn, true);
+
+            window.eprocAPI.post('admin/bids/' + bidId + '/attendees/invite', {})
+                .then(function(data) {
+                    if (data.success) {
+                        if (window.eprocToast) window.eprocToast(data.message || <?php echo wp_json_encode( __( 'Invites sent.', 'eprocurement' ) ); ?>, 'success');
+                    } else {
+                        alert(data.message || eprocManage.strings.error);
+                    }
+                })
+                .catch(function() { alert(eprocManage.strings.error); })
+                .finally(function() { window.eprocSetLoading(sendInvitesBtn, false); });
+        });
+    }
 });
 </script>
