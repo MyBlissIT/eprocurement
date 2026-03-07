@@ -121,10 +121,9 @@ class Eprocurement_Messaging {
             return null;
         }
 
-        if ( $user_id > 0 ) {
-            if ( ! $this->can_view_thread( $thread, $user_id ) ) {
-                return null;
-            }
+        // Always enforce ACL — caller must provide a valid user_id
+        if ( $user_id < 1 || ! $this->can_view_thread( $thread, $user_id ) ) {
+            return null;
         }
 
         return $thread;

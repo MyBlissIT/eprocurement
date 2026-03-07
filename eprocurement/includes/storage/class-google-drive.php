@@ -47,12 +47,16 @@ class Eprocurement_Google_Drive extends Eprocurement_Storage_Interface {
 
             // Refresh token if expired
             if ( $client->isAccessTokenExpired() && ! empty( $creds['refresh_token'] ) ) {
-                $client->fetchAccessTokenWithRefreshToken( $creds['refresh_token'] );
-                $new_token = $client->getAccessToken();
+                try {
+                    $client->fetchAccessTokenWithRefreshToken( $creds['refresh_token'] );
+                    $new_token = $client->getAccessToken();
 
-                // Save updated token
-                $creds['access_token'] = $new_token;
-                $this->save_credentials( $creds );
+                    // Save updated token
+                    $creds['access_token'] = $new_token;
+                    $this->save_credentials( $creds );
+                } catch ( \Exception $e ) {
+                    throw new \RuntimeException( 'Google Drive token refresh failed: ' . $e->getMessage() );
+                }
             }
         }
 
@@ -126,7 +130,7 @@ class Eprocurement_Google_Drive extends Eprocurement_Storage_Interface {
         }
 
         $content  = file_get_contents( $local_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-        $mimeType = mime_content_type( $local_path );
+        $mimeType = wp_check_filetype( $local_path )['type'] ?: 'application/octet-stream';
 
         $uploaded = $service->files->create( $file_metadata, [
             'data'       => $content,

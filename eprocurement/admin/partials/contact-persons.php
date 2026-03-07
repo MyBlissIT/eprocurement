@@ -135,7 +135,7 @@ $staff_users = get_users( [
 </div>
 
 <!-- Contact Modal -->
-<div id="eproc-contact-modal" style="display:none;">
+<div id="eproc-contact-modal" style="display:none;" role="dialog" aria-labelledby="eproc-modal-title" aria-modal="true">
     <div class="eproc-modal-overlay active">
         <div class="eproc-modal">
             <div class="eproc-modal-header">

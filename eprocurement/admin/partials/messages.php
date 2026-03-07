@@ -31,7 +31,7 @@ $thread_document  = null;
 $thread_bidder    = null;
 
 if ( $active_thread_id ) {
-    $active_thread = $messaging->get_thread( $active_thread_id );
+    $active_thread = $messaging->get_thread( $active_thread_id, get_current_user_id() );
     if ( $active_thread ) {
         $active_messages = $messaging->get_messages( $active_thread_id );
         $thread_document = Eprocurement_Database::get_by_id( 'documents', (int) $active_thread->document_id );
@@ -329,7 +329,7 @@ if ( $active_thread && $thread_document ) {
 </div>
 
 <!-- Bid Preview Modal -->
-<div id="eproc-bid-preview-modal" style="display:none;">
+<div id="eproc-bid-preview-modal" style="display:none;" role="dialog" aria-labelledby="eproc-bid-preview-title" aria-modal="true">
     <div class="eproc-modal-overlay active">
         <div class="eproc-modal eproc-modal-lg">
             <div class="eproc-modal-header">
@@ -353,10 +353,10 @@ if ( $active_thread && $thread_document ) {
 </div>
 
 <!-- Make Public Reason Modal -->
-<div id="eproc-make-public-modal" class="eproc-modal-overlay" style="display:none;">
+<div id="eproc-make-public-modal" class="eproc-modal-overlay" style="display:none;" role="dialog" aria-labelledby="eproc-make-public-title" aria-modal="true">
     <div class="eproc-modal" style="max-width:440px;">
         <div class="eproc-modal-header">
-            <h3><?php esc_html_e( 'Make Thread Public', 'eprocurement' ); ?></h3>
+            <h3 id="eproc-make-public-title"><?php esc_html_e( 'Make Thread Public', 'eprocurement' ); ?></h3>
             <button type="button" class="eproc-close-modal">&times;</button>
         </div>
         <div class="eproc-modal-body">

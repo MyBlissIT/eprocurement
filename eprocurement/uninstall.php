@@ -42,8 +42,26 @@ $options = [
     'eprocurement_closed_bid_retention_days',
     'eprocurement_compliance_section_title',
     'eprocurement_frontend_page_slug',
+    'eprocurement_frontend_page_id',
     'eprocurement_notification_settings',
     'eprocurement_smtp_configured',
+    'eprocurement_smtp_settings',
+    'eprocurement_category_briefing_register',
+    'eprocurement_category_closing_register',
+    'eprocurement_category_appointments',
+    'eprocurement_departments',
+    'eprocurement_external_db_settings',
+    'eprocurement_cors_origins',
+    'eprocurement_redirect_home',
+    'eprocurement_initial_cleanup_done',
+    'eprocurement_rewrite_version',
+    'eprocurement_brand_name',
+    'eprocurement_brand_url',
+    'eprocurement_support_email',
+    'eprocurement_brand_logo',
+    'eprocurement_brand_tagline',
+    'eprocurement_brand_colors',
+    'eprocurement_login_title',
 ];
 
 foreach ( $options as $option ) {
@@ -54,7 +72,7 @@ foreach ( $options as $option ) {
 remove_role( 'eprocurement_scm_manager' );
 remove_role( 'eprocurement_scm_official' );
 remove_role( 'eprocurement_unit_manager' );
-remove_role( 'eprocurement_subscriber' );
+remove_role( 'eprocurement_bidder' );
 
 // Remove custom capabilities from admin and editor roles
 $admin_role  = get_role( 'administrator' );
@@ -90,4 +108,4 @@ foreach ( $capabilities as $cap ) {
 wp_clear_scheduled_hook( 'eprocurement_daily_cleanup' );
 
 // Clean up user meta for bidder profiles
-$wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE 'eproc_%'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+$wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE '_eproc_%'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared

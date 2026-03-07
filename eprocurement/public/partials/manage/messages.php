@@ -36,7 +36,7 @@ $thread_document  = null;
 $thread_bidder    = null;
 
 if ( $active_thread_id ) {
-    $active_thread = $messaging->get_thread( $active_thread_id );
+    $active_thread = $messaging->get_thread( $active_thread_id, get_current_user_id() );
     if ( $active_thread ) {
         $active_messages = $messaging->get_messages( $active_thread_id );
         $thread_document = Eprocurement_Database::get_by_id( 'documents', (int) $active_thread->document_id );

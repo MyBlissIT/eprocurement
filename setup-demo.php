@@ -71,7 +71,7 @@ $demo_users = [
         'display'  => 'James van der Merwe',
         'first'    => 'James',
         'last'     => 'van der Merwe',
-        'role'     => 'eprocurement_subscriber',
+        'role'     => 'eprocurement_bidder',
         'label'    => 'Bidder',
     ],
 ];
@@ -107,7 +107,7 @@ foreach ($demo_users as $u) {
     echo "   [CREATED] {$u['label']}: {$u['login']} / {$u['pass']} (ID: {$user_id})\n";
 
     // If bidder, create profile
-    if ($u['role'] === 'eprocurement_subscriber') {
+    if ($u['role'] === 'eprocurement_bidder') {
         global $wpdb;
         $bp_table = $wpdb->prefix . EPROC_TABLE_PREFIX . 'bidder_profiles';
         $wpdb->replace($bp_table, [
@@ -273,7 +273,7 @@ echo "5. Creating sample Q&A threads...\n";
 
 $thread_table = Eprocurement_Database::table('threads');
 $msg_table = Eprocurement_Database::table('messages');
-$bidder_id = $user_ids['eprocurement_subscriber'] ?? 2;
+$bidder_id = $user_ids['eprocurement_bidder'] ?? 2;
 $open_bid_id = $bid_ids[0] ?? 1;
 
 // Check if threads already exist for this bidder

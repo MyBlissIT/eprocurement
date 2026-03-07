@@ -12,7 +12,7 @@ sleep 15
 
 echo "Installing WordPress..."
 docker compose run --rm cli core install \
-  --url="http://localhost:8180" \
+  --url="http://localhost:8190" \
   --title="eProcurement Dev" \
   --admin_user=admin \
   --admin_password=admin123 \
@@ -27,8 +27,8 @@ docker compose run --rm cli rewrite flush
 
 echo ""
 echo "=== Setup Complete ==="
-echo "WordPress: http://localhost:8180"
-echo "Admin:     http://localhost:8180/wp-admin"
+echo "WordPress: http://localhost:8190"
+echo "Admin:     http://localhost:8190/wp-admin"
 echo "Login:     admin / admin123"
 echo ""
 echo "eProcurement menu should now appear in the WP Admin sidebar."

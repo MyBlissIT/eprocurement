@@ -194,7 +194,7 @@ if ( file_exists( $logo_file ) ) {
                 ?>
                     <li>
                         <a href="<?php echo esc_url( $href ); ?>" class="eproc-nav-item<?php echo esc_attr( $active_class ); ?>">
-                            <span class="eproc-nav-icon"><?php echo $item['icon']; // SVGs are safe ?></span>
+                            <span class="eproc-nav-icon"><?php echo wp_kses( $item['icon'], [ 'svg' => [ 'width' => true, 'height' => true, 'viewbox' => true, 'fill' => true, 'stroke' => true, 'stroke-width' => true, 'stroke-linecap' => true, 'stroke-linejoin' => true, 'class' => true, 'xmlns' => true ], 'path' => [ 'd' => true, 'fill' => true, 'stroke' => true ], 'circle' => [ 'cx' => true, 'cy' => true, 'r' => true, 'fill' => true, 'stroke' => true ], 'rect' => [ 'x' => true, 'y' => true, 'width' => true, 'height' => true, 'rx' => true, 'fill' => true, 'stroke' => true ], 'line' => [ 'x1' => true, 'y1' => true, 'x2' => true, 'y2' => true, 'stroke' => true ], 'polyline' => [ 'points' => true, 'fill' => true, 'stroke' => true ], 'polygon' => [ 'points' => true, 'fill' => true, 'stroke' => true ], 'g' => [ 'fill' => true, 'stroke' => true, 'transform' => true ] ] ); ?></span>
                             <span class="eproc-nav-label"><?php echo esc_html( $item['label'] ); ?></span>
                             <?php if ( ! empty( $item['badge'] ) && $item['badge'] > 0 ) : ?>
                                 <span class="eproc-nav-badge"><?php echo esc_html( $item['badge'] ); ?></span>

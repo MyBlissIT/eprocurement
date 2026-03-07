@@ -60,9 +60,10 @@ class Eprocurement_Smtp {
         if ( ! empty( $settings['from_email'] ) ) {
             return $settings['from_email'];
         }
-        // Fix localhost issue
+        // Fix localhost issue — use site domain instead of hardcoded fallback
         if ( strpos( $from, '@localhost' ) !== false ) {
-            return 'noreply@eprocurement.test';
+            $domain = wp_parse_url( home_url(), PHP_URL_HOST ) ?: 'eprocurement.local';
+            return 'noreply@' . $domain;
         }
         return $from;
     }
