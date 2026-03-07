@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en-ZA">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eProcurement — MyBliss Technologies</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --maroon: #8b1a2b;
+    --maroon-dark: #6d1522;
+    --navy: #1a1a5e;
+    --gold: #c9a84c;
+    --gold-light: #e8d59a;
+    --slate: #f1f5f9;
+    --off-white: #f8f9fb;
+    --white: #ffffff;
+    --text-dark: #1e293b;
+    --text-mid: #475569;
+    --text-light: #64748b;
+    --border: #e2e8f0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--text-dark);
+    font-size: 12px;
+    line-height: 1.55;
+    background: var(--white);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    background: var(--white);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ===== PAGE 1 — COVER ===== */
+  .cover {
+    height: 297mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    background: linear-gradient(160deg, var(--navy) 0%, #12124a 55%, var(--maroon-dark) 100%);
+  }
+
+  .cover-accent {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 35%;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(139,26,43,0.1) 0%, rgba(201,168,76,0.05) 100%);
+    clip-path: polygon(35% 0, 100% 0, 100% 100%, 0% 100%);
+  }
+
+  .cover-stripe-top {
+    height: 4px;
+    background: linear-gradient(90deg, var(--gold), var(--maroon), var(--gold));
+    flex-shrink: 0;
+  }
+
+  .cover-stripe-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--maroon), var(--gold), var(--maroon));
+  }
+
+  /* Header row: logo + title side by side */
+  .cover-header {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 32px 56px 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .cover-logo {
+    width: 160px;
+    filter: brightness(0) invert(1);
+    flex-shrink: 0;
+  }
+
+  .cover-header-text {
+    flex: 1;
+    text-align: right;
+  }
+
+  .cover-tag {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+
+  .cover-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 34px;
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.15;
+  }
+
+  .cover-subtitle {
+    font-size: 12px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.55;
+    margin-top: 6px;
+    margin-left: auto;
+    max-width: 420px;
+  }
+
+  /* Readable text boxes on dark background */
+  .text-box {
+    background: rgba(255,255,255,0.95);
+    border-radius: 8px;
+    padding: 18px 22px;
+    color: var(--text-dark);
+    position: relative;
+    z-index: 2;
+  }
+
+  .text-box-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+
+  .text-box-rule {
+    width: 40px;
+    height: 2.5px;
+    background: var(--maroon);
+    margin-bottom: 8px;
+  }
+
+  .text-box p {
+    font-size: 12px;
+    color: var(--text-mid);
+    line-height: 1.65;
+  }
+
+  /* Cover body area */
+  .cover-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 56px 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Feature cards in text-box style */
+  .feature-grid-cover {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .feature-card-cover {
+    background: rgba(255,255,255,0.92);
+    border-radius: 6px;
+    padding: 14px 16px 12px;
+    border-left: 3px solid var(--maroon);
+  }
+
+  .feature-card-cover-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .fc-icon {
+    width: 18px;
+    height: 18px;
+    background: var(--maroon);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .fc-icon svg {
+    width: 11px;
+    height: 11px;
+    fill: var(--white);
+  }
+
+  .feature-card-cover p {
+    font-size: 12px;
+    color: var(--text-mid);
+    line-height: 1.55;
+  }
+
+  /* Benefits row on cover */
+  .benefits-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    position: relative;
+    z-index: 2;
+    width: 100%;
+  }
+
+  .benefit-card {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    padding: 18px 16px;
+    text-align: center;
+  }
+
+  .benefit-icon-wrap {
+    width: 34px;
+    height: 34px;
+    background: rgba(201,168,76,0.18);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8px;
+  }
+
+  .benefit-icon-wrap svg {
+    width: 16px;
+    height: 16px;
+    fill: var(--gold);
+  }
+
+  .benefit-card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 3px;
+  }
+
+  .benefit-card-desc {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.5;
+  }
+
+  /* Cover footer */
+  .cover-footer {
+    padding: 18px 56px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    position: relative;
+    z-index: 2;
+  }
+
+  .cover-footer span {
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+  }
+
+  .cover-footer .url {
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  /* ===== PAGE 2 ===== */
+  .content-page {
+    height: 297mm;
+    padding: 36px 56px 28px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .content-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--maroon), var(--gold), var(--maroon));
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 22px;
+  }
+
+  .page-header-logo { height: 28px; }
+
+  .page-header-title {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--maroon);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .section {
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+
+  .section-rule {
+    width: 40px;
+    height: 2.5px;
+    background: var(--maroon);
+    margin-bottom: 12px;
+  }
+
+  .section p {
+    font-size: 12px;
+    color: var(--text-mid);
+    line-height: 1.65;
+  }
+
+  /* Workflow strip */
+  .workflow-strip {
+    display: flex;
+    align-items: center;
+    background: var(--slate);
+    border-radius: 6px;
+    padding: 14px 12px;
+  }
+
+  .workflow-step { flex: 1; text-align: center; }
+
+  .workflow-step-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+
+  .workflow-step-desc {
+    font-size: 12px;
+    color: var(--text-light);
+    line-height: 1.4;
+    margin-top: 2px;
+  }
+
+  .workflow-arrow {
+    color: var(--maroon);
+    font-size: 16px;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+
+  /* Roles table */
+  .role-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .role-table th {
+    background: var(--navy);
+    color: var(--white);
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .role-table th:first-child { border-radius: 5px 0 0 0; }
+  .role-table th:last-child { border-radius: 0 5px 0 0; }
+
+  .role-table td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-mid);
+    line-height: 1.5;
+  }
+
+  .role-table tr:nth-child(even) td { background: var(--slate); }
+
+  .role-name {
+    font-weight: 600;
+    color: var(--navy);
+    white-space: nowrap;
+  }
+
+  /* Security & Notifications */
+  .spec-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .spec-box {
+    background: var(--slate);
+    border-radius: 6px;
+    padding: 16px 16px;
+  }
+
+  .spec-box-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .spec-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .spec-list li {
+    font-size: 12px;
+    color: var(--text-mid);
+    padding: 3px 0 3px 14px;
+    position: relative;
+    line-height: 1.5;
+  }
+
+  .spec-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--maroon);
+  }
+
+  /* Compliance checklist */
+  .compliance-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 20px;
+  }
+
+  .compliance-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--text-mid);
+    line-height: 1.5;
+    padding: 4px 0;
+  }
+
+  .check-icon {
+    width: 15px;
+    height: 15px;
+    background: var(--maroon);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .check-icon svg { width: 9px; height: 9px; fill: var(--white); }
+
+  /* CTA band */
+  .cta-band {
+    background: linear-gradient(135deg, var(--maroon), var(--maroon-dark));
+    border-radius: 6px;
+    padding: 26px 28px;
+    text-align: center;
+  }
+
+  .cta-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 6px;
+  }
+
+  .cta-text {
+    font-size: 12px;
+    color: rgba(255,255,255,0.8);
+    line-height: 1.6;
+    max-width: 420px;
+    margin: 0 auto 16px;
+  }
+
+  .cta-details {
+    display: flex;
+    justify-content: center;
+    gap: 36px;
+  }
+
+  .cta-detail { text-align: center; }
+
+  .cta-detail-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--gold-light);
+    margin-bottom: 2px;
+  }
+
+  .cta-detail-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--white);
+  }
+
+  /* Footer */
+  .page-footer {
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .page-footer span {
+    font-size: 10px;
+    color: var(--text-light);
+  }
+
+  /* Print */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  @media print {
+    body { background: white; margin: 0; padding: 0; }
+    .page {
+      width: 210mm;
+      height: 297mm;
+      min-height: 297mm;
+      max-height: 297mm;
+      margin: 0;
+      page-break-after: always;
+      page-break-inside: avoid;
+      box-shadow: none;
+      overflow: hidden;
+    }
+    .page:last-child { page-break-after: auto; }
+    .cover { height: 297mm; }
+    .content-page { height: 297mm; min-height: 297mm; max-height: 297mm; padding: 36px 56px 28px; overflow: hidden; }
+  }
+
+  @media screen {
+    body { background: #94a3b8; padding: 30px 0; }
+    .page { box-shadow: 0 4px 24px rgba(0,0,0,0.25); margin-bottom: 30px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== PAGE 1 — COVER ==================== -->
+<div class="page cover">
+  <div class="cover-accent"></div>
+  <div class="cover-stripe-top"></div>
+
+  <!-- Logo + Title side by side -->
+  <div class="cover-header">
+    <img src="assets/mybliss-logo.png" alt="MyBliss Technologies" class="cover-logo">
+    <div class="cover-header-text">
+      <div class="cover-tag">Government Procurement Solutions</div>
+      <h1 class="cover-title">eProcurement<br>Management System</h1>
+      <p class="cover-subtitle">A secure, cloud-based bid and tender management platform purpose-built for South African government supply chain operations.</p>
+    </div>
+  </div>
+
+  <div class="cover-body">
+
+    <!-- Platform Overview — readable text box -->
+    <div class="text-box">
+      <h2 class="text-box-title">Platform Overview</h2>
+      <div class="text-box-rule"></div>
+      <p>eProcurement digitalises the full procurement lifecycle for government SCM units — from publishing tender notices and managing bidder queries to secure document storage and audit trail compliance. It replaces paper-based processes with a centralised system that promotes transparency, accountability, and efficiency.</p>
+    </div>
+
+    <!-- Core Capabilities — readable cards -->
+    <div class="text-box" style="padding: 18px 22px 14px;">
+      <h2 class="text-box-title">Core Capabilities</h2>
+      <div class="text-box-rule"></div>
+      <div class="feature-grid-cover">
+        <div class="feature-card-cover">
+          <div class="feature-card-cover-title">
+            <div class="fc-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h5v7h7v9H6z"/></svg></div>
+            Bid &amp; Tender Management
+          </div>
+          <p>Manage bids through Draft, Open, Closed, and Archived stages with category support for briefing registers, closing registers, and appointments.</p>
+        </div>
+        <div class="feature-card-cover">
+          <div class="feature-card-cover-title">
+            <div class="fc-icon"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg></div>
+            Bidder Communication
+          </div>
+          <p>Structured query threads between bidders and SCM officials with private/public visibility, read tracking, and email notifications.</p>
+        </div>
+        <div class="feature-card-cover">
+          <div class="feature-card-cover-title">
+            <div class="fc-icon"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.83-3.23 9.36-7 10.62-3.77-1.26-7-5.79-7-10.62V6.3l7-3.12z"/></svg></div>
+            Audit &amp; Compliance
+          </div>
+          <p>Full download audit trail with date filtering, CSV export, and a built-in SCM document library for compliance templates.</p>
+        </div>
+        <div class="feature-card-cover">
+          <div class="feature-card-cover-title">
+            <div class="fc-icon"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+            Bidder Self-Service Portal
+          </div>
+          <p>Bidders register, verify via email, browse tenders, download documents, and submit queries without admin intervention.</p>
+        </div>
+        <div class="feature-card-cover">
+          <div class="feature-card-cover-title">
+            <div class="fc-icon"><svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
+            Role-Based Access Control
+          </div>
+          <p>Four roles with 14 capabilities ensure SCM managers, officials, unit managers, and bidders access only what they need.</p>
+        </div>
+        <div class="feature-card-cover">
+          <div class="feature-card-cover-title">
+            <div class="fc-icon"><svg viewBox="0 0 24 24"><path d="M19.35 10.04A7.49 7.49 0 0012 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 000 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4s1.79-4 4-4h.71C7.37 7.69 9.48 6 12 6c3.04 0 5.5 2.46 5.5 5.5V12H19c1.66 0 3 1.34 3 3s-1.34 3-3 3z"/></svg></div>
+            Secure Document Storage
+          </div>
+          <p>AES-256 encrypted cloud storage with MIME validation. Supports multiple providers with automatic local fallback.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Benefits row -->
+    <div class="benefits-row">
+      <div class="benefit-card">
+        <div class="benefit-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+        <div class="benefit-card-title">Full Transparency</div>
+        <div class="benefit-card-desc">Every download, message, and status change is logged and auditable</div>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon-wrap"><svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg></div>
+        <div class="benefit-card-title">Reduced Turnaround</div>
+        <div class="benefit-card-desc">Digital workflows replace manual paper-based processes and delays</div>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
+        <div class="benefit-card-title">PFMA &amp; MFMA Ready</div>
+        <div class="benefit-card-desc">Built for South African public finance compliance requirements</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="cover-footer">
+    <span>MyBliss Technologies (Pty) Ltd &bull; South Africa</span>
+    <span class="url">www.myblisstech.com</span>
+  </div>
+  <div class="cover-stripe-bottom"></div>
+</div>
+
+<!-- ==================== PAGE 2 ==================== -->
+<div class="page content-page">
+  <div class="page-header">
+    <img src="assets/mybliss-logo.png" alt="MyBliss Technologies" class="page-header-logo">
+    <span class="page-header-title">eProcurement Platform</span>
+  </div>
+
+  <!-- Bid Lifecycle -->
+  <div class="section">
+    <h2 class="section-title">Bid Lifecycle</h2>
+    <div class="section-rule"></div>
+    <div class="workflow-strip">
+      <div class="workflow-step">
+        <div class="workflow-step-label">Draft</div>
+        <div class="workflow-step-desc">Prepare details,<br>upload documents</div>
+      </div>
+      <div class="workflow-arrow">&#10132;</div>
+      <div class="workflow-step">
+        <div class="workflow-step-label">Open</div>
+        <div class="workflow-step-desc">Published to bidders,<br>queries enabled</div>
+      </div>
+      <div class="workflow-arrow">&#10132;</div>
+      <div class="workflow-step">
+        <div class="workflow-step-label">Closed</div>
+        <div class="workflow-step-desc">Submission deadline<br>passed</div>
+      </div>
+      <div class="workflow-arrow">&#10132;</div>
+      <div class="workflow-step">
+        <div class="workflow-step-label">Archived</div>
+        <div class="workflow-step-desc">Record retained<br>for compliance</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Roles Table -->
+  <div class="section">
+    <h2 class="section-title">User Roles &amp; Permissions</h2>
+    <div class="section-rule"></div>
+    <table class="role-table">
+      <thead>
+        <tr>
+          <th style="width: 25%;">Role</th>
+          <th>Permissions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="role-name">SCM Manager</td>
+          <td>Full management — create, publish, close, archive bids; manage contacts, bidders, settings; view audit logs</td>
+        </tr>
+        <tr>
+          <td class="role-name">SCM Official</td>
+          <td>Operational duties — create and edit bids, respond to queries, upload documents</td>
+        </tr>
+        <tr>
+          <td class="role-name">Unit Manager</td>
+          <td>Read-only oversight — view bids, messages, and download logs</td>
+        </tr>
+        <tr>
+          <td class="role-name">Bidder</td>
+          <td>Self-service — browse tenders, download documents, submit queries, manage profile</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Security & Notifications -->
+  <div class="section">
+    <h2 class="section-title">Security &amp; Notifications</h2>
+    <div class="section-rule"></div>
+    <div class="spec-row">
+      <div class="spec-box">
+        <div class="spec-box-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#1a1a5e"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/></svg>
+          Security
+        </div>
+        <ul class="spec-list">
+          <li>AES-256-CBC file encryption</li>
+          <li>Role-based access (14 capabilities)</li>
+          <li>Nonce-verified requests</li>
+          <li>XMLRPC disabled, enumeration blocked</li>
+          <li>50 MB limit with MIME validation</li>
+        </ul>
+      </div>
+      <div class="spec-box">
+        <div class="spec-box-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#1a1a5e"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+          Notifications
+        </div>
+        <ul class="spec-list">
+          <li>Email verification for registration</li>
+          <li>Configurable query/reply/status alerts</li>
+          <li>Per-bidder notification preferences</li>
+          <li>SMTP support (any email provider)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compliance -->
+  <div class="section">
+    <h2 class="section-title">Built-In Compliance</h2>
+    <div class="section-rule"></div>
+    <div class="compliance-grid">
+      <div class="compliance-item">
+        <div class="check-icon"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+        <span>Full download audit trail with CSV export</span>
+      </div>
+      <div class="compliance-item">
+        <div class="check-icon"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+        <span>SCM document library for policies</span>
+      </div>
+      <div class="compliance-item">
+        <div class="check-icon"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+        <span>Bid status change logging</span>
+      </div>
+      <div class="compliance-item">
+        <div class="check-icon"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+        <span>Encrypted file storage</span>
+      </div>
+      <div class="compliance-item">
+        <div class="check-icon"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+        <span>Transparent bidder communication records</span>
+      </div>
+      <div class="compliance-item">
+        <div class="check-icon"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+        <span>Role-based access prevents unauthorised actions</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-band">
+    <h2 class="cta-title">Ready to Modernise Your Procurement?</h2>
+    <p class="cta-text">Contact us for a personalised demonstration tailored to your organisation's requirements.</p>
+    <div class="cta-details">
+      <div class="cta-detail">
+        <div class="cta-detail-label">Email</div>
+        <div class="cta-detail-value">info@myblisstech.com</div>
+      </div>
+      <div class="cta-detail">
+        <div class="cta-detail-label">Website</div>
+        <div class="cta-detail-value">www.myblisstech.com</div>
+      </div>
+      <div class="cta-detail">
+        <div class="cta-detail-label">Based In</div>
+        <div class="cta-detail-value">South Africa</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>MyBliss Technologies (Pty) Ltd</span>
+    <span>Page 2 of 2</span>
+  </div>
+</div>
+
+</body>
+</html>
