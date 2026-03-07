@@ -29,6 +29,7 @@ class Eprocurement_Notifications {
         add_action( 'eprocurement_status_changed', [ $this, 'notify_status_change' ], 10, 3 );
         add_action( 'eprocurement_bid_published', [ $this, 'notify_new_bid' ], 10, 1 );
         add_action( 'eprocurement_visibility_changed', [ $this, 'notify_visibility_change' ], 10, 4 );
+        add_action( 'eprocurement_weekly_digest', [ $this, 'send_weekly_digest' ] );
     }
 
     /**
@@ -343,5 +344,116 @@ class Eprocurement_Notifications {
         );
 
         wp_mail( $bidder->user_email, $subject, $body );
+    }
+
+    /**
+     * Send weekly digest to administrators.
+     */
+    public function send_weekly_digest(): void {
+        if ( ! $this->is_enabled( 'weekly_digest_notify' ) ) {
+            return;
+        }
+
+        global $wpdb;
+
+        $week_ago  = gmdate( 'Y-m-d H:i:s', strtotime( '-7 days' ) );
+        $doc_table = Eprocurement_Database::table( 'documents' );
+        $thr_table = Eprocurement_Database::table( 'threads' );
+        $msg_table = Eprocurement_Database::table( 'messages' );
+        $dl_table  = Eprocurement_Database::table( 'downloads' );
+        $bp_table  = Eprocurement_Database::table( 'bidder_profiles' );
+
+        // Gather stats for the past 7 days.
+        $new_bids = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$doc_table} WHERE created_at >= %s", $week_ago // phpcs:ignore
+        ) );
+        $opened_bids = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$doc_table} WHERE status = 'open' AND updated_at >= %s", $week_ago // phpcs:ignore
+        ) );
+        $closed_bids = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$doc_table} WHERE status = 'closed' AND updated_at >= %s", $week_ago // phpcs:ignore
+        ) );
+        $new_queries = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$thr_table} WHERE created_at >= %s", $week_ago // phpcs:ignore
+        ) );
+        $new_messages = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$msg_table} WHERE created_at >= %s", $week_ago // phpcs:ignore
+        ) );
+        $downloads = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$dl_table} WHERE downloaded_at >= %s", $week_ago // phpcs:ignore
+        ) );
+        $new_bidders = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$bp_table} WHERE created_at >= %s", $week_ago // phpcs:ignore
+        ) );
+
+        // Get total open bids.
+        $total_open = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$doc_table} WHERE status = 'open'" // phpcs:ignore
+        );
+
+        // Get unresolved queries.
+        $unresolved = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$thr_table} WHERE status = 'open'" // phpcs:ignore
+        );
+
+        $week_start = wp_date( 'j M Y', strtotime( '-7 days' ) );
+        $week_end   = wp_date( 'j M Y' );
+        $brand_name = get_option( 'eprocurement_brand_name', 'eProcurement' );
+        $admin_url  = admin_url( 'admin.php?page=eprocurement' );
+
+        $subject = sprintf(
+            /* translators: 1: Brand name, 2: Week range */
+            __( '%1$s — Weekly Digest (%2$s)', 'eprocurement' ),
+            $brand_name,
+            "$week_start – $week_end"
+        );
+
+        // Build the digest body.
+        $body = sprintf(
+            __(
+                "Weekly Activity Summary\n" .
+                "Period: %1\$s – %2\$s\n" .
+                "─────────────────────────────\n\n" .
+                "BIDS\n" .
+                "  New bids created:     %3\$d\n" .
+                "  Bids opened:          %4\$d\n" .
+                "  Bids closed:          %5\$d\n" .
+                "  Currently open:       %6\$d\n\n" .
+                "QUERIES & MESSAGES\n" .
+                "  New queries:          %7\$d\n" .
+                "  Messages exchanged:   %8\$d\n" .
+                "  Unresolved queries:   %9\$d\n\n" .
+                "ACTIVITY\n" .
+                "  Document downloads:   %10\$d\n" .
+                "  New bidder signups:   %11\$d\n\n" .
+                "─────────────────────────────\n" .
+                "View dashboard: %12\$s\n\n" .
+                "Regards,\n%13\$s",
+                'eprocurement'
+            ),
+            $week_start,
+            $week_end,
+            $new_bids,
+            $opened_bids,
+            $closed_bids,
+            $total_open,
+            $new_queries,
+            $new_messages,
+            $unresolved,
+            $downloads,
+            $new_bidders,
+            $admin_url,
+            $brand_name
+        );
+
+        // Send to all administrators and SCM managers.
+        $recipients = get_users( [
+            'role__in' => [ 'administrator', 'eprocurement_scm_manager' ],
+            'fields'   => [ 'user_email', 'display_name' ],
+        ] );
+
+        foreach ( $recipients as $user ) {
+            wp_mail( $user->user_email, $subject, $body );
+        }
     }
 }

@@ -88,14 +88,21 @@ Deployment details (SSH, credentials, caching notes) are in `.claude/deploy.md` 
 ## Current Status
 
 **UI Redesign: 100% complete** (all 7 phases, 18 backend edits done).
-**254 automated tests passing** across 3 test suites.
+**254 automated tests passing** across 3 test suites + **96/100 Playwright cross-browser tests**.
 
 Full "What's Working" list: [docs/architecture.md](docs/architecture.md)
+
+### Recent Changes (v2.10.4)
+- **14 composite DB indexes** across 6 tables (documents, threads, messages, downloads, bidder_profiles, supporting_docs)
+- **Weekly Digest notification** — cron fires every Monday, emails admins + SCM Managers a 7-day activity summary. Toggle in Settings > Notifications.
+- **Download count badge** — maroon pill next to Bid No. in Download Log showing total downloads per bid
+- **Bid detail hero header** — OPEN bids get green gradient, CLOSED bids get maroon gradient (matching listing page hero colors)
+- **Playwright cross-browser test suite** — 20 tests (12 admin + 8 frontend) across 5 browsers (Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari)
+- **QA verification report** — `tests/visual/qa-report.html` (self-contained HTML with embedded screenshots)
 
 ### Needs Verification
 1. Cloud storage OAuth flows (need real API credentials)
 2. S3 test connection (need real credentials)
-3. Frontend pixel-perfect visual verification
 
 ### Known Technical Debt
 1. `get_recent_activity()` UNION query may need optimization at scale
@@ -105,14 +112,10 @@ Full "What's Working" list: [docs/architecture.md](docs/architecture.md)
 **Should Do:**
 1. Deploy to shared hosting + configure WP Mail SMTP
 2. MainWP dashboard for centralized client management
-3. Visual verification via browser screenshots
-4. Test cloud storage with a real provider (S3 recommended)
-5. Cross-browser testing (Chrome, Firefox, mobile Safari)
+3. Test cloud storage with a real provider (S3 recommended)
 
 **Nice to Have:**
 - Unit tests for core business logic
-- Database indexes review + query caching
-- Weekly Digest notification (marked "Coming Soon" in Settings)
 - Document multi-tenant CSS variable override process
 
 ## Reference Documents (`docs/`)

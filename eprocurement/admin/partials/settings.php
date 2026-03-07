@@ -306,13 +306,16 @@ $providers = [
 
                 <hr class="eproc-divider">
 
-                <!-- Future: Weekly Digest -->
-                <div class="eproc-notification-item eproc-notification-disabled">
+                <!-- Weekly Digest -->
+                <div class="eproc-notification-item">
                     <div class="eproc-notification-info">
-                        <strong><?php esc_html_e( 'Weekly Digest Report', 'eprocurement' ); ?></strong>
-                        <p class="eproc-text-muted eproc-text-sm"><?php esc_html_e( 'Summary of all activity sent to administrators weekly.', 'eprocurement' ); ?></p>
+                        <label>
+                            <input type="checkbox" name="notify_weekly_digest" value="1"
+                                   <?php checked( ! empty( $notify_settings['weekly_digest_notify'] ) ); ?>>
+                            <strong><?php esc_html_e( 'Weekly Digest Report', 'eprocurement' ); ?></strong>
+                        </label>
+                        <p class="eproc-text-muted eproc-text-sm"><?php esc_html_e( 'Summary of all activity sent to administrators and SCM Managers every Monday.', 'eprocurement' ); ?></p>
                     </div>
-                    <span class="eproc-badge unverified"><?php esc_html_e( 'Coming Soon', 'eprocurement' ); ?></span>
                 </div>
             </div>
         </div>

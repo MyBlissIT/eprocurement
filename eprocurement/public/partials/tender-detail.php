@@ -108,7 +108,7 @@ if ( $is_bidder ) {
     </nav>
 
     <!-- Bid Header + Key Dates (side by side) -->
-    <section class="eproc-detail-header eproc-detail-header--combined">
+    <section class="eproc-detail-header eproc-detail-header--combined eproc-detail-header--<?php echo esc_attr( $document->status ); ?>">
         <div class="eproc-detail-header-left">
             <?php echo Eprocurement_Public::status_badge( $document->status ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
             <h1 class="eproc-detail-title"><?php echo esc_html( $document->title ); ?></h1>

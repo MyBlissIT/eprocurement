@@ -772,12 +772,14 @@ class Eprocurement_Admin {
         if ( isset( $_POST['notify_new_bid'] )
           || isset( $_POST['notify_query'] )
           || isset( $_POST['notify_reply'] )
-          || isset( $_POST['notify_status'] ) ) {
+          || isset( $_POST['notify_status'] )
+          || isset( $_POST['notify_weekly_digest'] ) ) {
             $notifications = [
                 'new_bid_notify_bidders'  => ! empty( $_POST['notify_new_bid'] ),
                 'query_notify_contact'    => ! empty( $_POST['notify_query'] ),
                 'reply_notify_bidder'     => ! empty( $_POST['notify_reply'] ),
                 'status_change_notify'    => ! empty( $_POST['notify_status'] ),
+                'weekly_digest_notify'    => ! empty( $_POST['notify_weekly_digest'] ),
             ];
             update_option( 'eprocurement_notification_settings', wp_json_encode( $notifications ) );
         }

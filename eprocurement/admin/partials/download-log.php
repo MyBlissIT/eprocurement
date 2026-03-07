@@ -50,6 +50,15 @@ foreach ( $items as $dl ) {
     }
 }
 $autocomplete_items = array_values( array_unique( $autocomplete_items ) );
+
+// Get download counts per document for display next to Bid No.
+global $wpdb;
+$dl_table       = Eprocurement_Database::table( 'downloads' );
+$dl_counts_raw  = $wpdb->get_results( "SELECT document_id, COUNT(*) AS dl_count FROM {$dl_table} WHERE document_id > 0 GROUP BY document_id" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+$dl_counts      = [];
+foreach ( $dl_counts_raw as $row ) {
+    $dl_counts[ (int) $row->document_id ] = (int) $row->dl_count;
+}
 ?>
 <div class="eproc-wrap">
     <div class="eproc-page-header">
@@ -124,10 +133,15 @@ $autocomplete_items = array_values( array_unique( $autocomplete_items ) );
                                 <strong><?php echo esc_html( $file_name ); ?></strong>
                             </td>
                             <td>
-                                <?php if ( $doc ) : ?>
+                                <?php if ( $doc ) :
+                                    $bid_dl_count = $dl_counts[ (int) $doc->id ] ?? 0;
+                                ?>
                                     <a href="<?php echo esc_url( admin_url( 'admin.php?page=eprocurement-bids&action=edit&id=' . $doc->id ) ); ?>">
                                         <?php echo esc_html( $doc->bid_number ); ?>
                                     </a>
+                                    <span class="eproc-dl-count" title="<?php echo esc_attr( sprintf( _n( '%s download', '%s downloads', $bid_dl_count, 'eprocurement' ), number_format_i18n( $bid_dl_count ) ) ); ?>" style="display:inline-block;margin-left:6px;background:#8b1a2b;color:#fff;font-size:11px;font-weight:600;padding:1px 7px;border-radius:10px;vertical-align:middle;">
+                                        <?php echo esc_html( number_format_i18n( $bid_dl_count ) ); ?>
+                                    </span>
                                 <?php else : ?>
                                     —
                                 <?php endif; ?>

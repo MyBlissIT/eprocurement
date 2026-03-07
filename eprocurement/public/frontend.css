@@ -501,6 +501,54 @@
     margin-bottom: 8px;
 }
 
+.eproc-detail-header--open,
+.eproc-detail-header--closed {
+    padding: 24px 28px;
+    border: none;
+    color: #fff;
+}
+
+.eproc-detail-header--open {
+    background: linear-gradient(135deg, var(--eproc-success-dark), var(--eproc-success));
+}
+
+.eproc-detail-header--closed {
+    background: linear-gradient(135deg, var(--eproc-primary-hover), var(--eproc-primary));
+}
+
+.eproc-detail-header--open .eproc-detail-title,
+.eproc-detail-header--closed .eproc-detail-title {
+    color: #fff;
+}
+
+.eproc-detail-header--open .eproc-detail-bid-number,
+.eproc-detail-header--closed .eproc-detail-bid-number {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.eproc-detail-header--open .eproc-status-badge,
+.eproc-detail-header--closed .eproc-status-badge {
+    background: rgba(255, 255, 255, 0.25) !important;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.eproc-detail-header--open .eproc-date-card,
+.eproc-detail-header--closed .eproc-date-card {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.eproc-detail-header--open .eproc-date-label,
+.eproc-detail-header--closed .eproc-date-label {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.eproc-detail-header--open .eproc-date-value,
+.eproc-detail-header--closed .eproc-date-value {
+    color: #fff;
+}
+
 .eproc-detail-header--combined {
     display: flex;
     align-items: flex-start;

@@ -32,6 +32,12 @@ class Eprocurement_Activator {
             wp_schedule_event( time(), 'daily', 'eprocurement_daily_cleanup' );
         }
 
+        // Schedule weekly digest (Monday 9 AM local time)
+        if ( ! wp_next_scheduled( 'eprocurement_weekly_digest' ) ) {
+            $next_monday = strtotime( 'next Monday 09:00' );
+            wp_schedule_event( $next_monday, 'weekly', 'eprocurement_weekly_digest' );
+        }
+
         // Register rewrite rules before flushing — on activation, the init
         // hook has already fired so the rules from class-public.php aren't
         // registered yet in this request. We must register them explicitly.
@@ -92,7 +98,10 @@ class Eprocurement_Activator {
             KEY status (status),
             KEY category (category),
             KEY created_by (created_by),
-            KEY closing_date (closing_date)
+            KEY closing_date (closing_date),
+            KEY status_created (status, created_at),
+            KEY category_status (category, status),
+            KEY closing_status (closing_date, status)
         ) {$charset_collate};";
         dbDelta( $sql );
 
@@ -128,7 +137,8 @@ class Eprocurement_Activator {
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             KEY document_id (document_id),
-            KEY uploaded_by (uploaded_by)
+            KEY uploaded_by (uploaded_by),
+            KEY doc_sort (document_id, sort_order)
         ) {$charset_collate};";
         dbDelta( $sql );
 
@@ -166,7 +176,11 @@ class Eprocurement_Activator {
             KEY bidder_id (bidder_id),
             KEY contact_id (contact_id),
             KEY visibility (visibility),
-            KEY status (status)
+            KEY status (status),
+            KEY doc_status_updated (document_id, status, updated_at),
+            KEY bidder_updated (bidder_id, updated_at),
+            KEY contact_updated (contact_id, updated_at),
+            KEY status_updated (status, updated_at)
         ) {$charset_collate};";
         dbDelta( $sql );
 
@@ -181,7 +195,9 @@ class Eprocurement_Activator {
             PRIMARY KEY  (id),
             KEY thread_id (thread_id),
             KEY sender_id (sender_id),
-            KEY is_read (is_read)
+            KEY is_read (is_read),
+            KEY thread_read (thread_id, sender_id, is_read),
+            KEY thread_created (thread_id, created_at)
         ) {$charset_collate};";
         dbDelta( $sql );
 
@@ -214,7 +230,9 @@ class Eprocurement_Activator {
             KEY document_id (document_id),
             KEY supporting_doc_id (supporting_doc_id),
             KEY user_id (user_id),
-            KEY downloaded_at (downloaded_at)
+            KEY downloaded_at (downloaded_at),
+            KEY doc_downloaded (document_id, downloaded_at),
+            KEY user_downloaded (user_id, downloaded_at)
         ) {$charset_collate};";
         dbDelta( $sql );
 
@@ -232,7 +250,8 @@ class Eprocurement_Activator {
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             UNIQUE KEY user_id (user_id),
-            KEY verified (verified)
+            KEY verified (verified),
+            KEY verified_created (verified, created_at)
         ) {$charset_collate};";
         dbDelta( $sql );
     }
@@ -295,6 +314,7 @@ class Eprocurement_Activator {
             'query_notify_contact'    => false,
             'reply_notify_bidder'     => false,
             'status_change_notify'    => false,
+            'weekly_digest_notify'    => false,
         ] ) );
 
         // SMTP, External DB, and CORS — empty by default
