@@ -898,18 +898,18 @@ document.addEventListener('DOMContentLoaded', function() {
         window.eprocAPI.get('admin/bids/' + bidId + '/submissions')
             .then(function(data) {
                 loadingEl.style.display = 'none';
-                if (!data.submissions || data.submissions.length === 0) {
+                if (!data.items || data.items.length === 0) {
                     emptyEl.style.display = '';
                     countEl.textContent = '0';
                     return;
                 }
 
-                countEl.textContent = data.submissions.length;
+                countEl.textContent = data.items.length;
                 zipBtn.style.display = '';
                 tableWrap.style.display = '';
                 tbody.innerHTML = '';
 
-                data.submissions.forEach(function(sub) {
+                data.items.forEach(function(sub) {
                     var row = document.createElement('tr');
                     var lateHtml = sub.is_late == 1 ? ' <span class="eproc-badge-late">Late</span>' : '';
                     var backdateHtml = '';

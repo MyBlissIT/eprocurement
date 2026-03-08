@@ -729,9 +729,9 @@ class Eprocurement_Rest_Api {
         }
 
         return new \WP_REST_Response( [
-            'success'       => true,
-            'submission_id' => $result,
-            'message'       => __( 'Your bid has been submitted successfully.', 'eprocurement' ),
+            'success' => true,
+            'id'      => $result,
+            'message' => __( 'Your bid has been submitted successfully.', 'eprocurement' ),
         ], 201 );
     }
 

@@ -35,7 +35,10 @@ class Eprocurement_Local_Storage extends Eprocurement_Storage_Interface {
      */
     public function upload( string $local_path, string $remote_name, string $folder = '' ): array {
         $base_dir   = $this->get_base_dir();
-        $target_dir = $folder ? $base_dir . '/' . sanitize_file_name( $folder ) : $base_dir;
+        // Sanitize each path segment individually to preserve directory separators.
+        $target_dir = $folder
+            ? $base_dir . '/' . implode( '/', array_map( 'sanitize_file_name', explode( '/', $folder ) ) )
+            : $base_dir;
 
         // Ensure directory exists with correct permissions
         if ( ! wp_mkdir_p( $target_dir ) ) {

@@ -22,10 +22,15 @@ Mini-CRM WordPress plugin for government/corporate procurement. Manages bid/tend
 # Start environment (Docker Desktop must be running):
 docker compose -f "C:/Users/sinet/OneDrive/Documents/MyBliss Technologies/Website Development/Plugins/Custom Plugins/eProcument Plugin/docker-compose.yml" up -d
 
+# Stop and remove containers when done (volumes preserved):
+docker compose -f "C:/Users/sinet/OneDrive/Documents/MyBliss Technologies/Website Development/Plugins/Custom Plugins/eProcument Plugin/docker-compose.yml" down
+
 # WP-CLI (install first if needed — see docs/troubleshooting.md):
 docker exec eproc-wp wp --allow-root <command>
 docker exec eproc-wp wp rewrite flush --allow-root
 ```
+
+> **Container cleanup rule:** Always `docker compose down` when done working. Never leave containers stopped. Volumes hold all data and `docker compose up -d` recreates containers instantly.
 
 ## Key Architecture
 
