@@ -76,7 +76,7 @@ $statuses = [ 'draft', 'open', 'closed', 'cancelled', 'archived' ];
             <?php if ( $eproc_category !== 'bid' ) : ?>
                 <input type="hidden" name="category" value="<?php echo esc_attr( $eproc_category ); ?>">
             <?php endif; ?>
-            <select name="status" class="eproc-select">
+            <select name="status" class="eproc-select" onchange="this.form.submit()">
                 <option value=""><?php esc_html_e( 'All Statuses', 'eprocurement' ); ?></option>
                 <?php foreach ( $statuses as $status ) : ?>
                     <option value="<?php echo esc_attr( $status ); ?>" <?php selected( $current_status, $status ); ?>>

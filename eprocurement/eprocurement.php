@@ -3,7 +3,7 @@
  * Plugin Name: eProcurement
  * Plugin URI:  https://www.myblisstech.com/eprocurement
  * Description: A mini-CRM WordPress plugin for procurement processes. Manages bid/tender notices, structured communication between procurement officials and prospective bidders, cloud-based document storage, and role-based access control.
- * Version:     2.12.0
+ * Version:     2.12.2
  * Author:      MyBliss Tech
  * Author URI:  https://www.myblisstech.com
  * License:     GPL-2.0+
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin constants
  */
-define( 'EPROC_VERSION', '2.12.0' );
+define( 'EPROC_VERSION', '2.12.2' );
 define( 'EPROC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EPROC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'EPROC_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -172,6 +172,17 @@ function eprocurement_maybe_upgrade(): void {
         $col2 = $wpdb->get_var( "SHOW COLUMNS FROM {$doc_table} LIKE 'briefing_compulsory'" ); // phpcs:ignore
         if ( ! $col2 ) {
             $wpdb->query( "ALTER TABLE {$doc_table} ADD COLUMN briefing_compulsory TINYINT(1) NOT NULL DEFAULT 0 AFTER allow_late_submissions" ); // phpcs:ignore
+        }
+    }
+
+    // v2.12.2: Add accept_online_submissions column (default OFF — submissions are outside the system)
+    if ( version_compare( $installed_version, '2.12.2', '<' ) ) {
+        global $wpdb;
+        $doc_table = $wpdb->prefix . EPROC_TABLE_PREFIX . 'documents';
+
+        $col = $wpdb->get_var( "SHOW COLUMNS FROM {$doc_table} LIKE 'accept_online_submissions'" ); // phpcs:ignore
+        if ( ! $col ) {
+            $wpdb->query( "ALTER TABLE {$doc_table} ADD COLUMN accept_online_submissions TINYINT(1) NOT NULL DEFAULT 0 AFTER closing_date" ); // phpcs:ignore
         }
     }
 

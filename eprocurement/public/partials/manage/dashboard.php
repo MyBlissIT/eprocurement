@@ -33,10 +33,8 @@ $closed_bids = $counts['closed'] ?? 0;
 // Downloads today
 $downloads_today = Eprocurement_Downloads::get_downloads_today();
 
-// Most downloaded document (open bids only)
-$most_downloaded_row   = Eprocurement_Downloads::get_most_downloaded_document();
-$most_downloaded_title = $most_downloaded_row ? $most_downloaded_row->title : __( 'N/A', 'eprocurement' );
-$most_downloaded_count = $most_downloaded_row ? (int) $most_downloaded_row->dl_count : 0;
+// Most downloaded documents (top 4)
+$most_downloaded_rows = Eprocurement_Downloads::get_most_downloaded_documents( 4 );
 
 // Recent bids
 $recent_bids = $documents->list( [
@@ -52,7 +50,9 @@ $recent_threads = $messaging->get_admin_inbox( [
 ] );
 ?>
 <div class="eproc-wrap">
-    <h1><?php esc_html_e( 'Dashboard', 'eprocurement' ); ?></h1>
+    <div class="eproc-page-header">
+        <h1><?php esc_html_e( 'Dashboard', 'eprocurement' ); ?></h1>
+    </div>
 
     <!-- Stat Cards -->
     <div id="eproc-dashboard-stats">
@@ -80,18 +80,20 @@ $recent_threads = $messaging->get_admin_inbox( [
             <h3><?php esc_html_e( 'Downloads Today', 'eprocurement' ); ?></h3>
             <p><?php echo esc_html( $downloads_today ); ?></p>
         </div>
-        <div>
+        <div class="eproc-stat-card-wide">
             <h3><?php esc_html_e( 'Most Downloaded', 'eprocurement' ); ?></h3>
-            <p title="<?php echo esc_attr( $most_downloaded_title ); ?>">
-                <?php
-                if ( $most_downloaded_row ) {
-                    echo esc_html( wp_trim_words( $most_downloaded_title, 5, '...' ) );
-                    echo ' <small>(' . esc_html( $most_downloaded_count ) . ')</small>';
-                } else {
-                    esc_html_e( 'N/A', 'eprocurement' );
-                }
-                ?>
-            </p>
+            <?php if ( ! empty( $most_downloaded_rows ) ) : ?>
+                <ul class="eproc-most-downloaded-list">
+                    <?php foreach ( $most_downloaded_rows as $dl_row ) : ?>
+                        <li title="<?php echo esc_attr( $dl_row->title ); ?>">
+                            <?php echo esc_html( wp_trim_words( $dl_row->title, 5, '...' ) ); ?>
+                            <span>(<?php echo esc_html( (int) $dl_row->dl_count ); ?>)</span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php else : ?>
+                <p><?php esc_html_e( 'N/A', 'eprocurement' ); ?></p>
+            <?php endif; ?>
         </div>
     </div>
 

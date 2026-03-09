@@ -94,6 +94,7 @@ class Eprocurement_Activator {
             opening_date DATETIME DEFAULT NULL,
             briefing_date DATETIME DEFAULT NULL,
             closing_date DATETIME DEFAULT NULL,
+            accept_online_submissions TINYINT(1) NOT NULL DEFAULT 0,
             allow_late_submissions TINYINT(1) NOT NULL DEFAULT 0,
             briefing_compulsory TINYINT(1) NOT NULL DEFAULT 0,
             created_by BIGINT(20) UNSIGNED NOT NULL,

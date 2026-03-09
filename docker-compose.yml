@@ -60,4 +60,8 @@ services:
 
 volumes:
   eproc_db_data:
+    external: true
+    name: eprocumentplugin_eproc_db_data
   eproc_wp_data:
+    external: true
+    name: eprocumentplugin_eproc_wp_data

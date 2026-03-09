@@ -427,11 +427,38 @@
 .eproc-admin-content #eproc-dashboard-stats > div:nth-child(4) > p { color: var(--eproc-warning) !important; }
 .eproc-admin-content #eproc-dashboard-stats > div:nth-child(5) > p { color: var(--eproc-secondary) !important; }
 
-/* "Most Downloaded" card — text value instead of number, use smaller font */
-.eproc-admin-content #eproc-dashboard-stats > div:nth-child(7) > p {
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    line-height: 1.4;
+/* "Most Downloaded" wide card — spans 2 columns on desktop */
+.eproc-admin-content #eproc-dashboard-stats .eproc-stat-card-wide {
+    grid-column: span 2;
+}
+
+.eproc-admin-content .eproc-most-downloaded-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.eproc-admin-content .eproc-most-downloaded-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--eproc-text);
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.eproc-admin-content .eproc-most-downloaded-list li:last-child {
+    border-bottom: none;
+}
+
+.eproc-admin-content .eproc-most-downloaded-list li span {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--eproc-primary);
+    white-space: nowrap;
+    margin-left: 8px;
 }
 
 /* Make stat grid wrap for 7 cards: 4 + 3 */
@@ -1032,10 +1059,16 @@
     justify-content: space-between;
     gap: 16px;
     margin-bottom: 24px;
+    /* Reset gradient from frontend.css when inside admin shell */
+    background: none;
+    color: inherit;
+    padding: 0;
+    text-align: left;
 }
 
 .eproc-admin-content .eproc-page-header h1 {
     margin: 0;
+    color: var(--eproc-text-heading);
 }
 
 

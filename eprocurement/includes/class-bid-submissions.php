@@ -238,6 +238,15 @@ class Eprocurement_Bid_Submissions {
             return new \WP_Error( 'bid_not_found', __( 'Bid not found.', 'eprocurement' ), [ 'status' => 404 ] );
         }
 
+        // Rule 0: Online submissions must be enabled for this bid.
+        if ( empty( $bid->accept_online_submissions ) ) {
+            return new \WP_Error(
+                'online_submissions_disabled',
+                __( 'This bid does not accept online submissions.', 'eprocurement' ),
+                [ 'status' => 400 ]
+            );
+        }
+
         // Rule 1: Bid must be open.
         if ( $bid->status !== 'open' ) {
             return new \WP_Error(

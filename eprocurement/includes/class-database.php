@@ -199,7 +199,7 @@ class Eprocurement_Database {
      */
     private static function get_table_columns( string $table ): array {
         $columns = [
-            'documents'           => [ 'id', 'bid_number', 'title', 'description', 'status', 'category', 'scm_contact_id', 'technical_contact_id', 'opening_date', 'briefing_date', 'closing_date', 'allow_late_submissions', 'briefing_compulsory', 'created_by', 'created_at', 'updated_at' ],
+            'documents'           => [ 'id', 'bid_number', 'title', 'description', 'status', 'category', 'scm_contact_id', 'technical_contact_id', 'opening_date', 'briefing_date', 'closing_date', 'accept_online_submissions', 'allow_late_submissions', 'briefing_compulsory', 'created_by', 'created_at', 'updated_at' ],
             'contact_persons'     => [ 'id', 'user_id', 'type', 'name', 'phone', 'email', 'department', 'created_at' ],
             'supporting_docs'     => [ 'id', 'document_id', 'file_name', 'file_size', 'file_type', 'cloud_provider', 'cloud_key', 'cloud_url', 'label', 'sort_order', 'uploaded_by', 'created_at' ],
             'compliance_docs'     => [ 'id', 'file_name', 'file_size', 'file_type', 'cloud_provider', 'cloud_key', 'cloud_url', 'label', 'description', 'sort_order', 'uploaded_by', 'created_at' ],

@@ -65,7 +65,7 @@ $base_url = admin_url( 'admin.php?page=' . $current_page_slug );
         <form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="eproc-flex-row">
             <input type="hidden" name="page" value="<?php echo esc_attr( $current_page_slug ); ?>">
             <?php if ( $is_regular_bid ) : ?>
-                <select name="status">
+                <select name="status" onchange="this.form.submit()">
                     <option value=""><?php esc_html_e( 'All Statuses', 'eprocurement' ); ?></option>
                     <?php foreach ( $statuses as $status ) : ?>
                         <option value="<?php echo esc_attr( $status ); ?>" <?php selected( $current_status, $status ); ?>>

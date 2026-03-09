@@ -380,17 +380,8 @@ class Eprocurement_Admin_Rest_Api {
             $wpdb->prepare( "SELECT COUNT(*) FROM {$dl_table} WHERE DATE(downloaded_at) = %s", $today )
         );
 
-        // Most downloaded open document
-        $doc_table = Eprocurement_Database::table( 'documents' );
-        $most_downloaded = $wpdb->get_row(
-            "SELECT d.title, COUNT(dl.id) as download_count
-             FROM {$dl_table} dl
-             JOIN {$doc_table} d ON dl.document_id = d.id
-             WHERE d.status = 'open'
-             GROUP BY dl.document_id
-             ORDER BY download_count DESC
-             LIMIT 1"
-        );
+        // Most downloaded documents (top 4)
+        $most_downloaded_rows = Eprocurement_Downloads::get_most_downloaded_documents( 4 );
 
         // Recent bids
         $recent_bids = $documents->list( [
@@ -414,10 +405,12 @@ class Eprocurement_Admin_Rest_Api {
         return new \WP_REST_Response( [
             'status_counts'    => $counts,
             'today_downloads'  => $today_downloads,
-            'most_downloaded'  => $most_downloaded ? [
-                'title' => $most_downloaded->title,
-                'count' => (int) $most_downloaded->download_count,
-            ] : null,
+            'most_downloaded'  => array_map( function( $row ) {
+                return [
+                    'title' => $row->title,
+                    'count' => (int) $row->dl_count,
+                ];
+            }, $most_downloaded_rows ),
             'recent_bids'      => $recent_bids['items'],
             'unread_messages'  => $unread,
             'recent_threads'   => $recent_threads['items'],
@@ -485,6 +478,11 @@ class Eprocurement_Admin_Rest_Api {
             $data['opening_date']         = self::parse_date( $request->get_param( 'opening_date' ) ?? '' );
             $data['briefing_date']        = self::parse_date( $request->get_param( 'briefing_date' ) ?? '' );
             $data['closing_date']         = self::parse_date( $request->get_param( 'closing_date' ) ?? '' );
+
+            // Submission settings
+            $data['accept_online_submissions'] = absint( $request->get_param( 'accept_online_submissions' ) ?? 0 ) ? 1 : 0;
+            $data['allow_late_submissions']    = absint( $request->get_param( 'allow_late_submissions' ) ?? 0 ) ? 1 : 0;
+            $data['briefing_compulsory']       = absint( $request->get_param( 'briefing_compulsory' ) ?? 0 ) ? 1 : 0;
         }
 
         // Validate bid number uniqueness

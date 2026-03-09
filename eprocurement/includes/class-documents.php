@@ -450,6 +450,13 @@ class Eprocurement_Documents {
             }
         }
 
+        $bool_fields = [ 'accept_online_submissions', 'allow_late_submissions', 'briefing_compulsory' ];
+        foreach ( $bool_fields as $field ) {
+            if ( isset( $data[ $field ] ) ) {
+                $sanitised[ $field ] = absint( $data[ $field ] ) ? 1 : 0;
+            }
+        }
+
         return $sanitised;
     }
 }

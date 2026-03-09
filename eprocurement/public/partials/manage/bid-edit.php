@@ -188,8 +188,8 @@ $page_title = $is_edit
             </div>
 
             <?php if ( $is_edit && $is_regular_bid ) : ?>
-            <!-- Bid Submissions -->
-            <div class="eproc-card" id="eproc-submissions-card">
+            <!-- Bid Submissions (hidden when Accept Online Submissions is off) -->
+            <div class="eproc-card" id="eproc-submissions-card" style="<?php echo ( $bid && ! empty( $bid->accept_online_submissions ) ) ? '' : 'display:none;'; ?>">
                 <div class="eproc-card-header">
                     <h2>
                         <?php esc_html_e( 'Bid Submissions', 'eprocurement' ); ?>
@@ -379,6 +379,15 @@ $page_title = $is_edit
                 <div class="eproc-card-body">
                     <div class="eproc-form-group">
                         <label class="eproc-checkbox-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;">
+                            <input type="checkbox" name="accept_online_submissions" id="accept_online_submissions" value="1"
+                                <?php checked( $bid && ! empty( $bid->accept_online_submissions ) ); ?>
+                                style="width:auto;margin:0;" />
+                            <span><?php esc_html_e( 'Accept Online Submissions', 'eprocurement' ); ?></span>
+                        </label>
+                        <span class="eproc-form-hint"><?php esc_html_e( 'Allow bidders to upload bid documents through the portal. When disabled, bids must be submitted outside the system.', 'eprocurement' ); ?></span>
+                    </div>
+                    <div class="eproc-form-group" id="eproc-late-submissions-group" style="<?php echo ( $bid && ! empty( $bid->accept_online_submissions ) ) ? '' : 'display:none;'; ?>">
+                        <label class="eproc-checkbox-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;">
                             <input type="checkbox" name="allow_late_submissions" id="allow_late_submissions" value="1"
                                 <?php checked( $bid && ! empty( $bid->allow_late_submissions ) ); ?>
                                 style="width:auto;margin:0;" />
@@ -386,7 +395,7 @@ $page_title = $is_edit
                         </label>
                         <span class="eproc-form-hint"><?php esc_html_e( 'Bidders can submit after the closing date (marked as late).', 'eprocurement' ); ?></span>
                     </div>
-                    <div class="eproc-form-group">
+                    <div class="eproc-form-group" id="eproc-briefing-group" style="<?php echo ( $bid && ! empty( $bid->accept_online_submissions ) ) ? '' : 'display:none;'; ?>">
                         <label class="eproc-checkbox-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;">
                             <input type="checkbox" name="briefing_compulsory" id="briefing_compulsory" value="1"
                                 <?php checked( $bid && ! empty( $bid->briefing_compulsory ) ); ?>
@@ -517,8 +526,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (closingDate)  formData.closing_date   = closingDate.value;
 
             // Submission settings
+            var onlineCheck = document.getElementById('accept_online_submissions');
             var lateCheck = document.getElementById('allow_late_submissions');
             var briefCheck = document.getElementById('briefing_compulsory');
+            if (onlineCheck) formData.accept_online_submissions = onlineCheck.checked ? 1 : 0;
             if (lateCheck)  formData.allow_late_submissions = lateCheck.checked ? 1 : 0;
             if (briefCheck) formData.briefing_compulsory    = briefCheck.checked ? 1 : 0;
         }
@@ -572,9 +583,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
             window.eprocSetLoading(openBidBtn, true);
 
-            window.eprocAjax('eproc_change_status', {
-                id:     bidId,
-                status: 'open'
+            // Save form first, then change status
+            var saveData = {
+                action:     'eproc_save_bid',
+                nonce:      eprocManage.ajaxNonce,
+                id:         bidId,
+                bid_number: document.getElementById('bid_number').value,
+                title:      document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                category:   document.querySelector('input[name="category"]').value
+            };
+
+            if (saveData.category === 'bid') {
+                var scmSelect  = document.getElementById('scm_contact_id');
+                var techSelect = document.getElementById('technical_contact_id');
+                if (scmSelect)  saveData.scm_contact_id       = scmSelect.value;
+                if (techSelect) saveData.technical_contact_id = techSelect.value;
+
+                var openingDate  = document.getElementById('opening_date');
+                var briefingDate = document.getElementById('briefing_date');
+                var closingDate  = document.getElementById('closing_date');
+                if (openingDate)  saveData.opening_date  = openingDate.value;
+                if (briefingDate) saveData.briefing_date  = briefingDate.value;
+                if (closingDate)  saveData.closing_date   = closingDate.value;
+
+                var onlineEl = document.getElementById('accept_online_submissions');
+                var lateEl   = document.getElementById('allow_late_submissions');
+                var briefEl  = document.getElementById('briefing_compulsory');
+                if (onlineEl) saveData.accept_online_submissions = onlineEl.checked ? 1 : 0;
+                if (lateEl)   saveData.allow_late_submissions    = lateEl.checked ? 1 : 0;
+                if (briefEl)  saveData.briefing_compulsory       = briefEl.checked ? 1 : 0;
+            }
+
+            window.eprocAjax('eproc_save_bid', saveData)
+            .then(function() {
+                // Now change status
+                return window.eprocAjax('eproc_change_status', {
+                    id:     bidId,
+                    status: 'open'
+                });
             })
             .then(function(response) {
                 if (response.success) {
@@ -644,9 +691,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
             window.eprocSetLoading(applyStatusBtn, true);
 
-            window.eprocAjax('eproc_change_status', {
-                id:     bidId,
-                status: newStatus
+            // Save form first, then change status
+            var saveData = {
+                action:     'eproc_save_bid',
+                nonce:      eprocManage.ajaxNonce,
+                id:         bidId,
+                bid_number: document.getElementById('bid_number').value,
+                title:      document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                category:   document.querySelector('input[name="category"]').value
+            };
+
+            if (saveData.category === 'bid') {
+                var scmSelect  = document.getElementById('scm_contact_id');
+                var techSelect = document.getElementById('technical_contact_id');
+                if (scmSelect)  saveData.scm_contact_id       = scmSelect.value;
+                if (techSelect) saveData.technical_contact_id = techSelect.value;
+
+                var openingDate  = document.getElementById('opening_date');
+                var briefingDate = document.getElementById('briefing_date');
+                var closingDate  = document.getElementById('closing_date');
+                if (openingDate)  saveData.opening_date  = openingDate.value;
+                if (briefingDate) saveData.briefing_date  = briefingDate.value;
+                if (closingDate)  saveData.closing_date   = closingDate.value;
+
+                var onlineEl = document.getElementById('accept_online_submissions');
+                var lateEl   = document.getElementById('allow_late_submissions');
+                var briefEl  = document.getElementById('briefing_compulsory');
+                if (onlineEl) saveData.accept_online_submissions = onlineEl.checked ? 1 : 0;
+                if (lateEl)   saveData.allow_late_submissions    = lateEl.checked ? 1 : 0;
+                if (briefEl)  saveData.briefing_compulsory       = briefEl.checked ? 1 : 0;
+            }
+
+            window.eprocAjax('eproc_save_bid', saveData)
+            .then(function() {
+                // Then change status
+                return window.eprocAjax('eproc_change_status', {
+                    id:     bidId,
+                    status: newStatus
+                });
             })
             .then(function(response) {
                 if (response.success) {
@@ -858,6 +941,24 @@ document.addEventListener('DOMContentLoaded', function() {
             removeBtn.disabled = false;
         });
     });
+
+    // =========================================================================
+    // Accept Online Submissions toggle — show/hide sub-settings
+    // =========================================================================
+
+    var onlineCheck       = document.getElementById('accept_online_submissions');
+    var lateGroup         = document.getElementById('eproc-late-submissions-group');
+    var briefingGroup     = document.getElementById('eproc-briefing-group');
+    var submissionsCard   = document.getElementById('eproc-submissions-card');
+
+    if (onlineCheck) {
+        onlineCheck.addEventListener('change', function() {
+            var show = this.checked ? '' : 'none';
+            if (lateGroup)      lateGroup.style.display      = show;
+            if (briefingGroup)  briefingGroup.style.display   = show;
+            if (submissionsCard) submissionsCard.style.display = show;
+        });
+    }
 
     // =========================================================================
     // Compulsory Briefing toggle — show/hide attendees card

@@ -128,15 +128,23 @@ if ( is_super_admin() ) {
 
 // Build logout URL
 $logout_url = wp_logout_url( home_url( "/{$slug}/" ) );
+
+// Logo
+$logo_url  = '';
+$logo_file = WP_CONTENT_DIR . '/mu-plugins/sme-assets/mybliss-logo.png';
+if ( file_exists( $logo_file ) ) {
+    $logo_url = content_url( 'mu-plugins/sme-assets/mybliss-logo.png' );
+}
 ?>
 <div class="eproc-wrap eproc-frontend-manage">
 <div class="eproc-admin-shell">
     <!-- Sidebar Navigation -->
     <nav class="eproc-admin-sidebar">
         <div class="eproc-sidebar-brand">
-            <a href="<?php echo esc_url( $manage_base . '/' ); ?>" style="color:inherit;text-decoration:none;">
-                <?php esc_html_e( 'EPROCUREMENT', 'eprocurement' ); ?>
-            </a>
+            <?php if ( $logo_url ) : ?>
+                <img src="<?php echo esc_url( $logo_url ); ?>" alt="MyBliss Technologies" class="eproc-sidebar-logo">
+            <?php endif; ?>
+            <span class="eproc-sidebar-brand-text"><?php esc_html_e( 'eProcurement', 'eprocurement' ); ?></span>
         </div>
 
         <ul class="eproc-sidebar-nav">

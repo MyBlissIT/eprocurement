@@ -331,6 +331,41 @@ $page_title = $is_edit
                     </div>
                 </div>
             </div>
+            <!-- Submission Settings -->
+            <div class="eproc-card">
+                <div class="eproc-card-header">
+                    <h2><?php esc_html_e( 'Submission Settings', 'eprocurement' ); ?></h2>
+                </div>
+                <div class="eproc-card-body">
+                    <div class="eproc-form-group">
+                        <label class="eproc-checkbox-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;">
+                            <input type="checkbox" name="accept_online_submissions" id="accept_online_submissions" value="1"
+                                <?php checked( $bid && ! empty( $bid->accept_online_submissions ) ); ?>
+                                style="width:auto;margin:0;" />
+                            <span><?php esc_html_e( 'Accept Online Submissions', 'eprocurement' ); ?></span>
+                        </label>
+                        <span class="eproc-form-hint"><?php esc_html_e( 'Allow bidders to upload bid documents through the portal.', 'eprocurement' ); ?></span>
+                    </div>
+                    <div class="eproc-form-group" id="eproc-late-submissions-group" style="<?php echo ( $bid && ! empty( $bid->accept_online_submissions ) ) ? '' : 'display:none;'; ?>">
+                        <label class="eproc-checkbox-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;">
+                            <input type="checkbox" name="allow_late_submissions" id="allow_late_submissions" value="1"
+                                <?php checked( $bid && ! empty( $bid->allow_late_submissions ) ); ?>
+                                style="width:auto;margin:0;" />
+                            <span><?php esc_html_e( 'Allow Late Submissions', 'eprocurement' ); ?></span>
+                        </label>
+                        <span class="eproc-form-hint"><?php esc_html_e( 'Bidders can submit after the closing date (marked as late).', 'eprocurement' ); ?></span>
+                    </div>
+                    <div class="eproc-form-group" id="eproc-briefing-group" style="<?php echo ( $bid && ! empty( $bid->accept_online_submissions ) ) ? '' : 'display:none;'; ?>">
+                        <label class="eproc-checkbox-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;">
+                            <input type="checkbox" name="briefing_compulsory" id="briefing_compulsory" value="1"
+                                <?php checked( $bid && ! empty( $bid->briefing_compulsory ) ); ?>
+                                style="width:auto;margin:0;" />
+                            <span><?php esc_html_e( 'Compulsory Briefing Attendance', 'eprocurement' ); ?></span>
+                        </label>
+                        <span class="eproc-form-hint"><?php esc_html_e( 'Only bidders on the attendees list can submit.', 'eprocurement' ); ?></span>
+                    </div>
+                </div>
+            </div>
             <?php endif; // $is_regular_bid ?>
         </div>
     </form>
@@ -433,13 +468,16 @@ jQuery(function($) {
             category:             $('input[name="category"]').val()
         };
 
-        // Only include dates and contacts for regular bids
+        // Only include dates, contacts, and submission settings for regular bids
         if (formData.category === 'bid') {
             formData.scm_contact_id       = $('#scm_contact_id').val();
             formData.technical_contact_id = $('#technical_contact_id').val();
             formData.opening_date         = $('#opening_date').val();
             formData.briefing_date        = $('#briefing_date').val();
             formData.closing_date         = $('#closing_date').val();
+            formData.accept_online_submissions = $('#accept_online_submissions').is(':checked') ? 1 : 0;
+            formData.allow_late_submissions    = $('#allow_late_submissions').is(':checked') ? 1 : 0;
+            formData.briefing_compulsory       = $('#briefing_compulsory').is(':checked') ? 1 : 0;
         }
 
         // Include pending doc IDs for new bids
@@ -480,19 +518,55 @@ jQuery(function($) {
         $btn.prop('disabled', true).text('<?php echo esc_js( __( 'Saving...', 'eprocurement' ) ); ?>');
 
         if (bidId) {
-            // Existing bid — just change status
-            $.post(eprocAdmin.ajaxUrl, {
-                action: 'eproc_change_status',
-                nonce:  eprocAdmin.nonce,
-                id:     bidId,
-                status: 'open'
-            }, function(response) {
-                if (response.success) {
-                    location.reload();
+            // Existing bid — save form first, then change status
+            if (typeof tinymce !== 'undefined' && tinymce.get('description')) {
+                tinymce.get('description').save();
+            }
+
+            var formData = {
+                action:     'eproc_save_bid',
+                nonce:      eprocAdmin.nonce,
+                id:         bidId,
+                bid_number: $('#bid_number').val(),
+                title:      $('#title').val(),
+                description: $('#description').val(),
+                category:   $('input[name="category"]').val()
+            };
+
+            if (formData.category === 'bid') {
+                formData.scm_contact_id       = $('#scm_contact_id').val();
+                formData.technical_contact_id = $('#technical_contact_id').val();
+                formData.opening_date         = $('#opening_date').val();
+                formData.briefing_date        = $('#briefing_date').val();
+                formData.closing_date         = $('#closing_date').val();
+                formData.accept_online_submissions = $('#accept_online_submissions').is(':checked') ? 1 : 0;
+                formData.allow_late_submissions    = $('#allow_late_submissions').is(':checked') ? 1 : 0;
+                formData.briefing_compulsory       = $('#briefing_compulsory').is(':checked') ? 1 : 0;
+            }
+
+            $.post(eprocAdmin.ajaxUrl, formData, function(saveResponse) {
+                if (saveResponse.success) {
+                    // Now change status to open
+                    $.post(eprocAdmin.ajaxUrl, {
+                        action: 'eproc_change_status',
+                        nonce:  eprocAdmin.nonce,
+                        id:     bidId,
+                        status: 'open'
+                    }, function(response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert(response.data.message || eprocAdmin.strings.error);
+                            $btn.prop('disabled', false).text('<?php echo esc_js( __( 'Open Bid', 'eprocurement' ) ); ?>');
+                        }
+                    });
                 } else {
-                    alert(response.data.message || eprocAdmin.strings.error);
+                    bidToast(saveResponse.data.message || eprocAdmin.strings.error, 'error');
                     $btn.prop('disabled', false).text('<?php echo esc_js( __( 'Open Bid', 'eprocurement' ) ); ?>');
                 }
+            }).fail(function() {
+                bidToast(eprocAdmin.strings.error, 'error');
+                $btn.prop('disabled', false).text('<?php echo esc_js( __( 'Open Bid', 'eprocurement' ) ); ?>');
             });
         } else {
             // New bid — save first, then change status to open
@@ -516,6 +590,9 @@ jQuery(function($) {
                 formData.opening_date         = $('#opening_date').val();
                 formData.briefing_date        = $('#briefing_date').val();
                 formData.closing_date         = $('#closing_date').val();
+                formData.accept_online_submissions = $('#accept_online_submissions').is(':checked') ? 1 : 0;
+                formData.allow_late_submissions    = $('#allow_late_submissions').is(':checked') ? 1 : 0;
+                formData.briefing_compulsory       = $('#briefing_compulsory').is(':checked') ? 1 : 0;
             }
 
             if (pendingDocIds.length > 0) {
@@ -567,7 +644,7 @@ jQuery(function($) {
         });
     });
 
-    // Change status
+    // Change status — save form first, then transition
     $('#eproc-apply-status').on('click', function() {
         var newStatus = $('#eproc-change-status').val();
         if (!newStatus) return;
@@ -576,17 +653,48 @@ jQuery(function($) {
             return;
         }
 
-        $.post(eprocAdmin.ajaxUrl, {
-            action: 'eproc_change_status',
-            nonce:  eprocAdmin.nonce,
-            id:     bidId,
-            status: newStatus
-        }, function(response) {
-            if (response.success) {
-                location.reload();
-            } else {
-                alert(response.data.message || eprocAdmin.strings.error);
-            }
+        // Save form data first
+        if (typeof tinymce !== 'undefined' && tinymce.get('description')) {
+            tinymce.get('description').save();
+        }
+
+        var saveData = {
+            action:     'eproc_save_bid',
+            nonce:      eprocAdmin.nonce,
+            id:         bidId,
+            bid_number: $('#bid_number').val(),
+            title:      $('#title').val(),
+            description: $('#description').val(),
+            category:   $('input[name="category"]').val()
+        };
+
+        if (saveData.category === 'bid') {
+            saveData.scm_contact_id       = $('#scm_contact_id').val();
+            saveData.technical_contact_id = $('#technical_contact_id').val();
+            saveData.opening_date         = $('#opening_date').val();
+            saveData.briefing_date        = $('#briefing_date').val();
+            saveData.closing_date         = $('#closing_date').val();
+            saveData.accept_online_submissions = $('#accept_online_submissions').is(':checked') ? 1 : 0;
+            saveData.allow_late_submissions    = $('#allow_late_submissions').is(':checked') ? 1 : 0;
+            saveData.briefing_compulsory       = $('#briefing_compulsory').is(':checked') ? 1 : 0;
+        }
+
+        $.post(eprocAdmin.ajaxUrl, saveData, function() {
+            // Then change status
+            $.post(eprocAdmin.ajaxUrl, {
+                action: 'eproc_change_status',
+                nonce:  eprocAdmin.nonce,
+                id:     bidId,
+                status: newStatus
+            }, function(response) {
+                if (response.success) {
+                    location.reload();
+                } else {
+                    alert(response.data.message || eprocAdmin.strings.error);
+                }
+            });
+        }).fail(function() {
+            alert(eprocAdmin.strings.error);
         });
     });
 
@@ -700,6 +808,17 @@ jQuery(function($) {
             })(files[i]);
         }
     }
+
+    // Submission Settings toggle — show/hide sub-settings
+    var $onlineCheck = $('#accept_online_submissions');
+    var $lateGroup   = $('#eproc-late-submissions-group');
+    var $briefGroup  = $('#eproc-briefing-group');
+
+    $onlineCheck.on('change', function() {
+        var show = this.checked ? '' : 'none';
+        $lateGroup.css('display', show);
+        $briefGroup.css('display', show);
+    });
 
     // Remove bid document
     $(document).on('click', '.eproc-remove-doc', function() {

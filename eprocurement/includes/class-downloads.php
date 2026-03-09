@@ -90,9 +90,31 @@ class Eprocurement_Downloads {
                 wp_die( esc_html__( 'Cloud storage not configured.', 'eprocurement' ), 500 );
             }
 
+            // For local storage, serve the file directly as a download (not inline)
+            if ( $storage instanceof Eprocurement_Local_Storage ) {
+                $base_dir  = wp_upload_dir()['basedir'] . '/eprocurement';
+                $file_path = $base_dir . '/' . $file_record->cloud_key;
+
+                if ( ! file_exists( $file_path ) ) {
+                    wp_die( esc_html__( 'File not found on server.', 'eprocurement' ), 404 );
+                }
+
+                $filename  = $file_record->file_name ?? basename( $file_path );
+                $mime_type = $file_record->file_type ?? ( wp_check_filetype( $file_path )['type'] ?: 'application/octet-stream' );
+
+                header( 'Content-Type: ' . $mime_type );
+                header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $filename ) . '"' );
+                header( 'Content-Length: ' . filesize( $file_path ) );
+                header( 'Cache-Control: no-cache, must-revalidate' );
+                header( 'Pragma: no-cache' );
+
+                readfile( $file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
+                exit;
+            }
+
             $download_url = $storage->get_download_url( $file_record->cloud_key );
 
-            // Redirect to the time-limited download URL
+            // Redirect to the time-limited download URL (cloud providers)
             wp_redirect( $download_url ); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
             exit;
         } catch ( \Exception $e ) {
@@ -232,24 +254,26 @@ class Eprocurement_Downloads {
     }
 
     /**
-     * Get the most downloaded open document.
+     * Get the most downloaded documents.
      *
-     * @return object|null Object with ->title and ->dl_count, or null.
+     * @param int $limit Number of results to return.
+     * @return array Array of objects with ->title and ->dl_count.
      */
-    public static function get_most_downloaded_document(): ?object {
+    public static function get_most_downloaded_documents( int $limit = 4 ): array {
         global $wpdb;
         $downloads_table = Eprocurement_Database::table( 'downloads' );
         $docs_table      = Eprocurement_Database::table( 'documents' );
 
-        return $wpdb->get_row(
+        return $wpdb->get_results( $wpdb->prepare(
             "SELECT doc.title, COUNT(dl.id) as dl_count
              FROM {$downloads_table} dl
              INNER JOIN {$docs_table} doc ON dl.document_id = doc.id
-             WHERE doc.status = 'open' AND dl.document_id > 0
+             WHERE dl.document_id > 0
              GROUP BY dl.document_id
              ORDER BY dl_count DESC
-             LIMIT 1" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        );
+             LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $limit
+        ) );
     }
 
     /**

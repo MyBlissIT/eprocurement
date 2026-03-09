@@ -371,8 +371,9 @@ class Eprocurement_Admin {
             }
 
             // Submission settings
-            $data['allow_late_submissions'] = absint( $_POST['allow_late_submissions'] ?? 0 ) ? 1 : 0;
-            $data['briefing_compulsory']    = absint( $_POST['briefing_compulsory'] ?? 0 ) ? 1 : 0;
+            $data['accept_online_submissions'] = absint( $_POST['accept_online_submissions'] ?? 0 ) ? 1 : 0;
+            $data['allow_late_submissions']    = absint( $_POST['allow_late_submissions'] ?? 0 ) ? 1 : 0;
+            $data['briefing_compulsory']       = absint( $_POST['briefing_compulsory'] ?? 0 ) ? 1 : 0;
         }
 
         // Validate bid number uniqueness (scoped to category)

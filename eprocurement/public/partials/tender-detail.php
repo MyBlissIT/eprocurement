@@ -293,7 +293,7 @@ $is_briefing_req   = $bid_submissions->is_briefing_compulsory( $bid_id );
     <!-- ═══════════════════════════════════ -->
     <!-- Submit Your Bid Section             -->
     <!-- ═══════════════════════════════════ -->
-    <?php if ( $document->category === 'bid' ) : // Only for regular bids ?>
+    <?php if ( $document->category === 'bid' && ! empty( $document->accept_online_submissions ) ) : // Only for bids with online submissions enabled ?>
     <section class="eproc-detail-section eproc-submission-section">
         <h2 class="eproc-section-title"><?php echo esc_html__( 'Submit Your Bid', 'eprocurement' ); ?></h2>
 
@@ -736,8 +736,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
 
-            fetch( eprocFrontend.restUrl + 'query', fetchOptions
-            })
+            fetch( eprocFrontend.restUrl + 'query', fetchOptions )
             .then(function(response) { return response.json(); })
             .then(function(data) {
                 if ( data.success ) {

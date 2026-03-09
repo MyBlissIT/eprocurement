@@ -2174,6 +2174,11 @@
     text-align: center;
 }
 
+.eproc-page-header h1 {
+    color: #fff;
+    margin: 0;
+}
+
 .eproc-page-title {
     font-size: 20px;
     color: var(--eproc-card-bg);
