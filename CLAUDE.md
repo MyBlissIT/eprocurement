@@ -71,7 +71,7 @@ Full file tree with annotations: [docs/architecture.md](docs/architecture.md)
 |--------|-------|
 | Repo | `MyBlissIT/eprocurement` (public) |
 | Branch | `master` |
-| Current tag | `v2.13.0` |
+| Current tag | `v2.13.1` |
 | CI/CD | `.github/workflows/release.yml` — auto-builds ZIP on tag push |
 
 ### Release Flow
@@ -146,7 +146,12 @@ bash build-zip.sh
 ```
 The ZIP contains `eprocurement/` at the root. WordPress will detect the existing plugin and offer "Replace current with uploaded" when uploading via wp-admin > Plugins > Upload Plugin. The GitHub Actions workflow (`release.yml`) produces the same structure automatically on tag push.
 
-### Recent Changes (v2.13.0 — Online Bids Dashboard + ZIP Fix)
+### Recent Changes (v2.13.1 — Safe Uninstall)
+- **Safe uninstall by default** — `uninstall.php` now preserves all data (tables, options, roles) when plugin is deleted. Data is ONLY removed if the admin explicitly enables "Delete ALL data" in Settings > Data Protection (Super Admin only). Prevents the data loss incident that occurred during manual plugin updates.
+- **Data Protection settings card** — new card at bottom of Settings page with opt-in checkbox and warning text.
+- **Weekly digest save fix** — the `notify_weekly_digest` checkbox was missing from the Settings JS formData; now included.
+
+### Previous Release (v2.13.0 — Online Bids Dashboard + ZIP Fix)
 - **Online Bids dashboard page** — new sidebar item in both admin and frontend manage panels listing all bids with `accept_online_submissions` enabled. Columns: Bid Number, Title, Status (colored badges), Closing Date, Submissions (maroon count badge), Bidders (navy clickable badge → navigates to bid edit #submissions). Status filter dropdown (Open/Closed/Draft/Archived).
 - **Build script** (`build-zip.sh`) — creates correctly structured plugin ZIP for manual WordPress upload. ZIP contains `eprocurement/` at root so "Upload Plugin" detects the existing plugin and offers in-place replacement.
 - **Hardened self-updater** (`class-updater.php`) — `post_install()` now normalizes paths, cleans stale destinations, and returns WP_Error on move failure.
