@@ -1,9 +1,12 @@
 <?php
 /**
- * Fired when the plugin is uninstalled.
+ * Fired when the plugin is uninstalled (deleted from Plugins page).
  *
- * Cleans up all database tables, options, and custom roles
- * created by the eProcurement plugin.
+ * SAFE BY DEFAULT: preserves all data (tables, options, roles) so that
+ * reinstalling or updating the plugin picks up where it left off.
+ *
+ * Data is ONLY deleted if the admin has explicitly enabled
+ * "Delete all data on uninstall" in eProcurement > Settings.
  *
  * @package Eprocurement
  */
@@ -13,6 +16,17 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
     exit;
 }
 
+// ── Safety gate: only delete data if admin explicitly opted in ──────────
+$delete_data = get_option( 'eprocurement_delete_data_on_uninstall', '0' );
+
+if ( $delete_data !== '1' ) {
+    // Data preserved — plugin can be reinstalled without loss.
+    // Only clean up the transient cache so a fresh install fetches new data.
+    delete_transient( 'eproc_github_latest_release' );
+    return;
+}
+
+// ── Admin opted in: full cleanup ────────────────────────────────────────
 global $wpdb;
 
 $prefix = $wpdb->prefix . 'eproc_';
@@ -22,6 +36,8 @@ $tables = [
     'message_attachments',
     'messages',
     'threads',
+    'bid_submissions',
+    'briefing_attendees',
     'downloads',
     'supporting_docs',
     'compliance_docs',
@@ -62,6 +78,7 @@ $options = [
     'eprocurement_brand_tagline',
     'eprocurement_brand_colors',
     'eprocurement_login_title',
+    'eprocurement_delete_data_on_uninstall',
 ];
 
 foreach ( $options as $option ) {
@@ -93,6 +110,7 @@ $capabilities = [
     'eproc_view_downloads',
     'eproc_manage_compliance',
     'eproc_view_dashboard',
+    'eproc_send_queries',
 ];
 
 foreach ( $capabilities as $cap ) {

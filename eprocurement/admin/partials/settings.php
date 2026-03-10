@@ -533,6 +533,32 @@ $providers = [
         </div>
     </div>
     <?php endif; ?>
+
+    <?php if ( is_super_admin() ) : ?>
+    <!-- Data Protection -->
+    <?php $delete_on_uninstall = get_option( 'eprocurement_delete_data_on_uninstall', '0' ); ?>
+    <div class="eproc-card" style="margin-top:24px;">
+        <div class="eproc-card-header">
+            <h2><?php esc_html_e( 'Data Protection', 'eprocurement' ); ?></h2>
+        </div>
+        <div class="eproc-card-body">
+            <p class="eproc-text-muted eproc-text-sm" style="margin-bottom:16px;">
+                <?php esc_html_e( 'By default, deleting the plugin from the WordPress Plugins page preserves all data (tables, bids, bidder profiles, messages). The plugin can be reinstalled and all data will remain intact.', 'eprocurement' ); ?>
+            </p>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" name="delete_data_on_uninstall" value="1"
+                    <?php checked( $delete_on_uninstall, '1' ); ?>
+                    style="width:18px;height:18px;">
+                <span style="color:#dc2626;font-weight:600;">
+                    <?php esc_html_e( 'Delete ALL data when plugin is uninstalled', 'eprocurement' ); ?>
+                </span>
+            </label>
+            <p class="eproc-text-muted eproc-text-sm" style="margin-top:8px;">
+                <?php esc_html_e( 'When enabled, deleting the plugin will permanently drop all tables, options, roles, and user meta. This cannot be undone. Leave unchecked unless you are permanently removing the plugin.', 'eprocurement' ); ?>
+            </p>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
 
 <script>
@@ -590,7 +616,9 @@ jQuery(function($) {
             notify_new_bid:            $('input[name="notify_new_bid"]').is(':checked') ? 1 : 0,
             notify_query:              $('input[name="notify_query"]').is(':checked') ? 1 : 0,
             notify_reply:              $('input[name="notify_reply"]').is(':checked') ? 1 : 0,
-            notify_status:             $('input[name="notify_status"]').is(':checked') ? 1 : 0
+            notify_status:             $('input[name="notify_status"]').is(':checked') ? 1 : 0,
+            notify_weekly_digest:      $('input[name="notify_weekly_digest"]').is(':checked') ? 1 : 0,
+            delete_data_on_uninstall:  $('input[name="delete_data_on_uninstall"]').is(':checked') ? 1 : 0
         };
 
         var provider = $('#cloud_provider').val();

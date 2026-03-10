@@ -805,6 +805,11 @@ class Eprocurement_Admin {
             update_option( 'eprocurement_notification_settings', wp_json_encode( $notifications ) );
         }
 
+        // Data deletion on uninstall (Super Admin only)
+        if ( is_super_admin() ) {
+            update_option( 'eprocurement_delete_data_on_uninstall', ! empty( $_POST['delete_data_on_uninstall'] ) ? '1' : '0' );
+        }
+
         wp_send_json_success( [ 'message' => __( 'Settings saved.', 'eprocurement' ) ] );
     }
 
