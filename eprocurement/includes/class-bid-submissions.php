@@ -423,6 +423,65 @@ class Eprocurement_Bid_Submissions {
     }
 
     /**
+     * Get all bids that accept online submissions with their submission counts.
+     *
+     * Returns bid info joined with a count of active (non-cancelled) submissions
+     * and the number of unique bidders who have submitted.
+     *
+     * @param array $args {
+     *     Optional. Query arguments.
+     *     @type string $status   Filter by bid status (open, closed, etc.).
+     *     @type int    $per_page Items per page. Default 25.
+     *     @type int    $page     Page number. Default 1.
+     * }
+     * @return array{items: array, total: int}
+     */
+    public function get_bids_with_submissions( array $args = [] ): array {
+        global $wpdb;
+
+        $doc_table = Eprocurement_Database::table( 'documents' );
+        $sub_table = Eprocurement_Database::table( 'bid_submissions' );
+        $per_page  = absint( $args['per_page'] ?? 25 );
+        $page      = max( 1, absint( $args['page'] ?? 1 ) );
+        $offset    = ( $page - 1 ) * $per_page;
+
+        $where  = [ 'd.category = %s', 'd.accept_online_submissions = 1' ];
+        $values = [ 'bid' ];
+
+        if ( ! empty( $args['status'] ) ) {
+            $where[]  = 'd.status = %s';
+            $values[] = sanitize_text_field( $args['status'] );
+        }
+
+        $where_sql = implode( ' AND ', $where );
+
+        // Count total
+        $count_sql = "SELECT COUNT(*) FROM {$doc_table} d WHERE {$where_sql}";
+        $total     = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$values ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+        // Fetch items with submission counts
+        $sql = $wpdb->prepare(
+            "SELECT d.id, d.bid_number, d.title, d.status, d.closing_date,
+                    COUNT(s.id) AS submission_count,
+                    COUNT(DISTINCT s.user_id) AS bidder_count
+             FROM {$doc_table} d
+             LEFT JOIN {$sub_table} s ON d.id = s.document_id AND s.status = 'submitted'
+             WHERE {$where_sql}
+             GROUP BY d.id
+             ORDER BY d.closing_date DESC
+             LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+            ...array_merge( $values, [ $per_page, $offset ] )
+        );
+
+        $items = $wpdb->get_results( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+        return [
+            'items' => $items ?: [],
+            'total' => $total,
+        ];
+    }
+
+    /**
      * Backdate a submission timestamp (Super Admin only).
      *
      * Two modes:

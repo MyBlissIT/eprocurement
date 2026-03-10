@@ -56,7 +56,8 @@ class Eprocurement_Frontend_Admin {
             'contacts'   => 'eproc_manage_contacts',
             'bidders'    => 'eproc_view_bidders',
             'scm-docs'   => 'eproc_manage_compliance',
-            'downloads'  => 'eproc_view_downloads',
+            'online-bids' => 'eproc_view_dashboard',
+            'downloads'   => 'eproc_view_downloads',
         ];
 
         if ( isset( $page_caps[ $manage_page ] ) && ! current_user_can( $page_caps[ $manage_page ] ) ) {
@@ -93,6 +94,9 @@ class Eprocurement_Frontend_Admin {
                 break;
             case 'scm-docs':
                 require EPROC_PLUGIN_DIR . 'public/partials/manage/scm-docs.php';
+                break;
+            case 'online-bids':
+                require EPROC_PLUGIN_DIR . 'public/partials/manage/online-bids.php';
                 break;
             case 'downloads':
                 require EPROC_PLUGIN_DIR . 'public/partials/manage/downloads.php';

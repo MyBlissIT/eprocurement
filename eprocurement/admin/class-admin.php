@@ -156,6 +156,16 @@ class Eprocurement_Admin {
             [ $this, 'render_compliance' ]
         );
 
+        // Online Bids
+        add_submenu_page(
+            'eprocurement',
+            __( 'Online Bids', 'eprocurement' ),
+            __( 'Online Bids', 'eprocurement' ),
+            'eproc_view_dashboard',
+            'eprocurement-online-bids',
+            [ $this, 'render_online_bids' ]
+        );
+
         // Download Log
         add_submenu_page(
             'eprocurement',
@@ -289,6 +299,12 @@ class Eprocurement_Admin {
     public function render_compliance(): void {
         self::open_layout( 'eprocurement-compliance' );
         require_once EPROC_PLUGIN_DIR . 'admin/partials/compliance-docs.php';
+        self::close_layout();
+    }
+
+    public function render_online_bids(): void {
+        self::open_layout( 'eprocurement-online-bids' );
+        require_once EPROC_PLUGIN_DIR . 'admin/partials/online-bids.php';
         self::close_layout();
     }
 
