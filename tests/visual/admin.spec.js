@@ -68,9 +68,75 @@ test.describe('Admin Pages', () => {
     await expect(page.locator('.eproc-admin-shell')).toBeVisible();
   });
 
+  test('Online Bids page loads', async ({ page }) => {
+    await page.goto('/wp-admin/admin.php?page=eprocurement-online-bids');
+    await expect(page.locator('.eproc-admin-shell')).toBeVisible();
+    // Should have heading
+    await expect(page.locator('h1')).toContainText('Online Bids');
+  });
+
+  test('Online Bids shows status filter', async ({ page }) => {
+    await page.goto('/wp-admin/admin.php?page=eprocurement-online-bids');
+    const filter = page.locator('select[name="status"]');
+    await expect(filter).toBeVisible();
+    // Filter should have options
+    const options = filter.locator('option');
+    expect(await options.count()).toBeGreaterThanOrEqual(2);
+  });
+
+  test('Online Bids status filter works', async ({ page }) => {
+    await page.goto('/wp-admin/admin.php?page=eprocurement-online-bids');
+    // Select "Closed" filter
+    await page.selectOption('select[name="status"]', 'closed');
+    await page.waitForURL(/status=closed/);
+    // Page should still render without errors
+    await expect(page.locator('.eproc-admin-shell')).toBeVisible();
+  });
+
   test('Settings page loads', async ({ page }) => {
     await page.goto('/wp-admin/admin.php?page=eprocurement-settings');
     await expect(page.locator('.eproc-admin-shell')).toBeVisible();
+  });
+
+  test('Settings Data Protection card visible', async ({ page }) => {
+    await page.goto('/wp-admin/admin.php?page=eprocurement-settings');
+    // Scroll to bottom where Data Protection card is
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const heading = page.getByText('Data Protection');
+    await expect(heading).toBeVisible();
+    const checkbox = page.locator('input[name="delete_data_on_uninstall"]');
+    await expect(checkbox).toBeVisible();
+    // Should be unchecked by default
+    await expect(checkbox).not.toBeChecked();
+  });
+
+  test('Settings save persists Data Protection toggle', async ({ page }) => {
+    await page.goto('/wp-admin/admin.php?page=eprocurement-settings');
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    // Check the box
+    const checkbox = page.locator('input[name="delete_data_on_uninstall"]');
+    await checkbox.check();
+    await expect(checkbox).toBeChecked();
+
+    // Save
+    await page.locator('#eproc-save-settings').click();
+    await page.waitForSelector('.eproc-notice.success', { timeout: 10000 });
+
+    // Reload and verify persisted
+    await page.reload();
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await expect(page.locator('input[name="delete_data_on_uninstall"]')).toBeChecked();
+
+    // Uncheck and save (restore default)
+    await page.locator('input[name="delete_data_on_uninstall"]').uncheck();
+    await page.locator('#eproc-save-settings').click();
+    await page.waitForSelector('.eproc-notice.success', { timeout: 10000 });
+
+    // Verify unchecked persists
+    await page.reload();
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await expect(page.locator('input[name="delete_data_on_uninstall"]')).not.toBeChecked();
   });
 
   test('Contact modal has accessibility attrs', async ({ page }) => {
@@ -87,6 +153,8 @@ test.describe('Admin Pages', () => {
       '/wp-admin/admin.php?page=eprocurement-bids',
       '/wp-admin/admin.php?page=eprocurement-messages',
       '/wp-admin/admin.php?page=eprocurement-settings',
+      '/wp-admin/admin.php?page=eprocurement-online-bids',
+      '/wp-admin/admin.php?page=eprocurement-downloads',
     ];
     for (const url of urls) {
       await page.goto(url);

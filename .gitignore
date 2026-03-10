@@ -32,5 +32,10 @@ error_log
 eprocurement.zip
 build/
 
+# Test artifacts (screenshots, reports — regenerated on each run)
+tests/visual/results/
+tests/visual/report/
+tests/system-test/
+
 # Claude Code
 .claude/

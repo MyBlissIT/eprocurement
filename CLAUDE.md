@@ -89,9 +89,19 @@ git push origin v2.x.x      # Triggers CI → clients see update within 12h
 
 ## Live Site
 
+| Detail | Value |
+|--------|-------|
+| URL | `https://eprocurement.myblisstech.com` |
+| Host | Bluehost shared hosting (162.241.225.30) |
+| SSH alias | `eproc-live` (in `~/.ssh/config`) |
+| SSH user | `aplidtmy` |
+| SSH key | `~/.ssh/bluehost_mybliss` |
+| WP root | `~/eprocurement.myblisstech.com/` |
+| Plugin path | `~/eprocurement.myblisstech.com/wp-content/plugins/eprocurement/` |
+
 Production receives updates via the self-updater when a tag is pushed to GitHub. Flow: tag → push tag → GitHub Actions builds ZIP → live site sees "Update Available" in wp-admin → Plugins within 12h (or update immediately from wp-admin).
 
-VPS SSH config is in `~/.ssh/config` under `my-vps` (72.62.124.131, root, port 22).
+VPS SSH config is in `~/.ssh/config` under `my-vps` (72.62.124.131, root, port 22) — this is for VulaERP, not eProcurement.
 
 ## Current Status
 

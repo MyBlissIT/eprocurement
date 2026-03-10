@@ -68,3 +68,54 @@ test.describe('Frontend Pages', () => {
   });
 
 });
+
+test.describe('Frontend Manage Pages', () => {
+
+  test.beforeEach(async ({ page }) => {
+    // Log in as admin to access manage panel
+    await page.goto('/wp-login.php');
+    await page.locator('#user_login').fill('admin');
+    await page.locator('#user_pass').fill('admin123');
+    try {
+      await page.locator('#sme-submit').waitFor({ state: 'visible', timeout: 5000 });
+      await page.locator('#sme-submit').click();
+    } catch {
+      await page.evaluate(() => document.getElementById('loginform').submit());
+    }
+    await page.waitForURL(/wp-admin|tenders|eprocurement/, { timeout: 30000 });
+  });
+
+  test('Frontend manage Online Bids page loads', async ({ page }) => {
+    await page.goto('/tenders/manage/online-bids/');
+    await expect(page.locator('.eproc-manage-shell, .eproc-admin-shell')).toBeVisible();
+    await expect(page.locator('h1')).toContainText('Online Bids');
+  });
+
+  test('Frontend manage Online Bids has status filter', async ({ page }) => {
+    await page.goto('/tenders/manage/online-bids/');
+    const filter = page.locator('select[name="status"]');
+    await expect(filter).toBeVisible();
+  });
+
+  test('Frontend manage Online Bids status filter works', async ({ page }) => {
+    await page.goto('/tenders/manage/online-bids/');
+    await page.selectOption('select[name="status"]', 'closed');
+    await page.waitForURL(/status=closed/);
+    await expect(page.locator('.eproc-manage-shell, .eproc-admin-shell')).toBeVisible();
+  });
+
+  test('No PHP errors in frontend manage pages', async ({ page }) => {
+    const urls = [
+      '/tenders/manage/',
+      '/tenders/manage/online-bids/',
+    ];
+    for (const url of urls) {
+      await page.goto(url);
+      const content = await page.content();
+      expect(content).not.toContain('Fatal error');
+      expect(content).not.toContain('Parse error');
+      expect(content).not.toContain('Warning:');
+    }
+  });
+
+});
