@@ -141,9 +141,10 @@ Full "What's Working" list: [docs/architecture.md](docs/architecture.md)
 
 ### What's Next
 **Should Do:**
-1. Deploy v2.12.0 to shared hosting + verify bid submission flow end-to-end
-2. Test cloud storage with a real provider (S3 recommended)
-3. MainWP dashboard for centralized client management
+1. Fix ZIP packaging so uploads replace the existing plugin folder (WordPress expects the ZIP to overwrite `wp-content/plugins/eprocurement/` in-place — not create a second folder). The GitHub Actions release ZIP and any manually created ZIPs must produce a clean "Upload Plugin" upgrade without needing to delete the old version first.
+2. **Online Bids dashboard page** — new sidebar item (icon similar to Download Log). Table columns: Bid Number, Title, Closing Date, Submissions (total count to date), Bidders (clickable → opens page listing all bidders who submitted; clicking a bidder navigates to their submission on their profile). Design/adapt as needed.
+3. Test cloud storage with a real provider (S3 recommended)
+4. MainWP dashboard for centralized client management
 
 **Nice to Have:**
 - Unit tests for bid submission business logic

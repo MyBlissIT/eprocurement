@@ -38,6 +38,14 @@ INSERT INTO HIL_eproc_documents (bid_number, title, description, status, categor
 'open', 'bid', 2, '2026-02-15 08:00:00', '2026-02-28 10:00:00', '2026-03-14 12:00:00', 3);
 
 -- =============================================
+-- CONTACT PERSONS
+-- =============================================
+INSERT INTO HIL_eproc_contact_persons (user_id, type, name, phone, email, department) VALUES
+(2, 'scm', 'Thandi Nkosi', '043 705 1234', 'thandi.nkosi@municipality.gov.za', 'Supply Chain Management'),
+(3, 'scm', 'Nomsa Mthembu', '043 705 2345', 'nomsa.mthembu@municipality.gov.za', 'Supply Chain Management'),
+(4, 'technical', 'Sipho Dlamini', '043 705 3456', 'sipho.dlamini@municipality.gov.za', 'Infrastructure & Facilities');
+
+-- =============================================
 -- BIDDER PROFILES
 -- =============================================
 INSERT INTO HIL_eproc_bidder_profiles (user_id, company_name, company_reg, phone, verified, notify_replies) VALUES
