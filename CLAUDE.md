@@ -139,12 +139,18 @@ Full "What's Working" list: [docs/architecture.md](docs/architecture.md)
 - **Backdate DB pattern**: `$wpdb->update()` can't set NULL — raw query needed for `backdated_by = NULL` (hidden mode)
 - **Notifications**: `send_system_message()` helper creates private threads via existing messaging system (sender_id=0 for system)
 
+### Building Plugin ZIP Locally
+```bash
+# From repo root — creates eprocurement.zip with correct WordPress structure
+bash build-zip.sh
+```
+The ZIP contains `eprocurement/` at the root. WordPress will detect the existing plugin and offer "Replace current with uploaded" when uploading via wp-admin > Plugins > Upload Plugin. The GitHub Actions workflow (`release.yml`) produces the same structure automatically on tag push.
+
 ### What's Next
 **Should Do:**
-1. Fix ZIP packaging so uploads replace the existing plugin folder (WordPress expects the ZIP to overwrite `wp-content/plugins/eprocurement/` in-place — not create a second folder). The GitHub Actions release ZIP and any manually created ZIPs must produce a clean "Upload Plugin" upgrade without needing to delete the old version first.
-2. **Online Bids dashboard page** — new sidebar item (icon similar to Download Log). Table columns: Bid Number, Title, Closing Date, Submissions (total count to date), Bidders (clickable → opens page listing all bidders who submitted; clicking a bidder navigates to their submission on their profile). Design/adapt as needed.
-3. Test cloud storage with a real provider (S3 recommended)
-4. MainWP dashboard for centralized client management
+1. **Online Bids dashboard page** — new sidebar item (icon similar to Download Log). Table columns: Bid Number, Title, Closing Date, Submissions (total count to date), Bidders (clickable → opens page listing all bidders who submitted; clicking a bidder navigates to their submission on their profile). Design/adapt as needed.
+2. Test cloud storage with a real provider (S3 recommended)
+3. MainWP dashboard for centralized client management
 
 **Nice to Have:**
 - Unit tests for bid submission business logic

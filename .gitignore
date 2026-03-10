@@ -28,5 +28,9 @@ uploads/
 *.log
 error_log
 
+# Build output
+eprocurement.zip
+build/
+
 # Claude Code
 .claude/

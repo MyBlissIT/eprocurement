@@ -200,7 +200,7 @@ class Eprocurement_Updater {
     /**
      * After WordPress extracts the update ZIP, ensure the folder name
      * matches our plugin slug. GitHub zipballs use "owner-repo-hash"
-     * as the folder name.
+     * as the folder name, which would break the plugin path.
      *
      * @param bool|WP_Error $response   Install response.
      * @param array          $hook_extra Extra args.
@@ -215,17 +215,33 @@ class Eprocurement_Updater {
 
         global $wp_filesystem;
 
-        $proper_destination = WP_PLUGIN_DIR . '/' . $this->plugin_slug;
+        $proper_destination = trailingslashit( WP_PLUGIN_DIR ) . $this->plugin_slug;
+
+        // Normalize both paths for comparison (remove trailing slashes)
+        $current = untrailingslashit( $result['destination'] );
+        $target  = untrailingslashit( $proper_destination );
 
         // If the extracted folder doesn't match our slug, rename it
-        if ( $result['destination'] !== $proper_destination ) {
-            $wp_filesystem->move( $result['destination'], $proper_destination );
-            $result['destination'] = $proper_destination;
+        if ( $current !== $target ) {
+            // Remove stale destination if it exists (leftover from a failed update)
+            if ( $wp_filesystem->is_dir( $target ) ) {
+                $wp_filesystem->delete( $target, true );
+            }
+
+            $moved = $wp_filesystem->move( $current, $target );
+            if ( ! $moved ) {
+                return new \WP_Error(
+                    'eproc_update_move_failed',
+                    sprintf( 'Could not move plugin from %s to %s.', $current, $target )
+                );
+            }
+
+            $result['destination']     = $target;
+            $result['destination_name'] = $this->plugin_slug;
         }
 
         // Re-activate the plugin after update
-        $active = is_plugin_active( $this->plugin_basename );
-        if ( $active ) {
+        if ( is_plugin_active( $this->plugin_basename ) ) {
             activate_plugin( $this->plugin_basename );
         }
 
