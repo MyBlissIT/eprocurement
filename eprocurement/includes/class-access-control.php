@@ -30,11 +30,25 @@ class Eprocurement_Access_Control {
      */
     private function apply_security_hardening(): void {
         // Disable user enumeration via REST API for non-admins.
+        // Hide admin REST API routes and WP pages endpoint from unauthenticated users.
         add_filter( 'rest_endpoints', function ( $endpoints ) {
             if ( ! is_super_admin() ) {
                 unset( $endpoints['/wp/v2/users'] );
                 unset( $endpoints['/wp/v2/users/(?P<id>[\d]+)'] );
             }
+
+            // Hide admin endpoints from unauthenticated users.
+            if ( ! is_user_logged_in() ) {
+                foreach ( $endpoints as $route => $data ) {
+                    if ( strpos( $route, '/eprocurement/v1/admin' ) !== false ) {
+                        unset( $endpoints[ $route ] );
+                    }
+                }
+                // Hide WP pages endpoint (leaks full rendered HTML).
+                unset( $endpoints['/wp/v2/pages'] );
+                unset( $endpoints['/wp/v2/pages/(?P<id>[\d]+)'] );
+            }
+
             return $endpoints;
         } );
 
@@ -56,6 +70,7 @@ class Eprocurement_Access_Control {
             header( 'X-Frame-Options: SAMEORIGIN' );
             header( 'Referrer-Policy: strict-origin-when-cross-origin' );
             header( 'Permissions-Policy: camera=(), microphone=(), geolocation=()' );
+            header( "Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'self';" );
         } );
 
         // Disable application passwords for non-Super-Admin.
