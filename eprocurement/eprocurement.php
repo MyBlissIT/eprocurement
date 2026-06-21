@@ -270,6 +270,21 @@ function eprocurement_init(): void {
 add_action( 'plugins_loaded', 'eprocurement_init' );
 
 /**
+ * Track each user's last login timestamp.
+ *
+ * Stored in usermeta as 'eproc_last_login' (MySQL datetime).
+ * Surfaced on the bidder dashboard profile card as "Last Login: 2 hours ago".
+ *
+ * @since 2.14.0
+ * @param string  $user_login Username being logged in.
+ * @param WP_User $user       User object.
+ */
+function eprocurement_track_last_login( string $user_login, \WP_User $user ): void {
+    update_user_meta( $user->ID, 'eproc_last_login', current_time( 'mysql' ) );
+}
+add_action( 'wp_login', 'eprocurement_track_last_login', 10, 2 );
+
+/**
  * Add plugin settings link on plugins page.
  */
 function eprocurement_settings_link( array $links ): array {

@@ -396,6 +396,66 @@ $profile_updated = isset( $_GET['profile_updated'] ) && $_GET['profile_updated']
 
             <div class="eproc-form-feedback" id="eproc-profile-feedback" style="display:none;"></div>
 
+            <?php
+            // Profile completion meter — encourages bidders to fill out their
+            // profile fully. High perceived value: gamifies profile completion
+            // and increases data quality.
+            $completion_fields = [
+                'company_name' => ! empty( $profile->company_name ),
+                'company_reg'  => ! empty( $profile->company_reg ),
+                'phone'        => ! empty( $profile->phone ),
+                'verified'     => ! empty( $profile->verified ) && (int) $profile->verified === 1,
+                'notify_set'   => isset( $profile->notify_replies ),
+            ];
+            $completed_count = count( array_filter( $completion_fields ) );
+            $total_count     = count( $completion_fields );
+            $completion_pct  = (int) round( ( $completed_count / $total_count ) * 100 );
+            $is_complete     = ( $completion_pct === 100 );
+
+            // Determine which field is missing for the hint.
+            $missing_field_labels = [
+                'company_name' => __( 'company name', 'eprocurement' ),
+                'company_reg'  => __( 'company registration number', 'eprocurement' ),
+                'phone'        => __( 'phone number', 'eprocurement' ),
+                'verified'     => __( 'email verification', 'eprocurement' ),
+                'notify_set'   => __( 'notification preference', 'eprocurement' ),
+            ];
+            $first_missing = '';
+            foreach ( $completion_fields as $key => $filled ) {
+                if ( ! $filled ) {
+                    $first_missing = $missing_field_labels[ $key ];
+                    break;
+                }
+            }
+            ?>
+            <div class="eproc-profile-completion <?php echo $is_complete ? 'is-complete' : ''; ?>">
+                <div class="eproc-profile-completion-header">
+                    <h3 class="eproc-profile-completion-title">
+                        <?php if ( $is_complete ) : ?>
+                            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            <?php esc_html_e( 'Profile complete', 'eprocurement' ); ?>
+                        <?php else : ?>
+                            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+                            <?php esc_html_e( 'Complete your profile', 'eprocurement' ); ?>
+                        <?php endif; ?>
+                    </h3>
+                    <span class="eproc-profile-completion-pct"><?php echo esc_html( $completion_pct . '%' ); ?></span>
+                </div>
+                <div class="eproc-profile-completion-bar">
+                    <div class="eproc-profile-completion-fill" style="width: <?php echo esc_attr( $completion_pct ); ?>%;"></div>
+                </div>
+                <p class="eproc-profile-completion-hint">
+                    <?php if ( $is_complete ) : ?>
+                        <?php esc_html_e( 'Your profile is complete. You\'re all set to submit bids.', 'eprocurement' ); ?>
+                    <?php else : ?>
+                        <?php
+                        /* translators: %s: name of the next missing field */
+                        echo esc_html( sprintf( __( 'Add your %s to reach 100%% — complete profiles build trust with procurement teams.', 'eprocurement' ), $first_missing ) );
+                        ?>
+                    <?php endif; ?>
+                </p>
+            </div>
+
             <div class="eproc-card" style="padding:28px;">
                 <h2 style="margin-top:0;font-size:18px;color:var(--eproc-text-heading);"><?php echo esc_html__( 'Company Information', 'eprocurement' ); ?></h2>
                 <p style="margin-top:0;margin-bottom:24px;color:var(--eproc-text-muted);font-size:13px;">
@@ -545,6 +605,22 @@ $profile_updated = isset( $_GET['profile_updated'] ) && $_GET['profile_updated']
                     <div>
                         <dt style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--eproc-text-muted);margin-bottom:4px;font-weight:600;"><?php echo esc_html__( 'Role', 'eprocurement' ); ?></dt>
                         <dd style="margin:0;font-weight:500;color:var(--eproc-text-heading);"><?php echo esc_html__( 'Bidder', 'eprocurement' ); ?></dd>
+                    </div>
+                    <?php
+                    // Last login timestamp (stored via wp_login hook on each login).
+                    $last_login = get_user_meta( $current_user->ID, 'eproc_last_login', true );
+                    ?>
+                    <div>
+                        <dt style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--eproc-text-muted);margin-bottom:4px;font-weight:600;"><?php echo esc_html__( 'Last Login', 'eprocurement' ); ?></dt>
+                        <dd style="margin:0;font-weight:500;color:var(--eproc-text-heading);">
+                            <?php
+                            if ( $last_login ) {
+                                echo esc_html( eprocurement_relative_time( $last_login ) );
+                            } else {
+                                esc_html_e( 'This is your first login', 'eprocurement' );
+                            }
+                            ?>
+                        </dd>
                     </div>
                 </dl>
 

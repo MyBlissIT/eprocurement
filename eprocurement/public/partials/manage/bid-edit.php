@@ -71,11 +71,36 @@ $page_title = $is_edit
         $bid->bid_number
     )
     : __( 'Add New Bid', 'eprocurement' );
+
+// Build breadcrumbs (manage/frontend version).
+$breadcrumb_items = [
+    [
+        'label' => __( 'Dashboard', 'eprocurement' ),
+        'url'   => $manage_base . '/dashboard/',
+    ],
+    [
+        'label' => $is_regular_bid ? __( 'All Bids', 'eprocurement' ) : ( $category_labels[ $eproc_category ] ?? __( 'Bids', 'eprocurement' ) ),
+        'url'   => $back_url,
+    ],
+];
+
+if ( $is_edit ) {
+    $breadcrumb_items[] = [
+        'label' => $bid->bid_number,
+        'url'   => '',
+    ];
+} else {
+    $breadcrumb_items[] = [
+        'label' => __( 'Add New', 'eprocurement' ),
+        'url'   => '',
+    ];
+}
 ?>
 <div class="eproc-wrap">
+    <?php echo eprocurement_breadcrumbs( $breadcrumb_items ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+
     <div class="eproc-page-header">
         <h1>
-            <a href="<?php echo esc_url( $back_url ); ?>" class="eproc-back-link">&larr;</a>
             <?php echo esc_html( $page_title ); ?>
             <?php if ( $is_edit ) : ?>
                 <span class="eproc-status-badge eproc-status-<?php echo esc_attr( $current_status ); ?>">

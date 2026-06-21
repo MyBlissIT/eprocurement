@@ -1786,3 +1786,335 @@ a.eproc-btn-primary {
     margin-bottom: 8px;
 }
 
+/* ──────────────────────────────────────────
+   40. COUNTDOWN TIMER — tender detail page
+   ────────────────────────────────────────── */
+
+.eproc-countdown-timer {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 16px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08);
+    transition: all var(--eproc-duration-base) var(--eproc-ease-out);
+}
+
+.eproc-countdown-timer--urgent {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-color: #f59e0b;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.18);
+}
+
+.eproc-countdown-timer--critical {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border-color: #ef4444;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.22);
+    animation: eproc-countdown-pulse 1.2s var(--eproc-ease-in-out) infinite;
+}
+
+@keyframes eproc-countdown-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.015); }
+}
+
+.eproc-countdown-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(245, 158, 11, 0.2);
+    color: #b45309;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.eproc-countdown-timer--urgent .eproc-countdown-icon {
+    background: rgba(245, 158, 11, 0.3);
+    color: #92400e;
+}
+
+.eproc-countdown-timer--critical .eproc-countdown-icon {
+    background: rgba(239, 68, 68, 0.25);
+    color: #b91c1c;
+}
+
+.eproc-countdown-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.eproc-countdown-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.eproc-countdown-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #92400e;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+}
+
+.eproc-countdown-timer--urgent .eproc-countdown-label { color: #78350f; }
+.eproc-countdown-timer--critical .eproc-countdown-label { color: #991b1b; }
+
+.eproc-countdown-digits {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.eproc-countdown-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 36px;
+}
+
+.eproc-countdown-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+
+.eproc-countdown-timer--urgent .eproc-countdown-value { color: #78350f; }
+.eproc-countdown-timer--critical .eproc-countdown-value { color: #991b1b; }
+
+.eproc-countdown-unit-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: #92400e;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+}
+
+.eproc-countdown-timer--urgent .eproc-countdown-unit-label { color: #92400e; }
+.eproc-countdown-timer--critical .eproc-countdown-unit-label { color: #b91c1c; }
+
+.eproc-countdown-sep {
+    font-size: 22px;
+    font-weight: 800;
+    color: #92400e;
+    line-height: 1;
+    margin: 0 2px;
+    align-self: center;
+    padding-bottom: 12px;
+}
+
+@media (max-width: 480px) {
+    .eproc-countdown-timer {
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+    }
+
+    .eproc-countdown-digits {
+        justify-content: center;
+    }
+
+    .eproc-countdown-value {
+        font-size: 18px;
+    }
+}
+
+/* ──────────────────────────────────────────
+   41. COPY BUTTON + PRINT BUTTON — tender detail header
+   ────────────────────────────────────────── */
+
+.eproc-detail-bid-number {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.eproc-copy-btn,
+.eproc-print-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--eproc-border, #e2e8f0);
+    background: #fff;
+    color: var(--eproc-text-muted, #64748b);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all var(--eproc-duration-fast) var(--eproc-ease-out);
+    padding: 0;
+    vertical-align: middle;
+}
+
+.eproc-copy-btn:hover,
+.eproc-print-btn:hover {
+    background: var(--eproc-primary-bg, #fdf2f4);
+    border-color: var(--eproc-primary, #8b1a2b);
+    color: var(--eproc-primary, #8b1a2b);
+    transform: translateY(-1px);
+}
+
+.eproc-copy-btn:active,
+.eproc-print-btn:active {
+    transform: translateY(0);
+}
+
+/* ──────────────────────────────────────────
+   42. NOTIFICATION BELL — sidebar with unread count
+   ────────────────────────────────────────── */
+
+.eproc-sidebar-brand {
+    position: relative;
+}
+
+.eproc-sidebar-brand-text {
+    /* Allow the bell to sit beside the brand text via absolute positioning. */
+}
+
+.eproc-notification-bell {
+    position: absolute;
+    top: 24px;
+    right: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: all var(--eproc-duration-fast) var(--eproc-ease-out);
+    border: 1px solid transparent;
+    text-decoration: none;
+}
+
+.eproc-notification-bell:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.18);
+    transform: translateY(-1px);
+}
+
+.eproc-notification-bell svg {
+    width: 16px;
+    height: 16px;
+}
+
+.eproc-notification-bell-count {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+    border: 2px solid var(--eproc-sidebar-bg, #1a1a5e);
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.4);
+    animation: eproc-bell-pulse 2.5s var(--eproc-ease-in-out) infinite;
+}
+
+@keyframes eproc-bell-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.1); }
+}
+
+.eproc-notification-bell.has-unread {
+    background: rgba(220, 38, 38, 0.18);
+    color: #fff;
+}
+
+/* ──────────────────────────────────────────
+   43. PROFILE COMPLETION METER — bidder dashboard
+   ────────────────────────────────────────── */
+
+.eproc-profile-completion {
+    margin-bottom: 20px;
+    padding: 16px 20px;
+    background: #fff;
+    border: 1px solid var(--eproc-border, #e2e8f0);
+    border-radius: 12px;
+}
+
+.eproc-profile-completion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.eproc-profile-completion-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--eproc-text-heading, #1e293b);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.eproc-profile-completion-title svg {
+    color: var(--eproc-primary, #8b1a2b);
+    width: 16px;
+    height: 16px;
+}
+
+.eproc-profile-completion-pct {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--eproc-primary, #8b1a2b);
+}
+
+.eproc-profile-completion-bar {
+    height: 6px;
+    background: var(--eproc-border, #e2e8f0);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.eproc-profile-completion-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--eproc-primary, #8b1a2b) 0%, var(--eproc-primary-light, #a52040) 100%);
+    border-radius: 3px;
+    transition: width var(--eproc-duration-slow) var(--eproc-ease-out);
+}
+
+.eproc-profile-completion-hint {
+    font-size: 12px;
+    color: var(--eproc-text-muted, #64748b);
+    margin: 0;
+}
+
+.eproc-profile-completion.is-complete {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #86efac;
+}
+
+.eproc-profile-completion.is-complete .eproc-profile-completion-title svg {
+    color: #16a34a;
+}
+
+.eproc-profile-completion.is-complete .eproc-profile-completion-fill {
+    background: linear-gradient(90deg, #16a34a 0%, #15803d 100%);
+}
+

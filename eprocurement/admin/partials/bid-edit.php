@@ -52,11 +52,50 @@ $page_title = $is_edit
         $bid->bid_number
     )
     : __( 'Add New Bid', 'eprocurement' );
+
+// Build breadcrumbs (admin version).
+$breadcrumb_items = [
+    [
+        'label' => __( 'Dashboard', 'eprocurement' ),
+        'url'   => admin_url( 'admin.php?page=eprocurement-dashboard' ),
+    ],
+];
+
+if ( $is_regular_bid ) {
+    $breadcrumb_items[] = [
+        'label' => __( 'All Bids', 'eprocurement' ),
+        'url'   => admin_url( 'admin.php?page=eprocurement-bids' ),
+    ];
+} else {
+    $category_page_map = [
+        'briefing_register' => 'eprocurement-briefing-register',
+        'closing_register'  => 'eprocurement-closing-register',
+        'appointments'      => 'eprocurement-appointments',
+    ];
+    $cat_page = $category_page_map[ $eproc_category ] ?? 'eprocurement-bids';
+    $breadcrumb_items[] = [
+        'label' => $category_labels[ $eproc_category ] ?? __( 'Bids', 'eprocurement' ),
+        'url'   => admin_url( 'admin.php?page=' . $cat_page ),
+    ];
+}
+
+if ( $is_edit ) {
+    $breadcrumb_items[] = [
+        'label' => $bid->bid_number,
+        'url'   => '',
+    ];
+} else {
+    $breadcrumb_items[] = [
+        'label' => __( 'Add New', 'eprocurement' ),
+        'url'   => '',
+    ];
+}
 ?>
 <div class="eproc-wrap">
+    <?php echo eprocurement_breadcrumbs( $breadcrumb_items ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+
     <div class="eproc-page-header">
         <h1>
-            <a href="<?php echo esc_url( admin_url( 'admin.php?page=eprocurement-bids' ) ); ?>" class="eproc-back-link">&larr;</a>
             <?php echo esc_html( $page_title ); ?>
             <?php if ( $is_edit && $is_regular_bid ) : ?>
                 <span class="eproc-status-badge eproc-status-<?php echo esc_attr( $current_status ); ?>">

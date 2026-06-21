@@ -166,6 +166,12 @@ if ( file_exists( $logo_file ) ) {
                 <img src="<?php echo esc_url( $logo_url ); ?>" alt="MyBliss Technologies" class="eproc-sidebar-logo">
             <?php endif; ?>
             <span class="eproc-sidebar-brand-text"><?php esc_html_e( 'eProcurement', 'eprocurement' ); ?></span>
+            <?php if ( $unread_count > 0 ) : ?>
+                <a href="<?php echo esc_url( admin_url( 'admin.php?page=eprocurement-messages' ) ); ?>" class="eproc-notification-bell has-unread" aria-label="<?php echo esc_attr( sprintf( __( '%d unread messages', 'eprocurement' ), $unread_count ) ); ?>" title="<?php echo esc_attr( sprintf( __( '%d unread messages', 'eprocurement' ), $unread_count ) ); ?>">
+                    <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+                    <span class="eproc-notification-bell-count"><?php echo esc_html( $unread_count > 99 ? '99+' : $unread_count ); ?></span>
+                </a>
+            <?php endif; ?>
         </div>
 
         <ul class="eproc-sidebar-nav">

@@ -119,7 +119,15 @@ $is_briefing_req   = $bid_submissions->is_briefing_compulsory( $bid_id );
         <div class="eproc-detail-header-left">
             <?php echo Eprocurement_Public::status_badge( $document->status ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
             <h1 class="eproc-detail-title"><?php echo esc_html( $document->title ); ?></h1>
-            <p class="eproc-detail-bid-number"><?php echo esc_html( $document->bid_number ); ?></p>
+            <p class="eproc-detail-bid-number">
+                <?php echo esc_html( $document->bid_number ); ?>
+                <button type="button" class="eproc-copy-btn" data-copy-bid-number="<?php echo esc_attr( $document->bid_number ); ?>" aria-label="<?php esc_attr_e( 'Copy bid number', 'eprocurement' ); ?>" title="<?php esc_attr_e( 'Copy bid number', 'eprocurement' ); ?>">
+                    <svg viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z"/><path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z"/></svg>
+                </button>
+                <button type="button" class="eproc-print-btn" data-action="print-tender" aria-label="<?php esc_attr_e( 'Print tender', 'eprocurement' ); ?>" title="<?php esc_attr_e( 'Print this tender', 'eprocurement' ); ?>">
+                    <svg viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd"/></svg>
+                </button>
+            </p>
         </div>
         <div class="eproc-detail-header-dates">
             <div class="eproc-date-card eproc-date-card--compact">
@@ -153,6 +161,49 @@ $is_briefing_req   = $bid_submissions->is_briefing_compulsory( $bid_id );
                 </span>
             </div>
         </div>
+
+        <?php
+        // Live countdown timer — only shown for OPEN bids with a future closing date.
+        // High perceived value: creates urgency and helps bidders plan submissions.
+        if ( $document->status === 'open' && $document->closing_date && $document->closing_date !== '0000-00-00 00:00:00' ) :
+            $closing_ts = strtotime( $document->closing_date );
+            $now_ts     = current_time( 'timestamp' );
+            $seconds_left = $closing_ts - $now_ts;
+            if ( $seconds_left > 0 ) :
+                ?>
+                <div class="eproc-countdown-timer" data-closing-timestamp="<?php echo esc_attr( $closing_ts ); ?>" role="timer" aria-live="polite" aria-label="<?php esc_attr_e( 'Time remaining until bid closing', 'eprocurement' ); ?>">
+                    <div class="eproc-countdown-icon">
+                        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 102 0V6zm-1 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+                    </div>
+                    <div class="eproc-countdown-body">
+                        <span class="eproc-countdown-label"><?php esc_html_e( 'Time remaining', 'eprocurement' ); ?></span>
+                        <div class="eproc-countdown-digits">
+                            <div class="eproc-countdown-unit">
+                                <span class="eproc-countdown-value" data-unit="days">00</span>
+                                <span class="eproc-countdown-unit-label"><?php esc_html_e( 'days', 'eprocurement' ); ?></span>
+                            </div>
+                            <span class="eproc-countdown-sep">:</span>
+                            <div class="eproc-countdown-unit">
+                                <span class="eproc-countdown-value" data-unit="hours">00</span>
+                                <span class="eproc-countdown-unit-label"><?php esc_html_e( 'hours', 'eprocurement' ); ?></span>
+                            </div>
+                            <span class="eproc-countdown-sep">:</span>
+                            <div class="eproc-countdown-unit">
+                                <span class="eproc-countdown-value" data-unit="minutes">00</span>
+                                <span class="eproc-countdown-unit-label"><?php esc_html_e( 'min', 'eprocurement' ); ?></span>
+                            </div>
+                            <span class="eproc-countdown-sep">:</span>
+                            <div class="eproc-countdown-unit">
+                                <span class="eproc-countdown-value" data-unit="seconds">00</span>
+                                <span class="eproc-countdown-unit-label"><?php esc_html_e( 'sec', 'eprocurement' ); ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php
+            endif;
+        endif;
+        ?>
     </section>
 
     <!-- Description -->
@@ -639,6 +690,76 @@ $is_briefing_req   = $bid_submissions->is_briefing_compulsory( $bid_id );
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // ──── Countdown timer ────
+    var countdownEl = document.querySelector('.eproc-countdown-timer');
+    if (countdownEl) {
+        var closingTs = parseInt(countdownEl.getAttribute('data-closing-timestamp'), 10);
+
+        function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+        function updateCountdown() {
+            var now = Math.floor(Date.now() / 1000);
+            var diff = closingTs - now;
+
+            if (diff <= 0) {
+                // Bid has closed — reload to show updated status.
+                window.location.reload();
+                return;
+            }
+
+            var days    = Math.floor(diff / 86400);
+            var hours   = Math.floor((diff % 86400) / 3600);
+            var minutes = Math.floor((diff % 3600) / 60);
+            var seconds = diff % 60;
+
+            var daysEl    = countdownEl.querySelector('[data-unit="days"]');
+            var hoursEl   = countdownEl.querySelector('[data-unit="hours"]');
+            var minutesEl = countdownEl.querySelector('[data-unit="minutes"]');
+            var secondsEl = countdownEl.querySelector('[data-unit="seconds"]');
+
+            if (daysEl)    daysEl.textContent    = pad(days);
+            if (hoursEl)   hoursEl.textContent   = pad(hours);
+            if (minutesEl) minutesEl.textContent = pad(minutes);
+            if (secondsEl) secondsEl.textContent = pad(seconds);
+
+            // Add urgency class when < 24h remaining.
+            if (diff < 86400) {
+                countdownEl.classList.add('eproc-countdown-timer--urgent');
+            }
+            if (diff < 3600) {
+                countdownEl.classList.add('eproc-countdown-timer--critical');
+            }
+        }
+
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    }
+
+    // ──── Copy-to-clipboard on bid number ────
+    var copyBidBtn = document.querySelector('[data-copy-bid-number]');
+    if (copyBidBtn) {
+        copyBidBtn.addEventListener('click', function() {
+            var bidNumber = copyBidBtn.getAttribute('data-copy-bid-number');
+            if (navigator.clipboard && bidNumber) {
+                navigator.clipboard.writeText(bidNumber).then(function() {
+                    var original = copyBidBtn.innerHTML;
+                    copyBidBtn.innerHTML = '<svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>';
+                    setTimeout(function() { copyBidBtn.innerHTML = original; }, 1500);
+                });
+            }
+        });
+    }
+
+    // ──── Print button ────
+    var printBtn = document.querySelector('[data-action="print-tender"]');
+    if (printBtn) {
+        printBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.print();
+        });
+    }
+
+    // ──── Original modal logic ────
     var modal          = document.getElementById('eproc-query-modal');
     var contactIdField    = document.getElementById('eproc-query-contact-id');
     var contactName       = document.getElementById('eproc-query-contact-name');
