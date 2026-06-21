@@ -185,9 +185,12 @@ $is_briefing_req   = $bid_submissions->is_briefing_compulsory( $bid_id );
                                 <tr>
                                     <td><?php echo esc_html( $index + 1 ); ?></td>
                                     <td>
-                                        <span class="eproc-file-label">
-                                            <?php echo esc_html( $file->label ?: $file->file_name ); ?>
-                                        </span>
+                                        <div style="display:flex;align-items:center;gap:10px;">
+                                            <?php echo eprocurement_file_icon( $file->file_name ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                                            <span class="eproc-file-label">
+                                                <?php echo esc_html( $file->label ?: $file->file_name ); ?>
+                                            </span>
+                                        </div>
                                     </td>
                                     <td><?php echo esc_html( Eprocurement_Public::format_file_size( (int) $file->file_size ) ); ?></td>
                                     <td>
@@ -197,6 +200,7 @@ $is_briefing_req   = $bid_submissions->is_briefing_compulsory( $bid_id );
                                             target="_blank"
                                             rel="noopener noreferrer"
                                         >
+                                            <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" style="margin-right:4px;vertical-align:-2px;"><path d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"/></svg>
                                             <?php echo esc_html__( 'Download', 'eprocurement' ); ?>
                                         </a>
                                     </td>
@@ -213,25 +217,34 @@ $is_briefing_req   = $bid_submissions->is_briefing_compulsory( $bid_id );
             <div class="eproc-contacts-stack">
                 <?php if ( $scm_contact ) : ?>
                     <div class="eproc-contact-card">
-                        <h3 class="eproc-contact-type"><?php echo esc_html__( 'SCM Contact', 'eprocurement' ); ?></h3>
-                        <p class="eproc-contact-name"><?php echo esc_html( $scm_contact->name ); ?></p>
-                        <?php if ( $scm_contact->department ) : ?>
-                            <p class="eproc-contact-dept"><?php echo esc_html( $scm_contact->department ); ?></p>
-                        <?php endif; ?>
-                        <?php if ( $scm_contact->email ) : ?>
-                            <p class="eproc-contact-email">
-                                <a href="mailto:<?php echo esc_attr( $scm_contact->email ); ?>">
-                                    <?php echo esc_html( $scm_contact->email ); ?>
-                                </a>
-                            </p>
-                        <?php endif; ?>
-                        <?php if ( $scm_contact->phone ) : ?>
-                            <p class="eproc-contact-phone">
-                                <a href="tel:<?php echo esc_attr( $scm_contact->phone ); ?>">
-                                    <?php echo esc_html( $scm_contact->phone ); ?>
-                                </a>
-                            </p>
-                        <?php endif; ?>
+                        <div class="eproc-contact-card-header">
+                            <?php echo eprocurement_avatar( (int) $scm_contact->user_id, $scm_contact->name, 48 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                            <div>
+                                <span class="eproc-contact-type"><?php echo esc_html__( 'SCM Contact', 'eprocurement' ); ?></span>
+                                <h3 class="eproc-contact-name"><?php echo esc_html( $scm_contact->name ); ?></h3>
+                                <?php if ( $scm_contact->department ) : ?>
+                                    <p class="eproc-contact-dept"><?php echo esc_html( $scm_contact->department ); ?></p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="eproc-contact-details">
+                            <?php if ( $scm_contact->email ) : ?>
+                                <p class="eproc-contact-email">
+                                    <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+                                    <a href="mailto:<?php echo esc_attr( $scm_contact->email ); ?>">
+                                        <?php echo esc_html( $scm_contact->email ); ?>
+                                    </a>
+                                </p>
+                            <?php endif; ?>
+                            <?php if ( $scm_contact->phone ) : ?>
+                                <p class="eproc-contact-phone">
+                                    <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
+                                    <a href="tel:<?php echo esc_attr( $scm_contact->phone ); ?>">
+                                        <?php echo esc_html( $scm_contact->phone ); ?>
+                                    </a>
+                                </p>
+                            <?php endif; ?>
+                        </div>
                         <?php if ( $is_open_bid ) : ?>
                         <button
                             type="button"
@@ -249,25 +262,34 @@ $is_briefing_req   = $bid_submissions->is_briefing_compulsory( $bid_id );
 
                 <?php if ( $technical_contact ) : ?>
                     <div class="eproc-contact-card">
-                        <h3 class="eproc-contact-type"><?php echo esc_html__( 'Technical Contact', 'eprocurement' ); ?></h3>
-                        <p class="eproc-contact-name"><?php echo esc_html( $technical_contact->name ); ?></p>
-                        <?php if ( $technical_contact->department ) : ?>
-                            <p class="eproc-contact-dept"><?php echo esc_html( $technical_contact->department ); ?></p>
-                        <?php endif; ?>
-                        <?php if ( $technical_contact->email ) : ?>
-                            <p class="eproc-contact-email">
-                                <a href="mailto:<?php echo esc_attr( $technical_contact->email ); ?>">
-                                    <?php echo esc_html( $technical_contact->email ); ?>
-                                </a>
-                            </p>
-                        <?php endif; ?>
-                        <?php if ( $technical_contact->phone ) : ?>
-                            <p class="eproc-contact-phone">
-                                <a href="tel:<?php echo esc_attr( $technical_contact->phone ); ?>">
-                                    <?php echo esc_html( $technical_contact->phone ); ?>
-                                </a>
-                            </p>
-                        <?php endif; ?>
+                        <div class="eproc-contact-card-header">
+                            <?php echo eprocurement_avatar( (int) $technical_contact->user_id, $technical_contact->name, 48 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                            <div>
+                                <span class="eproc-contact-type"><?php echo esc_html__( 'Technical Contact', 'eprocurement' ); ?></span>
+                                <h3 class="eproc-contact-name"><?php echo esc_html( $technical_contact->name ); ?></h3>
+                                <?php if ( $technical_contact->department ) : ?>
+                                    <p class="eproc-contact-dept"><?php echo esc_html( $technical_contact->department ); ?></p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="eproc-contact-details">
+                            <?php if ( $technical_contact->email ) : ?>
+                                <p class="eproc-contact-email">
+                                    <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+                                    <a href="mailto:<?php echo esc_attr( $technical_contact->email ); ?>">
+                                        <?php echo esc_html( $technical_contact->email ); ?>
+                                    </a>
+                                </p>
+                            <?php endif; ?>
+                            <?php if ( $technical_contact->phone ) : ?>
+                                <p class="eproc-contact-phone">
+                                    <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
+                                    <a href="tel:<?php echo esc_attr( $technical_contact->phone ); ?>">
+                                        <?php echo esc_html( $technical_contact->phone ); ?>
+                                    </a>
+                                </p>
+                            <?php endif; ?>
+                        </div>
                         <?php if ( $is_open_bid ) : ?>
                         <button
                             type="button"
@@ -284,7 +306,9 @@ $is_briefing_req   = $bid_submissions->is_briefing_compulsory( $bid_id );
                 <?php endif; ?>
 
                 <?php if ( ! $scm_contact && ! $technical_contact ) : ?>
-                    <p class="eproc-muted"><?php echo esc_html__( 'No contact persons assigned.', 'eprocurement' ); ?></p>
+                    <div class="eproc-empty-state">
+                        <p class="eproc-empty-state-text"><?php echo esc_html__( 'No contact persons assigned to this tender yet.', 'eprocurement' ); ?></p>
+                    </div>
                 <?php endif; ?>
             </div>
         </section>

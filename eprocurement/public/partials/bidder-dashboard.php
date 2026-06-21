@@ -94,7 +94,49 @@ $profile_updated = isset( $_GET['profile_updated'] ) && $_GET['profile_updated']
 
     <!-- Dashboard Header -->
     <section class="eproc-dashboard-header">
-        <h1 class="eproc-dashboard-title"><?php echo esc_html__( 'My Dashboard', 'eprocurement' ); ?></h1>
+        <div class="eproc-profile-card">
+            <div class="eproc-profile-card-avatar">
+                <?php echo eprocurement_avatar( $user_id, $current_user->display_name, 96, [ 'class' => 'eproc-avatar--xl' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+            </div>
+            <div class="eproc-profile-card-info">
+                <h1 class="eproc-profile-card-name">
+                    <?php
+                    /* translators: %s: user's first name */
+                    echo esc_html( sprintf( __( 'Welcome back, %s', 'eprocurement' ), $current_user->first_name ?: $current_user->display_name ) );
+                    ?>
+                </h1>
+                <p class="eproc-profile-card-meta">
+                    <?php
+                    $company = $profile ? $profile->company_name : '';
+                    if ( $company ) {
+                        echo esc_html( $company ) . ' · ';
+                    }
+                    echo esc_html( $current_user->user_email );
+                    ?>
+                </p>
+                <div class="eproc-profile-card-badges">
+                    <?php if ( $profile && (int) $profile->verified === 1 ) : ?>
+                        <?php echo eprocurement_status_badge( 'verified', __( 'Verified', 'eprocurement' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                    <?php else : ?>
+                        <?php echo eprocurement_status_badge( 'unverified', __( 'Pending verification', 'eprocurement' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="eproc-profile-card-stats">
+                <div class="eproc-profile-stat">
+                    <div class="eproc-profile-stat-value"><?php echo esc_html( number_format_i18n( count( $threads ) ) ); ?></div>
+                    <div class="eproc-profile-stat-label"><?php echo esc_html__( 'Queries', 'eprocurement' ); ?></div>
+                </div>
+                <div class="eproc-profile-stat">
+                    <div class="eproc-profile-stat-value"><?php echo esc_html( number_format_i18n( count( $my_submissions ) ) ); ?></div>
+                    <div class="eproc-profile-stat-label"><?php echo esc_html__( 'Submissions', 'eprocurement' ); ?></div>
+                </div>
+                <div class="eproc-profile-stat">
+                    <div class="eproc-profile-stat-value"><?php echo esc_html( number_format_i18n( count( $user_downloads ) ) ); ?></div>
+                    <div class="eproc-profile-stat-label"><?php echo esc_html__( 'Downloads', 'eprocurement' ); ?></div>
+                </div>
+            </div>
+        </div>
     </section>
 
     <!-- Tabs Navigation -->
@@ -347,133 +389,182 @@ $profile_updated = isset( $_GET['profile_updated'] ) && $_GET['profile_updated']
         <div class="eproc-tab-panel <?php echo $active_tab === 'profile' ? 'eproc-tab-panel--active' : ''; ?>" id="eproc-tab-profile">
 
             <?php if ( $profile_updated ) : ?>
-                <div class="eproc-info-box eproc-info-box--success">
-                    <p><?php echo esc_html__( 'Profile updated successfully.', 'eprocurement' ); ?></p>
+                <div class="eproc-notice success">
+                    <p><?php echo esc_html__( 'Your profile has been updated successfully.', 'eprocurement' ); ?></p>
                 </div>
             <?php endif; ?>
 
             <div class="eproc-form-feedback" id="eproc-profile-feedback" style="display:none;"></div>
 
-            <form id="eproc-profile-form" class="eproc-form">
-                <div class="eproc-form-row eproc-form-row--2col">
+            <div class="eproc-card" style="padding:28px;">
+                <h2 style="margin-top:0;font-size:18px;color:var(--eproc-text-heading);"><?php echo esc_html__( 'Company Information', 'eprocurement' ); ?></h2>
+                <p style="margin-top:0;margin-bottom:24px;color:var(--eproc-text-muted);font-size:13px;">
+                    <?php echo esc_html__( 'Update your company details. These will appear on your bid submissions.', 'eprocurement' ); ?>
+                </p>
+
+                <form id="eproc-profile-form" class="eproc-form">
+                    <div class="eproc-form-row eproc-form-row--2col">
+                        <div class="eproc-form-group">
+                            <label for="eproc-profile-first-name" class="eproc-form-label">
+                                <?php echo esc_html__( 'First Name', 'eprocurement' ); ?>
+                            </label>
+                            <input
+                                type="text"
+                                id="eproc-profile-first-name"
+                                class="eproc-input"
+                                value="<?php echo esc_attr( $current_user->first_name ); ?>"
+                                disabled
+                            />
+                            <span class="eproc-form-hint"><?php echo esc_html__( 'Contact support to change your name.', 'eprocurement' ); ?></span>
+                        </div>
+                        <div class="eproc-form-group">
+                            <label for="eproc-profile-last-name" class="eproc-form-label">
+                                <?php echo esc_html__( 'Last Name', 'eprocurement' ); ?>
+                            </label>
+                            <input
+                                type="text"
+                                id="eproc-profile-last-name"
+                                class="eproc-input"
+                                value="<?php echo esc_attr( $current_user->last_name ); ?>"
+                                disabled
+                            />
+                        </div>
+                    </div>
+
                     <div class="eproc-form-group">
-                        <label for="eproc-profile-first-name" class="eproc-label">
-                            <?php echo esc_html__( 'First Name', 'eprocurement' ); ?>
+                        <label for="eproc-profile-email" class="eproc-form-label">
+                            <?php echo esc_html__( 'Email Address', 'eprocurement' ); ?>
                         </label>
                         <input
-                            type="text"
-                            id="eproc-profile-first-name"
+                            type="email"
+                            id="eproc-profile-email"
                             class="eproc-input"
-                            value="<?php echo esc_attr( $current_user->first_name ); ?>"
+                            value="<?php echo esc_attr( $current_user->user_email ); ?>"
                             disabled
                         />
-                        <span class="eproc-form-hint"><?php echo esc_html__( 'Contact support to change your name.', 'eprocurement' ); ?></span>
                     </div>
+
+                    <div class="eproc-form-row eproc-form-row--2col">
+                        <div class="eproc-form-group">
+                            <label for="eproc-profile-company" class="eproc-form-label">
+                                <?php echo esc_html__( 'Company Name', 'eprocurement' ); ?> <span class="eproc-required">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="eproc-profile-company"
+                                name="company_name"
+                                class="eproc-input"
+                                value="<?php echo esc_attr( $profile ? $profile->company_name : '' ); ?>"
+                                required
+                                placeholder="<?php echo esc_attr__( 'e.g. Acme Procurement Ltd', 'eprocurement' ); ?>"
+                            />
+                        </div>
+                        <div class="eproc-form-group">
+                            <label for="eproc-profile-company-reg" class="eproc-form-label">
+                                <?php echo esc_html__( 'Company Reg Number', 'eprocurement' ); ?>
+                                <span class="eproc-optional">(<?php echo esc_html__( 'optional', 'eprocurement' ); ?>)</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="eproc-profile-company-reg"
+                                name="company_reg"
+                                class="eproc-input"
+                                value="<?php echo esc_attr( $profile ? $profile->company_reg : '' ); ?>"
+                                placeholder="<?php echo esc_attr__( 'e.g. 2018/123456/07', 'eprocurement' ); ?>"
+                            />
+                        </div>
+                    </div>
+
                     <div class="eproc-form-group">
-                        <label for="eproc-profile-last-name" class="eproc-label">
-                            <?php echo esc_html__( 'Last Name', 'eprocurement' ); ?>
+                        <label for="eproc-profile-phone" class="eproc-form-label">
+                            <?php echo esc_html__( 'Phone Number', 'eprocurement' ); ?>
                         </label>
                         <input
-                            type="text"
-                            id="eproc-profile-last-name"
+                            type="tel"
+                            id="eproc-profile-phone"
+                            name="phone"
                             class="eproc-input"
-                            value="<?php echo esc_attr( $current_user->last_name ); ?>"
-                            disabled
+                            value="<?php echo esc_attr( $profile ? $profile->phone : '' ); ?>"
+                            placeholder="<?php echo esc_attr__( '+27 12 345 6789', 'eprocurement' ); ?>"
                         />
                     </div>
-                </div>
 
-                <div class="eproc-form-group">
-                    <label for="eproc-profile-email" class="eproc-label">
-                        <?php echo esc_html__( 'Email Address', 'eprocurement' ); ?>
-                    </label>
-                    <input
-                        type="email"
-                        id="eproc-profile-email"
-                        class="eproc-input"
-                        value="<?php echo esc_attr( $current_user->user_email ); ?>"
-                        disabled
-                    />
-                </div>
-
-                <div class="eproc-form-row eproc-form-row--2col">
                     <div class="eproc-form-group">
-                        <label for="eproc-profile-company" class="eproc-label">
-                            <?php echo esc_html__( 'Company Name', 'eprocurement' ); ?>
+                        <label class="eproc-form-label"><?php echo esc_html__( 'Email Notifications', 'eprocurement' ); ?></label>
+                        <label class="eproc-checkbox">
+                            <input
+                                type="checkbox"
+                                name="notify_replies"
+                                id="eproc-profile-notify-replies"
+                                value="1"
+                                <?php checked( $profile && isset( $profile->notify_replies ) ? (int) $profile->notify_replies : 1, 1 ); ?>
+                            />
+                            <span><?php echo esc_html__( 'Receive email notifications when staff replies to my queries', 'eprocurement' ); ?></span>
                         </label>
-                        <input
-                            type="text"
-                            id="eproc-profile-company"
-                            name="company_name"
-                            class="eproc-input"
-                            value="<?php echo esc_attr( $profile ? $profile->company_name : '' ); ?>"
-                            required
-                        />
                     </div>
+
                     <div class="eproc-form-group">
-                        <label for="eproc-profile-company-reg" class="eproc-label">
-                            <?php echo esc_html__( 'Company Reg Number', 'eprocurement' ); ?>
-                        </label>
-                        <input
-                            type="text"
-                            id="eproc-profile-company-reg"
-                            name="company_reg"
-                            class="eproc-input"
-                            value="<?php echo esc_attr( $profile ? $profile->company_reg : '' ); ?>"
-                        />
+                        <label class="eproc-form-label"><?php echo esc_html__( 'Verification Status', 'eprocurement' ); ?></label>
+                        <?php if ( $profile && (int) $profile->verified === 1 ) : ?>
+                            <?php echo eprocurement_status_badge( 'verified', __( 'Verified', 'eprocurement' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                            <span class="eproc-form-hint" style="margin-left:8px;">
+                                <?php echo esc_html__( 'Your email has been verified — you can submit queries and bids.', 'eprocurement' ); ?>
+                            </span>
+                        <?php else : ?>
+                            <?php echo eprocurement_status_badge( 'unverified', __( 'Not verified', 'eprocurement' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                            <div class="eproc-form-hint" style="margin-top:6px;">
+                                <?php echo esc_html__( 'Check your email for the verification link. You must verify before submitting queries.', 'eprocurement' ); ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
-                </div>
 
-                <div class="eproc-form-group">
-                    <label for="eproc-profile-phone" class="eproc-label">
-                        <?php echo esc_html__( 'Phone Number', 'eprocurement' ); ?>
-                    </label>
-                    <input
-                        type="tel"
-                        id="eproc-profile-phone"
-                        name="phone"
-                        class="eproc-input"
-                        value="<?php echo esc_attr( $profile ? $profile->phone : '' ); ?>"
-                    />
-                </div>
+                    <div class="eproc-form-actions">
+                        <button type="submit" class="eproc-btn eproc-btn-primary eproc-btn-lg" id="eproc-profile-submit">
+                            <?php echo esc_html__( 'Save Profile Changes', 'eprocurement' ); ?>
+                        </button>
+                    </div>
+                </form>
+            </div>
 
-                <div class="eproc-form-group">
-                    <label class="eproc-label"><?php echo esc_html__( 'Email Notifications', 'eprocurement' ); ?></label>
-                    <label class="eproc-checkbox-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;">
-                        <input
-                            type="checkbox"
-                            name="notify_replies"
-                            id="eproc-profile-notify-replies"
-                            value="1"
-                            <?php checked( $profile && isset( $profile->notify_replies ) ? (int) $profile->notify_replies : 1, 1 ); ?>
-                            style="width:auto;margin:0;"
-                        />
-                        <span><?php echo esc_html__( 'Receive email notifications when staff replies to my queries', 'eprocurement' ); ?></span>
-                    </label>
-                </div>
+            <!-- Account Details Card -->
+            <div class="eproc-card" style="padding:28px;margin-top:24px;">
+                <h2 style="margin-top:0;font-size:18px;color:var(--eproc-text-heading);"><?php echo esc_html__( 'Account Details', 'eprocurement' ); ?></h2>
+                <p style="margin-top:0;margin-bottom:24px;color:var(--eproc-text-muted);font-size:13px;">
+                    <?php echo esc_html__( 'Read-only account information.', 'eprocurement' ); ?>
+                </p>
 
-                <div class="eproc-form-group">
-                    <label class="eproc-label"><?php echo esc_html__( 'Verification Status', 'eprocurement' ); ?></label>
-                    <?php if ( $profile && (int) $profile->verified === 1 ) : ?>
-                        <span class="eproc-verification-status eproc-verification-status--verified">
-                            <?php echo esc_html__( 'Verified', 'eprocurement' ); ?>
-                        </span>
-                    <?php else : ?>
-                        <span class="eproc-verification-status eproc-verification-status--pending">
-                            <?php echo esc_html__( 'Not Verified', 'eprocurement' ); ?>
-                        </span>
-                        <span class="eproc-form-hint">
-                            <?php echo esc_html__( 'Check your email for the verification link. You must verify before submitting queries.', 'eprocurement' ); ?>
-                        </span>
-                    <?php endif; ?>
-                </div>
+                <dl style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin:0;">
+                    <div>
+                        <dt style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--eproc-text-muted);margin-bottom:4px;font-weight:600;"><?php echo esc_html__( 'Username', 'eprocurement' ); ?></dt>
+                        <dd style="margin:0;font-weight:500;color:var(--eproc-text-heading);"><?php echo esc_html( $current_user->user_login ); ?></dd>
+                    </div>
+                    <div>
+                        <dt style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--eproc-text-muted);margin-bottom:4px;font-weight:600;"><?php echo esc_html__( 'Member Since', 'eprocurement' ); ?></dt>
+                        <dd style="margin:0;font-weight:500;color:var(--eproc-text-heading);"><?php echo esc_html( wp_date( 'j F Y', strtotime( $current_user->user_registered ) ) ); ?></dd>
+                    </div>
+                    <div>
+                        <dt style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--eproc-text-muted);margin-bottom:4px;font-weight:600;"><?php echo esc_html__( 'Role', 'eprocurement' ); ?></dt>
+                        <dd style="margin:0;font-weight:500;color:var(--eproc-text-heading);"><?php echo esc_html__( 'Bidder', 'eprocurement' ); ?></dd>
+                    </div>
+                </dl>
 
-                <div class="eproc-form-actions">
-                    <button type="submit" class="eproc-btn eproc-btn-primary" id="eproc-profile-submit">
-                        <?php echo esc_html__( 'Update Profile', 'eprocurement' ); ?>
-                    </button>
-                </div>
-            </form>
+                <hr style="margin:24px 0;border:none;border-top:1px solid var(--eproc-border);">
+
+                <h3 style="margin:0 0 12px;font-size:14px;color:var(--eproc-text-heading);"><?php echo esc_html__( 'Change Password', 'eprocurement' ); ?></h3>
+                <p style="margin:0 0 16px;color:var(--eproc-text-muted);font-size:13px;">
+                    <?php
+                    echo wp_kses(
+                        sprintf(
+                            /* translators: %s: lost password URL */
+                            __( 'Need to change your password? <a href="%s">Use the password reset form</a> — a secure link will be emailed to you.', 'eprocurement' ),
+                            esc_url( wp_lostpassword_url( home_url( "/{$slug}/login/" ) ) )
+                        ),
+                        [ 'a' => [ 'href' => [] ] ]
+                    );
+                    ?>
+                </p>
+            </div>
+
         </div>
 
     </div><!-- .eproc-tabs -->

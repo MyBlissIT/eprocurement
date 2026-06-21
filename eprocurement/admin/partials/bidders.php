@@ -91,10 +91,15 @@ $base_url = admin_url( 'admin.php?page=eprocurement-bidders' );
                         ?>
                         <tr>
                             <td>
-                                <strong><?php echo esc_html( $bidder->company_name ); ?></strong>
-                                <?php if ( $bidder->company_reg ) : ?>
-                                    <br><span class="eproc-text-muted"><?php echo esc_html( $bidder->company_reg ); ?></span>
-                                <?php endif; ?>
+                                <div style="display:flex;align-items:center;gap:12px;">
+                                    <?php echo eprocurement_avatar( (int) $bidder->user_id, $bidder->display_name, 40 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                                    <div>
+                                        <strong><?php echo esc_html( $bidder->company_name ); ?></strong>
+                                        <?php if ( $bidder->company_reg ) : ?>
+                                            <br><span class="eproc-text-muted"><?php echo esc_html( $bidder->company_reg ); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </td>
                             <td><?php echo esc_html( $bidder->display_name ); ?></td>
                             <td>
@@ -105,9 +110,9 @@ $base_url = admin_url( 'admin.php?page=eprocurement-bidders' );
                             <td><?php echo esc_html( $bidder->phone ?: '—' ); ?></td>
                             <td>
                                 <?php if ( (int) $bidder->verified ) : ?>
-                                    <span class="eproc-badge verified"><?php esc_html_e( 'Verified', 'eprocurement' ); ?></span>
+                                    <?php echo eprocurement_status_badge( 'verified', __( 'Verified', 'eprocurement' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
                                 <?php else : ?>
-                                    <span class="eproc-badge unverified"><?php esc_html_e( 'Unverified', 'eprocurement' ); ?></span>
+                                    <?php echo eprocurement_status_badge( 'unverified', __( 'Unverified', 'eprocurement' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
                                     <button type="button" class="button button-small eproc-resend-verify" data-user-id="<?php echo esc_attr( $bidder->user_id ); ?>" style="margin-left:4px;font-size:11px;">
                                         <?php esc_html_e( 'Resend', 'eprocurement' ); ?>
                                     </button>
@@ -122,7 +127,16 @@ $base_url = admin_url( 'admin.php?page=eprocurement-bidders' );
                     <tr>
                         <td colspan="8">
                             <div class="eproc-empty-state">
-                                <p><?php esc_html_e( 'No bidders found.', 'eprocurement' ); ?></p>
+                                <div class="eproc-empty-state-illustration">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="9" cy="7" r="4"></circle>
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                    </svg>
+                                </div>
+                                <p class="eproc-empty-state-title"><?php esc_html_e( 'No bidders yet', 'eprocurement' ); ?></p>
+                                <p class="eproc-empty-state-text"><?php esc_html_e( 'Bidders will appear here once they register on the portal.', 'eprocurement' ); ?></p>
                             </div>
                         </td>
                     </tr>

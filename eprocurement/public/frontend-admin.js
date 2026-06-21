@@ -110,6 +110,89 @@
     };
 
     // =========================================================================
+    // Password visibility toggle + strength meter
+    // =========================================================================
+
+    /**
+     * Wire up any [data-toggle-password="inputId"] button to toggle the
+     * visibility of the target password input. Swaps the eye/eye-off SVG.
+     */
+    window.eprocInitPasswordToggles = function () {
+        document.querySelectorAll('[data-toggle-password]').forEach(function (btn) {
+            if (btn.dataset.bound === '1') return;
+            btn.dataset.bound = '1';
+            btn.addEventListener('click', function () {
+                const inputId = btn.getAttribute('data-toggle-password');
+                const input = document.getElementById(inputId);
+                if (!input) return;
+                const eye = btn.querySelector('.eproc-icon-eye');
+                const eyeOff = btn.querySelector('.eproc-icon-eye-off');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    if (eye) eye.style.display = 'none';
+                    if (eyeOff) eyeOff.style.display = 'inline-block';
+                    btn.setAttribute('aria-label', 'Hide password');
+                } else {
+                    input.type = 'password';
+                    if (eye) eye.style.display = 'inline-block';
+                    if (eyeOff) eyeOff.style.display = 'none';
+                    btn.setAttribute('aria-label', 'Show password');
+                }
+            });
+        });
+    };
+
+    /**
+     * Wire up a password strength meter.
+     * The input gets a data-strength-target attribute pointing to the
+     * meter container (.eproc-password-strength).
+     */
+    window.eprocInitPasswordStrength = function () {
+        document.querySelectorAll('[data-strength-target]').forEach(function (input) {
+            if (input.dataset.bound === '1') return;
+            input.dataset.bound = '1';
+            const meterId = input.getAttribute('data-strength-target');
+            const meter = document.getElementById(meterId);
+            if (!meter) return;
+
+            input.addEventListener('input', function () {
+                const value = input.value;
+                const score = window.eprocPasswordScore ? window.eprocPasswordScore(value) : eprocDefaultScore(value);
+                let label = '', cls = '';
+                if (!value) { label = ''; cls = ''; }
+                else if (score < 2) { label = 'Weak';   cls = 'weak'; }
+                else if (score < 3) { label = 'Fair';   cls = 'fair'; }
+                else if (score < 4) { label = 'Good';   cls = 'good'; }
+                else                { label = 'Strong'; cls = 'strong'; }
+                meter.className = 'eproc-password-strength' + (cls ? ' eproc-password-strength--' + cls : '');
+                const labelEl = meter.querySelector('.eproc-password-strength-label');
+                if (labelEl) labelEl.textContent = label;
+            });
+        });
+    };
+
+    /**
+     * Simple password strength scorer (0-5).
+     * Returns a numeric score: length + variety bonuses.
+     */
+    function eprocDefaultScore(pw) {
+        if (!pw) return 0;
+        let score = 0;
+        if (pw.length >= 8)  score++;
+        if (pw.length >= 12) score++;
+        if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+        if (/\d/.test(pw)) score++;
+        if (/[^a-zA-Z0-9]/.test(pw)) score++;
+        return score;
+    }
+
+    // Auto-init on DOMContentLoaded.
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.eprocInitPasswordToggles) window.eprocInitPasswordToggles();
+        if (window.eprocInitPasswordStrength) window.eprocInitPasswordStrength();
+    });
+
+    // =========================================================================
     // Confirm delete helper
     // =========================================================================
 

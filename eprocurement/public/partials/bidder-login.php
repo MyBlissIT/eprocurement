@@ -132,15 +132,21 @@ if ( $email ) {
                     <label for="eproc-login-password" class="eproc-form-label">
                         <?php echo esc_html__( 'Password', 'eprocurement' ); ?>
                     </label>
-                    <input
-                        type="password"
-                        id="eproc-login-password"
-                        name="password"
-                        class="eproc-input"
-                        required
-                        autocomplete="current-password"
-                        placeholder="<?php echo esc_attr__( 'Enter your password', 'eprocurement' ); ?>"
-                    />
+                    <div class="eproc-password-field">
+                        <input
+                            type="password"
+                            id="eproc-login-password"
+                            name="password"
+                            class="eproc-input"
+                            required
+                            autocomplete="current-password"
+                            placeholder="<?php echo esc_attr__( 'Enter your password', 'eprocurement' ); ?>"
+                        />
+                        <button type="button" class="eproc-password-toggle" aria-label="<?php echo esc_attr__( 'Show password', 'eprocurement' ); ?>" data-toggle-password="eproc-login-password">
+                            <svg viewBox="0 0 20 20" fill="currentColor" class="eproc-icon-eye"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                            <svg viewBox="0 0 20 20" fill="currentColor" class="eproc-icon-eye-off" style="display:none;"><path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2 2 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/><path fill-rule="evenodd" d="M9.013 4.044L11 6.03a4 4 0 014.95 4.95l1.617 1.617A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-2.987.044z" clip-rule="evenodd"/></svg>
+                        </button>
+                    </div>
                     <div class="eproc-form-help" style="text-align:right; margin-top:6px;">
                         <a href="<?php echo esc_url( wp_lostpassword_url( home_url( "/{$slug}/login/" ) ) ); ?>" class="eproc-link-muted">
                             <?php echo esc_html__( 'Forgot password?', 'eprocurement' ); ?>
@@ -165,3 +171,27 @@ if ( $email ) {
     </section>
 
 </div><!-- .eproc-wrap -->
+
+<script>
+// Password visibility toggle (self-contained — page doesn't load frontend-admin.js).
+document.querySelectorAll('[data-toggle-password]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        var inputId = btn.getAttribute('data-toggle-password');
+        var input = document.getElementById(inputId);
+        if (!input) return;
+        var eye = btn.querySelector('.eproc-icon-eye');
+        var eyeOff = btn.querySelector('.eproc-icon-eye-off');
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (eye) eye.style.display = 'none';
+            if (eyeOff) eyeOff.style.display = 'inline-block';
+            btn.setAttribute('aria-label', '<?php echo esc_js( __( 'Hide password', 'eprocurement' ) ); ?>');
+        } else {
+            input.type = 'password';
+            if (eye) eye.style.display = 'inline-block';
+            if (eyeOff) eyeOff.style.display = 'none';
+            btn.setAttribute('aria-label', '<?php echo esc_js( __( 'Show password', 'eprocurement' ) ); ?>');
+        }
+    });
+});
+</script>

@@ -114,16 +114,33 @@ class Eprocurement_Bidder {
 
     /**
      * Send the email verification email.
+     *
+     * Loads the HTML template at templates/email/verification.php (or a
+     * theme override at /wp-content/themes/{theme}/eprocurement/email/verification.php).
+     * Sends as HTML via the wp_mail_content_type filter (stored closure ref
+     * so the filter is properly removed after sending — security fix H-08).
      */
     private function send_verification_email( int $user_id, string $email, string $token ): void {
-        $slug = get_option( 'eprocurement_frontend_page_slug', 'tenders' );
-        $url  = home_url( "/{$slug}/verify/?token=" . urlencode( $token ) . '&uid=' . $user_id );
+        $slug       = eprocurement_get_slug();
+        $verify_url = home_url( "/{$slug}/verify/?token=" . urlencode( $token ) . '&uid=' . $user_id );
 
-        $user    = get_userdata( $user_id );
-        $name    = $user ? $user->display_name : '';
-        $subject = __( 'Verify your eProcurement account', 'eprocurement' );
+        $user = get_userdata( $user_id );
+        $name = $user ? $user->display_name : '';
+        $expires_in = (int) ( self::TOKEN_EXPIRY / 3600 );
 
-        $message = sprintf(
+        $subject = __( 'Verify your email address', 'eprocurement' );
+
+        // Build HTML body from template.
+        ob_start();
+        eprocurement_load_template( 'email/verification.php', [
+            'name'        => $name,
+            'verify_url'  => $verify_url,
+            'expires_in'  => $expires_in,
+        ] );
+        $html_body = ob_get_clean();
+
+        // Fallback plain-text version (for clients that don't render HTML).
+        $text_body = sprintf(
             /* translators: 1: User display name, 2: Verification URL, 3: Expiry hours */
             __(
                 "Hello %1\$s,\n\n" .
@@ -136,11 +153,16 @@ class Eprocurement_Bidder {
                 'eprocurement'
             ),
             $name,
-            $url,
-            self::TOKEN_EXPIRY / 3600
+            $verify_url,
+            $expires_in
         );
 
-        wp_mail( $email, $subject, $message );
+        // Set HTML content type with a stored closure reference so
+        // remove_filter actually removes it (security fix H-08).
+        $set_html = static fn( $ct ) => 'text/html';
+        add_filter( 'wp_mail_content_type', $set_html );
+        wp_mail( $email, $subject, $html_body ?: $text_body );
+        remove_filter( 'wp_mail_content_type', $set_html );
     }
 
     /**

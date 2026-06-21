@@ -201,9 +201,31 @@ if ( ! empty( $_doc_ids ) ) {
                 $closing_date   = $doc->closing_date ? date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $doc->closing_date ) ) : '';
                 $short_desc     = wp_trim_words( wp_strip_all_tags( $doc->description ), 20, '...' );
             ?>
-                <div class="eproc-card eproc-bid-card">
+                <div class="eproc-card eproc-bid-card is-interactive">
                     <div class="eproc-card-header">
                         <?php echo Eprocurement_Public::status_badge( $doc->status ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- method returns escaped HTML ?>
+                        <?php
+                        // "Closing soon" badge for open bids closing within 48h.
+                        if ( $doc->status === 'open' && $doc->closing_date && $doc->closing_date !== '0000-00-00 00:00:00' ) :
+                            $hours_left = ( strtotime( $doc->closing_date ) - current_time( 'timestamp' ) ) / 3600;
+                            if ( $hours_left > 0 && $hours_left <= 48 ) :
+                                ?>
+                                <span class="eproc-badge eproc-badge-closing-soon">
+                                    <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 102 0V6zm-1 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+                                    <?php
+                                    if ( $hours_left < 24 ) {
+                                        /* translators: %d: hours left */
+                                        echo esc_html( sprintf( __( 'Closing in %dh', 'eprocurement' ), (int) $hours_left ) );
+                                    } else {
+                                        /* translators: %d: days left */
+                                        echo esc_html( sprintf( _n( 'Closing in %d day', 'Closing in %d days', 1, 'eprocurement' ), 1 ) );
+                                    }
+                                    ?>
+                                </span>
+                                <?php
+                            endif;
+                        endif;
+                        ?>
                     </div>
                     <div class="eproc-card-body">
                         <p class="eproc-bid-number"><?php echo esc_html( $doc->bid_number ); ?></p>
@@ -225,17 +247,19 @@ if ( ! empty( $_doc_ids ) ) {
                                 <span class="eproc-meta-value"><?php echo esc_html( $scm_name ); ?></span>
                             </div>
                         <?php endif; ?>
-                        <div class="eproc-meta-item">
-                            <span class="eproc-meta-label"><?php echo esc_html__( 'Documents:', 'eprocurement' ); ?></span>
-                            <span class="eproc-meta-value"><?php echo esc_html( $doc_count ); ?></span>
-                        </div>
+                        <?php if ( $doc_count > 0 ) : ?>
+                            <div class="eproc-meta-item">
+                                <span class="eproc-meta-label"><?php echo esc_html__( 'Documents:', 'eprocurement' ); ?></span>
+                                <span class="eproc-meta-value"><?php echo esc_html( $doc_count ); ?></span>
+                            </div>
+                        <?php endif; ?>
                     </div>
                     <div class="eproc-card-footer">
                         <a
                             href="<?php echo esc_url( Eprocurement_Public::bid_url( (int) $doc->id ) ); ?>"
                             class="eproc-btn eproc-btn-primary eproc-btn-block"
                         >
-                            <?php echo esc_html__( 'View Details', 'eprocurement' ); ?>
+                            <?php echo esc_html__( 'View Tender Details', 'eprocurement' ); ?>
                         </a>
                     </div>
                 </div>

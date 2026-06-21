@@ -78,6 +78,8 @@ class Eprocurement_Notifications {
         $bidder   = get_userdata( (int) $thread->bidder_id );
         $message  = Eprocurement_Database::get_by_id( 'messages', $message_id );
 
+        $slug = eprocurement_get_slug();
+
         $subject = sprintf(
             /* translators: 1: Bid number, 2: Bid title */
             __( 'New Query: %1$s — %2$s', 'eprocurement' ),
@@ -85,9 +87,21 @@ class Eprocurement_Notifications {
             $document->title ?? ''
         );
 
-        $slug = get_option( 'eprocurement_frontend_page_slug', 'tenders' );
+        // Build HTML body from template.
+        ob_start();
+        eprocurement_load_template( 'email/new-query.php', [
+            'contact_name' => $contact->name,
+            'bidder_name'  => $bidder ? $bidder->display_name : 'Unknown',
+            'bid_number'   => $document->bid_number ?? '',
+            'bid_title'    => $document->title ?? '',
+            'message'      => $message ? wp_strip_all_tags( $message->message ) : '',
+            'visibility'   => $thread->visibility,
+            'admin_url'    => home_url( "/{$slug}/manage/messages/?thread_id=" . $thread_id ),
+        ] );
+        $html_body = ob_get_clean();
 
-        $body = sprintf(
+        // Fallback plain text.
+        $text_body = sprintf(
             /* translators: 1: Contact name, 2: Bidder name, 3: Bid number, 4: Visibility, 5: Message excerpt, 6: Manage URL */
             __(
                 "Hello %1\$s,\n\n" .
@@ -106,7 +120,10 @@ class Eprocurement_Notifications {
             home_url( "/{$slug}/manage/messages/?thread_id=" . $thread_id )
         );
 
-        wp_mail( $contact->email, $subject, $body );
+        $set_html = static fn( $ct ) => 'text/html';
+        add_filter( 'wp_mail_content_type', $set_html );
+        wp_mail( $contact->email, $subject, $html_body ?: $text_body );
+        remove_filter( 'wp_mail_content_type', $set_html );
     }
 
     /**
@@ -151,9 +168,22 @@ class Eprocurement_Notifications {
             $document->bid_number ?? ''
         );
 
-        $slug = get_option( 'eprocurement_frontend_page_slug', 'tenders' );
+        $slug = eprocurement_get_slug();
 
-        $body = sprintf(
+        // Build HTML body from template.
+        ob_start();
+        eprocurement_load_template( 'email/new-reply.php', [
+            'bidder_name'   => $bidder->display_name,
+            'responder'     => $sender ? $sender->display_name : 'Staff',
+            'bid_number'    => $document->bid_number ?? '',
+            'bid_title'     => $document->title ?? '',
+            'reply'         => $message ? wp_strip_all_tags( $message->message ) : '',
+            'dashboard_url' => home_url( "/{$slug}/my-account/?tab=queries" ),
+        ] );
+        $html_body = ob_get_clean();
+
+        // Fallback plain text.
+        $text_body = sprintf(
             /* translators: 1: Bidder name, 2: Responder name, 3: Bid number, 4: Message excerpt, 5: Dashboard URL */
             __(
                 "Hello %1\$s,\n\n" .
@@ -170,7 +200,10 @@ class Eprocurement_Notifications {
             home_url( "/{$slug}/my-account/" )
         );
 
-        wp_mail( $bidder->user_email, $subject, $body );
+        $set_html = static fn( $ct ) => 'text/html';
+        add_filter( 'wp_mail_content_type', $set_html );
+        wp_mail( $bidder->user_email, $subject, $html_body ?: $text_body );
+        remove_filter( 'wp_mail_content_type', $set_html );
     }
 
     /**

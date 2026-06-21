@@ -155,41 +155,57 @@ if ( is_user_logged_in() && Eprocurement_Roles::is_bidder() ) {
 
                 <div class="eproc-form-row eproc-form-row--2col">
                     <div class="eproc-form-group">
-                        <label for="eproc-reg-password" class="eproc-label">
+                        <label for="eproc-reg-password" class="eproc-form-label">
                             <?php echo esc_html__( 'Password', 'eprocurement' ); ?> <span class="eproc-required">*</span>
                         </label>
-                        <input
-                            type="password"
-                            id="eproc-reg-password"
-                            name="password"
-                            class="eproc-input"
-                            required
-                            minlength="8"
-                            autocomplete="new-password"
-                        />
-                        <span class="eproc-form-hint">
-                            <?php echo esc_html__( 'Minimum 8 characters', 'eprocurement' ); ?>
-                        </span>
+                        <div class="eproc-password-field">
+                            <input
+                                type="password"
+                                id="eproc-reg-password"
+                                name="password"
+                                class="eproc-input"
+                                required
+                                minlength="8"
+                                autocomplete="new-password"
+                                placeholder="<?php echo esc_attr__( 'At least 8 characters', 'eprocurement' ); ?>"
+                                data-strength-target="eproc-password-strength"
+                            />
+                            <button type="button" class="eproc-password-toggle" aria-label="<?php echo esc_attr__( 'Show password', 'eprocurement' ); ?>" data-toggle-password="eproc-reg-password">
+                                <svg viewBox="0 0 20 20" fill="currentColor" class="eproc-icon-eye"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                                <svg viewBox="0 0 20 20" fill="currentColor" class="eproc-icon-eye-off" style="display:none;"><path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2 2 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/></svg>
+                            </button>
+                        </div>
+                        <div class="eproc-password-strength" id="eproc-password-strength">
+                            <div class="eproc-password-strength-bar"><div class="eproc-password-strength-fill"></div></div>
+                            <span class="eproc-password-strength-label"></span>
+                        </div>
                     </div>
                     <div class="eproc-form-group">
-                        <label for="eproc-reg-password-confirm" class="eproc-label">
+                        <label for="eproc-reg-password-confirm" class="eproc-form-label">
                             <?php echo esc_html__( 'Confirm Password', 'eprocurement' ); ?> <span class="eproc-required">*</span>
                         </label>
-                        <input
-                            type="password"
-                            id="eproc-reg-password-confirm"
-                            name="password_confirm"
-                            class="eproc-input"
-                            required
-                            minlength="8"
-                            autocomplete="new-password"
-                        />
+                        <div class="eproc-password-field">
+                            <input
+                                type="password"
+                                id="eproc-reg-password-confirm"
+                                name="password_confirm"
+                                class="eproc-input"
+                                required
+                                minlength="8"
+                                autocomplete="new-password"
+                                placeholder="<?php echo esc_attr__( 'Re-enter your password', 'eprocurement' ); ?>"
+                            />
+                            <button type="button" class="eproc-password-toggle" aria-label="<?php echo esc_attr__( 'Show password', 'eprocurement' ); ?>" data-toggle-password="eproc-reg-password-confirm">
+                                <svg viewBox="0 0 20 20" fill="currentColor" class="eproc-icon-eye"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                                <svg viewBox="0 0 20 20" fill="currentColor" class="eproc-icon-eye-off" style="display:none;"><path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2 2 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/></svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <div class="eproc-form-actions">
                     <button type="submit" class="eproc-btn eproc-btn-primary eproc-btn-lg eproc-btn-block" id="eproc-register-submit">
-                        <?php echo esc_html__( 'Create Account & Send Verification Email', 'eprocurement' ); ?>
+                        <?php echo esc_html__( 'Create Account', 'eprocurement' ); ?>
                     </button>
                 </div>
             </form>
@@ -291,4 +307,52 @@ if ( is_user_logged_in() && Eprocurement_Roles::is_bidder() ) {
         feedback.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 })();
+
+// Password visibility toggle + strength meter (self-contained).
+document.querySelectorAll('[data-toggle-password]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        var inputId = btn.getAttribute('data-toggle-password');
+        var input = document.getElementById(inputId);
+        if (!input) return;
+        var eye = btn.querySelector('.eproc-icon-eye');
+        var eyeOff = btn.querySelector('.eproc-icon-eye-off');
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (eye) eye.style.display = 'none';
+            if (eyeOff) eyeOff.style.display = 'inline-block';
+            btn.setAttribute('aria-label', '<?php echo esc_js( __( 'Hide password', 'eprocurement' ) ); ?>');
+        } else {
+            input.type = 'password';
+            if (eye) eye.style.display = 'inline-block';
+            if (eyeOff) eyeOff.style.display = 'none';
+            btn.setAttribute('aria-label', '<?php echo esc_js( __( 'Show password', 'eprocurement' ) ); ?>');
+        }
+    });
+});
+
+// Password strength meter.
+var strengthInput = document.querySelector('[data-strength-target]');
+if (strengthInput) {
+    strengthInput.addEventListener('input', function () {
+        var meterId = strengthInput.getAttribute('data-strength-target');
+        var meter = document.getElementById(meterId);
+        if (!meter) return;
+        var pw = strengthInput.value;
+        var score = 0;
+        if (pw.length >= 8)  score++;
+        if (pw.length >= 12) score++;
+        if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+        if (/\d/.test(pw)) score++;
+        if (/[^a-zA-Z0-9]/.test(pw)) score++;
+        var label = '', cls = '';
+        if (!pw) { label = ''; cls = ''; }
+        else if (score < 2) { label = 'Weak';   cls = 'weak'; }
+        else if (score < 3) { label = 'Fair';   cls = 'fair'; }
+        else if (score < 4) { label = 'Good';   cls = 'good'; }
+        else                { label = 'Strong'; cls = 'strong'; }
+        meter.className = 'eproc-password-strength' + (cls ? ' eproc-password-strength--' + cls : '');
+        var labelEl = meter.querySelector('.eproc-password-strength-label');
+        if (labelEl) labelEl.textContent = label;
+    });
+}
 </script>

@@ -94,10 +94,15 @@ $base_url = $manage_base . '/bidders/';
                         ?>
                         <tr>
                             <td>
-                                <strong><?php echo esc_html( $bidder->company_name ); ?></strong>
-                                <?php if ( $bidder->company_reg ) : ?>
-                                    <br><span class="eproc-text-muted"><?php echo esc_html( $bidder->company_reg ); ?></span>
-                                <?php endif; ?>
+                                <div style="display:flex;align-items:center;gap:12px;">
+                                    <?php echo eprocurement_avatar( (int) $bidder->user_id, $bidder->display_name, 40 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                                    <div>
+                                        <strong><?php echo esc_html( $bidder->company_name ); ?></strong>
+                                        <?php if ( $bidder->company_reg ) : ?>
+                                            <br><span class="eproc-text-muted"><?php echo esc_html( $bidder->company_reg ); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </td>
                             <td><?php echo esc_html( $bidder->display_name ); ?></td>
                             <td>
@@ -108,9 +113,9 @@ $base_url = $manage_base . '/bidders/';
                             <td><?php echo esc_html( $bidder->phone ?: '—' ); ?></td>
                             <td>
                                 <?php if ( (int) $bidder->verified ) : ?>
-                                    <span class="eproc-badge verified"><?php esc_html_e( 'Verified', 'eprocurement' ); ?></span>
+                                    <?php echo eprocurement_status_badge( 'verified', __( 'Verified', 'eprocurement' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
                                 <?php else : ?>
-                                    <span class="eproc-badge unverified"><?php esc_html_e( 'Unverified', 'eprocurement' ); ?></span>
+                                    <?php echo eprocurement_status_badge( 'unverified', __( 'Unverified', 'eprocurement' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
                                     <button type="button" class="eproc-btn eproc-btn-sm eproc-resend-verify" data-user-id="<?php echo esc_attr( $bidder->user_id ); ?>">
                                         <?php esc_html_e( 'Resend', 'eprocurement' ); ?>
                                     </button>

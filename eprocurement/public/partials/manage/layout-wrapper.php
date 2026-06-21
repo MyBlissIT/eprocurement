@@ -221,8 +221,11 @@ if ( file_exists( $logo_file ) ) {
 
         <!-- User info at bottom -->
         <div class="eproc-sidebar-user">
-            <span class="eproc-sidebar-user-name"><?php echo esc_html( $current_user->display_name ); ?></span>
-            <span class="eproc-sidebar-user-role"><?php echo esc_html( ucwords( str_replace( [ 'eprocurement_', '_' ], [ '', ' ' ], $current_user->roles[0] ?? '' ) ) ); ?></span>
+            <?php echo eprocurement_avatar( $current_user->ID, $current_user->display_name, 36 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+            <div class="eproc-sidebar-user-info">
+                <span class="eproc-sidebar-user-name"><?php echo esc_html( $current_user->display_name ); ?></span>
+                <span class="eproc-sidebar-user-role"><?php echo esc_html( ucwords( str_replace( [ 'eprocurement_', '_' ], [ '', ' ' ], $current_user->roles[0] ?? '' ) ) ); ?></span>
+            </div>
         </div>
     </nav>
 

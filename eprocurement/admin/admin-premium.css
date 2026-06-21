@@ -826,3 +826,963 @@ a.eproc-btn-primary {
 .eproc-status-dot.archived { background: #94a3b8; }
 .eproc-status-dot.cancelled { background: #a3a3a3; }
 
+/* ──────────────────────────────────────────
+   23. AVATARS — initials-based coloured circles
+   ────────────────────────────────────────── */
+
+.eproc-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: #fff;
+    font-weight: 600;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    flex-shrink: 0;
+    vertical-align: middle;
+    user-select: none;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.18),
+                0 1px 2px rgba(15, 23, 42, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+.eproc-avatar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.eproc-avatar--sm { width: 28px; height: 28px; font-size: 11px; }
+.eproc-avatar--md { width: 36px; height: 36px; font-size: 13px; }
+.eproc-avatar--lg { width: 48px; height: 48px; font-size: 17px; }
+.eproc-avatar--xl { width: 80px; height: 80px; font-size: 28px; }
+
+/* Avatar with online status dot */
+.eproc-avatar-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+.eproc-avatar-wrap .eproc-avatar-status {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 30%;
+    height: 30%;
+    min-width: 10px;
+    min-height: 10px;
+    border-radius: 50%;
+    background: #16a34a;
+    border: 2px solid #fff;
+}
+
+/* Avatar group (overlapping) */
+.eproc-avatar-group {
+    display: inline-flex;
+    align-items: center;
+}
+
+.eproc-avatar-group .eproc-avatar {
+    margin-left: -10px;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+.eproc-avatar-group .eproc-avatar:first-child {
+    margin-left: 0;
+}
+
+/* ──────────────────────────────────────────
+   24. FILE TYPE ICONS — coloured pill badges
+   ────────────────────────────────────────── */
+
+.eproc-file-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 44px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    text-transform: uppercase;
+    position: relative;
+    vertical-align: middle;
+    flex-shrink: 0;
+    box-shadow: inset 0 0 0 1px currentColor,
+                inset 0 -8px 0 rgba(0, 0, 0, 0.06);
+}
+
+.eproc-file-icon::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    background: linear-gradient(225deg, #fff 50%, transparent 50%);
+    border-radius: 0 6px 0 6px;
+    box-shadow: -1px 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.eproc-file-icon-label {
+    position: relative;
+    z-index: 1;
+    margin-top: 6px;
+}
+
+/* Inline variant (smaller, for tight tables) */
+.eproc-file-icon--inline {
+    width: 28px;
+    height: 32px;
+    font-size: 8px;
+    border-radius: 4px;
+}
+
+.eproc-file-icon--inline::before {
+    width: 7px;
+    height: 7px;
+    border-radius: 0 4px 0 4px;
+}
+
+.eproc-file-icon--inline .eproc-file-icon-label {
+    margin-top: 4px;
+}
+
+/* ──────────────────────────────────────────
+   25. BREADCRUMBS
+   ────────────────────────────────────────── */
+
+.eproc-breadcrumbs {
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--eproc-text-muted, #64748b);
+}
+
+.eproc-breadcrumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.eproc-breadcrumbs li {
+    display: inline-flex;
+    align-items: center;
+}
+
+.eproc-breadcrumbs a {
+    color: var(--eproc-text-muted, #64748b);
+    text-decoration: none;
+    transition: color var(--eproc-duration-fast) var(--eproc-ease-out);
+    padding: 4px 6px;
+    border-radius: 4px;
+}
+
+.eproc-breadcrumbs a:hover {
+    color: var(--eproc-primary, #8b1a2b);
+    background: var(--eproc-primary-bg, rgba(139, 26, 43, 0.05));
+}
+
+.eproc-breadcrumb-current {
+    color: var(--eproc-text-heading, #1e293b);
+    font-weight: 600;
+    padding: 4px 6px;
+}
+
+.eproc-breadcrumb-separator {
+    color: var(--eproc-text-light, #94a3b8);
+    user-select: none;
+}
+
+/* ──────────────────────────────────────────
+   26. STATUS BADGES WITH ICONS
+   ────────────────────────────────────────── */
+
+.eproc-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.eproc-badge-icon {
+    display: inline-flex;
+    width: 12px;
+    height: 12px;
+}
+
+.eproc-badge-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.eproc-badge-icon svg circle,
+.eproc-badge-icon svg path {
+    fill: currentColor;
+}
+
+.eproc-badge-text {
+    line-height: 1;
+}
+
+/* Colour variants — softer than the v2.13 solid fills */
+.eproc-badge-draft     { background: #f1f5f9; color: #475569; }
+.eproc-badge-open      { background: #dcfce7; color: #15803d; }
+.eproc-badge-closed    { background: #fee2e2; color: #b91c1c; }
+.eproc-badge-cancelled { background: #f3f4f6; color: #6b7280; }
+.eproc-badge-archived  { background: #e0e7ff; color: #4338ca; }
+.eproc-badge-verified  { background: #dcfce7; color: #15803d; }
+.eproc-badge-unverified{ background: #fef3c7; color: #b45309; }
+.eproc-badge-public    { background: #dbeafe; color: #1d4ed8; }
+.eproc-badge-private   { background: #f3e8ff; color: #7c3aed; }
+.eproc-badge-scm       { background: #fef2f2; color: var(--eproc-primary, #8b1a2b); }
+.eproc-badge-technical { background: #f3e8ff; color: #7c3aed; }
+
+/* ──────────────────────────────────────────
+   27. STAT CARD ICONS — coloured circle per metric
+   ────────────────────────────────────────── */
+
+.eproc-stat-card {
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.eproc-stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--eproc-primary-bg, rgba(139, 26, 43, 0.08));
+    color: var(--eproc-primary, #8b1a2b);
+}
+
+.eproc-stat-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.eproc-stat-icon--green   { background: #dcfce7; color: #15803d; }
+.eproc-stat-icon--red     { background: #fee2e2; color: #b91c1c; }
+.eproc-stat-icon--orange  { background: #ffedd5; color: #c2410c; }
+.eproc-stat-icon--purple  { background: #f3e8ff; color: #7c3aed; }
+.eproc-stat-icon--blue    { background: #dbeafe; color: #1d4ed8; }
+.eproc-stat-icon--teal    { background: #ccfbf1; color: #0f766e; }
+
+.eproc-stat-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.eproc-stat-number {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 2px;
+}
+
+.eproc-stat-label {
+    font-size: 12px;
+    color: var(--eproc-text-muted, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+}
+
+.eproc-stat-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.eproc-stat-trend--up   { color: #16a34a; }
+.eproc-stat-trend--down { color: #dc2626; }
+.eproc-stat-trend--flat { color: #64748b; }
+
+/* ──────────────────────────────────────────
+   28. PASSWORD INPUT — visibility toggle + strength meter
+   ────────────────────────────────────────── */
+
+.eproc-password-field {
+    position: relative;
+}
+
+.eproc-password-toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--eproc-text-muted, #64748b);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--eproc-duration-fast) var(--eproc-ease-out),
+                background-color var(--eproc-duration-fast) var(--eproc-ease-out);
+}
+
+.eproc-password-toggle:hover {
+    color: var(--eproc-primary, #8b1a2b);
+    background: var(--eproc-primary-bg, rgba(139, 26, 43, 0.06));
+}
+
+.eproc-password-toggle svg {
+    width: 18px;
+    height: 18px;
+}
+
+.eproc-password-field input {
+    padding-right: 42px !important;
+}
+
+/* Strength meter */
+.eproc-password-strength {
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.eproc-password-strength-bar {
+    flex: 1;
+    height: 4px;
+    background: var(--eproc-border, #e2e8f0);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.eproc-password-strength-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 2px;
+    transition: width var(--eproc-duration-base) var(--eproc-ease-out),
+                background-color var(--eproc-duration-base) var(--eproc-ease-out);
+}
+
+.eproc-password-strength-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--eproc-text-muted, #64748b);
+    min-width: 60px;
+    text-align: right;
+}
+
+.eproc-password-strength--weak   .eproc-password-strength-fill { width: 25%;  background: #dc2626; }
+.eproc-password-strength--weak   .eproc-password-strength-label { color: #dc2626; }
+.eproc-password-strength--fair   .eproc-password-strength-fill { width: 50%;  background: #f59e0b; }
+.eproc-password-strength--fair   .eproc-password-strength-label { color: #f59e0b; }
+.eproc-password-strength--good   .eproc-password-strength-fill { width: 75%;  background: #16a34a; }
+.eproc-password-strength--good   .eproc-password-strength-label { color: #16a34a; }
+.eproc-password-strength--strong .eproc-password-strength-fill { width: 100%; background: #15803d; }
+.eproc-password-strength--strong .eproc-password-strength-label { color: #15803d; }
+
+/* ──────────────────────────────────────────
+   29. PROFILE CARD — bidder dashboard "My Profile"
+   ────────────────────────────────────────── */
+
+.eproc-profile-card {
+    display: flex;
+    gap: 24px;
+    padding: 28px;
+    background: linear-gradient(135deg, #fff 0%, var(--eproc-primary-bg, #fdf2f4) 100%);
+    border: 1px solid var(--eproc-border, #e2e8f0);
+    border-radius: 14px;
+    margin-bottom: 24px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.eproc-profile-card-avatar {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.eproc-profile-card-avatar .eproc-avatar {
+    width: 96px;
+    height: 96px;
+    font-size: 34px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12),
+                inset 0 0 0 3px rgba(255, 255, 255, 0.25);
+}
+
+.eproc-profile-card-info {
+    flex: 1;
+    min-width: 200px;
+}
+
+.eproc-profile-card-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--eproc-text-heading, #1e293b);
+    margin-bottom: 4px;
+    letter-spacing: -0.025em;
+}
+
+.eproc-profile-card-meta {
+    color: var(--eproc-text-muted, #64748b);
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.eproc-profile-card-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.eproc-profile-card-stats {
+    display: flex;
+    gap: 24px;
+    padding-left: 24px;
+    border-left: 1px solid var(--eproc-border, #e2e8f0);
+    flex-wrap: wrap;
+}
+
+.eproc-profile-stat {
+    text-align: center;
+}
+
+.eproc-profile-stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--eproc-text-heading, #1e293b);
+    line-height: 1;
+}
+
+.eproc-profile-stat-label {
+    font-size: 11px;
+    color: var(--eproc-text-muted, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 4px;
+}
+
+@media (max-width: 640px) {
+    .eproc-profile-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 24px 20px;
+    }
+
+    .eproc-profile-card-stats {
+        padding-left: 0;
+        border-left: none;
+        border-top: 1px solid var(--eproc-border, #e2e8f0);
+        padding-top: 20px;
+        width: 100%;
+        justify-content: space-around;
+    }
+}
+
+/* ──────────────────────────────────────────
+   30. SIDEBAR USER FOOTER — with avatar
+   ────────────────────────────────────────── */
+
+.eproc-sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin-top: auto;
+}
+
+.eproc-sidebar-user .eproc-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+}
+
+.eproc-sidebar-user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.eproc-sidebar-user-name {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.eproc-sidebar-user-role {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+}
+
+/* ──────────────────────────────────────────
+   31. REFINED EMPTY STATES — illustration + CTA
+   ────────────────────────────────────────── */
+
+.eproc-empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--eproc-text-muted, #64748b);
+}
+
+.eproc-empty-state-illustration {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--eproc-primary-bg, #fdf2f4) 0%, var(--eproc-border-light, #f1f5f9) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--eproc-primary, #8b1a2b);
+    position: relative;
+}
+
+.eproc-empty-state-illustration::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border: 2px dashed var(--eproc-border, #e2e8f0);
+    border-radius: 50%;
+    opacity: 0.6;
+}
+
+.eproc-empty-state-illustration svg {
+    width: 48px;
+    height: 48px;
+}
+
+.eproc-empty-state-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--eproc-text-heading, #1e293b);
+    margin-bottom: 8px;
+}
+
+.eproc-empty-state-text {
+    font-size: 14px;
+    color: var(--eproc-text-muted, #64748b);
+    max-width: 420px;
+    margin: 0 auto 24px;
+    line-height: 1.6;
+}
+
+/* ──────────────────────────────────────────
+   32. CHECKBOX / RADIO REFINED
+   ────────────────────────────────────────── */
+
+.eproc-checkbox,
+.eproc-radio {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 14px;
+}
+
+.eproc-checkbox input[type="checkbox"],
+.eproc-radio input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--eproc-border-input, #cbd5e1);
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    transition: all var(--eproc-duration-fast) var(--eproc-ease-out);
+    position: relative;
+    flex-shrink: 0;
+}
+
+.eproc-radio input[type="radio"] {
+    border-radius: 50%;
+}
+
+.eproc-checkbox input[type="checkbox"]:hover,
+.eproc-radio input[type="radio"]:hover {
+    border-color: var(--eproc-primary, #8b1a2b);
+}
+
+.eproc-checkbox input[type="checkbox"]:checked {
+    background: var(--eproc-primary, #8b1a2b);
+    border-color: var(--eproc-primary, #8b1a2b);
+}
+
+.eproc-checkbox input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 9px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.eproc-radio input[type="radio"]:checked {
+    border-color: var(--eproc-primary, #8b1a2b);
+    border-width: 2px;
+}
+
+.eproc-radio input[type="radio"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--eproc-primary, #8b1a2b);
+}
+
+/* ──────────────────────────────────────────
+   33. REFINED SELECT
+   ────────────────────────────────────────── */
+
+.eproc-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2364748b'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+    background-position: right 10px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 36px !important;
+    cursor: pointer;
+}
+
+/* ──────────────────────────────────────────
+   34. UPLOAD DROPZONE — refined
+   ────────────────────────────────────────── */
+
+.eproc-dropzone {
+    border: 2px dashed var(--eproc-border, #e2e8f0);
+    border-radius: 12px;
+    padding: 36px 24px;
+    text-align: center;
+    background: var(--eproc-surface-light, #f7f9fc);
+    cursor: pointer;
+    transition: all var(--eproc-duration-base) var(--eproc-ease-out);
+    position: relative;
+}
+
+.eproc-dropzone:hover,
+.eproc-dropzone.is-dragover {
+    border-color: var(--eproc-primary, #8b1a2b);
+    background: var(--eproc-primary-bg, #fdf2f4);
+    transform: scale(1.005);
+}
+
+.eproc-dropzone-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 12px;
+    border-radius: 14px;
+    background: var(--eproc-primary-bg, rgba(139, 26, 43, 0.08));
+    color: var(--eproc-primary, #8b1a2b);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform var(--eproc-duration-base) var(--eproc-ease-spring);
+}
+
+.eproc-dropzone:hover .eproc-dropzone-icon,
+.eproc-dropzone.is-dragover .eproc-dropzone-icon {
+    transform: translateY(-3px) scale(1.05);
+}
+
+.eproc-dropzone-icon svg {
+    width: 26px;
+    height: 26px;
+}
+
+.eproc-dropzone-text {
+    font-size: 14px;
+    color: var(--eproc-text-heading, #1e293b);
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.eproc-dropzone-hint {
+    font-size: 12px;
+    color: var(--eproc-text-muted, #64748b);
+}
+
+/* ──────────────────────────────────────────
+   35. ATTACHMENT CHIP — refined with file icon
+   ────────────────────────────────────────── */
+
+.eproc-attachment-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px 6px 6px;
+    background: var(--eproc-surface-light, #f7f9fc);
+    border: 1px solid var(--eproc-border, #e2e8f0);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--eproc-text, #334155);
+    text-decoration: none;
+    transition: all var(--eproc-duration-fast) var(--eproc-ease-out);
+    max-width: 100%;
+}
+
+.eproc-attachment-chip:hover {
+    border-color: var(--eproc-primary, #8b1a2b);
+    background: var(--eproc-primary-bg, #fdf2f4);
+    color: var(--eproc-primary, #8b1a2b);
+}
+
+.eproc-attachment-chip-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.eproc-attachment-chip-size {
+    color: var(--eproc-text-muted, #64748b);
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+/* ──────────────────────────────────────────
+   36. PAGE HEADER — refined with title + subtitle
+   ────────────────────────────────────────── */
+
+.eproc-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.eproc-page-header-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--eproc-text-heading, #1e293b);
+    letter-spacing: -0.025em;
+    margin: 0 0 4px;
+    line-height: 1.2;
+}
+
+.eproc-page-header-subtitle {
+    color: var(--eproc-text-muted, #64748b);
+    font-size: 14px;
+    margin: 0;
+}
+
+.eproc-page-header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ──────────────────────────────────────────
+   37. TAB NAVIGATION — refined
+   ────────────────────────────────────────── */
+
+.eproc-tabs-nav {
+    display: flex;
+    gap: 2px;
+    border-bottom: 1px solid var(--eproc-border, #e2e8f0);
+    margin-bottom: 24px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.eproc-tab-item {
+    padding: 12px 18px;
+    color: var(--eproc-text-muted, #64748b);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all var(--eproc-duration-fast) var(--eproc-ease-out);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    top: 1px;
+}
+
+.eproc-tab-item:hover {
+    color: var(--eproc-text-heading, #1e293b);
+}
+
+.eproc-tab-item.active {
+    color: var(--eproc-primary, #8b1a2b);
+    border-bottom-color: var(--eproc-primary, #8b1a2b);
+    font-weight: 600;
+}
+
+.eproc-tab-badge {
+    background: var(--eproc-border, #e2e8f0);
+    color: var(--eproc-text-muted, #64748b);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 10px;
+    line-height: 1.4;
+    min-width: 18px;
+    text-align: center;
+}
+
+.eproc-tab-item.active .eproc-tab-badge {
+    background: var(--eproc-primary, #8b1a2b);
+    color: #fff;
+}
+
+/* ──────────────────────────────────────────
+   38. CONTACT CARD — tender detail page
+   ────────────────────────────────────────── */
+
+.eproc-contact-card {
+    background: #fff;
+    border: 1px solid var(--eproc-border, #e2e8f0);
+    border-radius: 12px;
+    padding: 20px;
+    transition: box-shadow var(--eproc-duration-base) var(--eproc-ease-out),
+                border-color var(--eproc-duration-base) var(--eproc-ease-out);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.eproc-contact-card:hover {
+    box-shadow: var(--eproc-shadow-md);
+    border-color: var(--eproc-primary-border, #f8bbd0);
+}
+
+.eproc-contact-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.eproc-contact-type {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--eproc-text-muted, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 2px;
+}
+
+.eproc-contact-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--eproc-text-heading, #1e293b);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.eproc-contact-dept {
+    font-size: 13px;
+    color: var(--eproc-text-muted, #64748b);
+    margin: 0;
+}
+
+.eproc-contact-details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 12px;
+    border-top: 1px solid var(--eproc-border-light, #f1f5f9);
+}
+
+.eproc-contact-email,
+.eproc-contact-phone {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    margin: 0;
+}
+
+.eproc-contact-email svg,
+.eproc-contact-phone svg {
+    color: var(--eproc-text-muted, #64748b);
+    flex-shrink: 0;
+}
+
+.eproc-contact-email a,
+.eproc-contact-phone a {
+    color: var(--eproc-text, #334155);
+    text-decoration: none;
+    transition: color var(--eproc-duration-fast) var(--eproc-ease-out);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.eproc-contact-email a:hover,
+.eproc-contact-phone a:hover {
+    color: var(--eproc-primary, #8b1a2b);
+}
+
+/* ──────────────────────────────────────────
+   39. CLOSING-SOON BADGE + CARD HEADER
+   ────────────────────────────────────────── */
+
+.eproc-badge-closing-soon {
+    background: #fef3c7;
+    color: #b45309;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    animation: eproc-pulse-soft 2s var(--eproc-ease-in-out) infinite;
+}
+
+@keyframes eproc-pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.75; }
+}
+
+.eproc-card-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-bottom: 8px;
+}
+

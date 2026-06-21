@@ -87,11 +87,18 @@ $staff_users = get_users( [
                             data-email="<?php echo esc_attr( $contact->email ); ?>"
                             data-department="<?php echo esc_attr( $contact->department ); ?>"
                             data-user-id="<?php echo esc_attr( $contact->user_id ); ?>">
-                            <td><strong><?php echo esc_html( $contact->name ); ?></strong></td>
                             <td>
-                                <span class="eproc-badge <?php echo esc_attr( $contact->type ); ?>">
-                                    <?php echo esc_html( strtoupper( $contact->type ) ); ?>
-                                </span>
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <?php echo eprocurement_avatar( (int) $contact->user_id, $contact->name, 36 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                                    <strong><?php echo esc_html( $contact->name ); ?></strong>
+                                </div>
+                            </td>
+                            <td>
+                                <?php if ( $contact->type === 'scm' ) : ?>
+                                    <?php echo eprocurement_status_badge( 'scm', __( 'SCM', 'eprocurement' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                                <?php else : ?>
+                                    <?php echo eprocurement_status_badge( 'technical', __( 'Technical', 'eprocurement' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <?php if ( $contact->phone ) : ?>
