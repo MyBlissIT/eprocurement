@@ -215,69 +215,82 @@ class Eprocurement_Documents {
     /**
      * Delete a document and its related records.
      *
+     * Wrapped in a database transaction (security/integrity fix M-09) so
+     * that partial failures don't leave orphaned rows pointing to a
+     * deleted document.
+     *
      * @param int $id Document ID.
      * @return bool True on success.
      */
     public function delete( int $id ): bool {
-        // Delete bid docs (cloud files should be manually managed)
-        Eprocurement_Database::delete( 'supporting_docs', [ 'document_id' => $id ] );
-
-        // Delete threads and messages
         global $wpdb;
-        $threads_table  = Eprocurement_Database::table( 'threads' );
-        $messages_table = Eprocurement_Database::table( 'messages' );
-        $attachments_table = Eprocurement_Database::table( 'message_attachments' );
 
-        // Get thread IDs for this document
-        $thread_ids = $wpdb->get_col(
-            $wpdb->prepare( "SELECT id FROM {$threads_table} WHERE document_id = %d", $id ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        );
+        $wpdb->query( 'START TRANSACTION' );
 
-        if ( ! empty( $thread_ids ) ) {
-            $placeholders = implode( ',', array_fill( 0, count( $thread_ids ), '%d' ) );
+        try {
+            // Delete bid docs (cloud files should be manually managed)
+            Eprocurement_Database::delete( 'supporting_docs', [ 'document_id' => $id ] );
 
-            // Delete message attachments
-            $msg_ids = $wpdb->get_col(
-                $wpdb->prepare(
-                    "SELECT id FROM {$messages_table} WHERE thread_id IN ({$placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
-                    ...$thread_ids
-                )
+            $threads_table  = Eprocurement_Database::table( 'threads' );
+            $messages_table = Eprocurement_Database::table( 'messages' );
+            $attachments_table = Eprocurement_Database::table( 'message_attachments' );
+
+            // Get thread IDs for this document
+            $thread_ids = $wpdb->get_col(
+                $wpdb->prepare( "SELECT id FROM {$threads_table} WHERE document_id = %d", $id ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             );
 
-            if ( ! empty( $msg_ids ) ) {
-                $msg_placeholders = implode( ',', array_fill( 0, count( $msg_ids ), '%d' ) );
+            if ( ! empty( $thread_ids ) ) {
+                $placeholders = implode( ',', array_fill( 0, count( $thread_ids ), '%d' ) );
+
+                // Delete message attachments
+                $msg_ids = $wpdb->get_col(
+                    $wpdb->prepare(
+                        "SELECT id FROM {$messages_table} WHERE thread_id IN ({$placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+                        ...$thread_ids
+                    )
+                );
+
+                if ( ! empty( $msg_ids ) ) {
+                    $msg_placeholders = implode( ',', array_fill( 0, count( $msg_ids ), '%d' ) );
+                    $wpdb->query(
+                        $wpdb->prepare(
+                            "DELETE FROM {$attachments_table} WHERE message_id IN ({$msg_placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+                            ...$msg_ids
+                        )
+                    );
+                }
+
+                // Delete messages
                 $wpdb->query(
                     $wpdb->prepare(
-                        "DELETE FROM {$attachments_table} WHERE message_id IN ({$msg_placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
-                        ...$msg_ids
+                        "DELETE FROM {$messages_table} WHERE thread_id IN ({$placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+                        ...$thread_ids
+                    )
+                );
+
+                // Delete threads
+                $wpdb->query(
+                    $wpdb->prepare(
+                        "DELETE FROM {$threads_table} WHERE document_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                        $id
                     )
                 );
             }
 
-            // Delete messages
-            $wpdb->query(
-                $wpdb->prepare(
-                    "DELETE FROM {$messages_table} WHERE thread_id IN ({$placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
-                    ...$thread_ids
-                )
-            );
+            // Delete downloads log
+            Eprocurement_Database::delete( 'downloads', [ 'document_id' => $id ] );
 
-            // Delete threads
-            $wpdb->query(
-                $wpdb->prepare(
-                    "DELETE FROM {$threads_table} WHERE document_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-                    $id
-                )
-            );
+            // Delete the document
+            $result = Eprocurement_Database::delete( 'documents', [ 'id' => $id ] );
+
+            $wpdb->query( 'COMMIT' );
+            return $result !== false;
+        } catch ( \Exception $e ) {
+            $wpdb->query( 'ROLLBACK' );
+            error_log( 'eProcurement: cascade delete failed for document ' . $id . ': ' . $e->getMessage() );
+            return false;
         }
-
-        // Delete downloads log
-        Eprocurement_Database::delete( 'downloads', [ 'document_id' => $id ] );
-
-        // Delete the document
-        $result = Eprocurement_Database::delete( 'documents', [ 'id' => $id ] );
-
-        return $result !== false;
     }
 
     /**

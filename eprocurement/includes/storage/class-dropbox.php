@@ -73,11 +73,13 @@ class Eprocurement_Dropbox extends Eprocurement_Storage_Interface {
 
     public function get_auth_url(): string {
         $creds  = $this->get_credentials();
+        $state  = self::generate_oauth_state();
         $params = http_build_query( [
             'client_id'             => $creds['app_key'] ?? '',
             'response_type'         => 'code',
             'redirect_uri'          => self::get_redirect_uri(),
             'token_access_type'     => 'offline',
+            'state'                 => $state,
         ] );
 
         return self::AUTH_URL . '/authorize?' . $params;

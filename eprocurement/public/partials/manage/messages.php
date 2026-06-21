@@ -365,8 +365,7 @@ if ( $active_thread && $thread_document ) {
                     location.reload();
                 })
                 .catch(function (err) {
-                    document.getElementById('eproc-message-notices').innerHTML =
-                        '<div class="eproc-notice error"><p>' + (err.message || 'An error occurred.') + '</p></div>';
+                    eprocShowNotice('error', err.message || 'An error occurred.');
                     eprocSetLoading(resolveBtn, false);
                 });
         });
@@ -411,8 +410,7 @@ if ( $active_thread && $thread_document ) {
                     location.reload();
                 })
                 .catch(function (err) {
-                    document.getElementById('eproc-message-notices').innerHTML =
-                        '<div class="eproc-notice error"><p>' + (err.message || 'An error occurred.') + '</p></div>';
+                    eprocShowNotice('error', err.message || 'An error occurred.');
                     eprocSetLoading(sendBtn, false);
                 });
         });

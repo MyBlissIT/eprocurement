@@ -229,6 +229,15 @@ class Eprocurement_Admin {
             EPROC_VERSION
         );
 
+        // Premium polish layer — refined shadows, micro-interactions, toasts.
+        // Loaded last so it can override base styles where intended.
+        wp_enqueue_style(
+            'eprocurement-admin-premium',
+            EPROC_PLUGIN_URL . 'admin/admin-premium.css',
+            [ 'eprocurement-admin-shell', 'eprocurement-admin' ],
+            EPROC_VERSION
+        );
+
         wp_enqueue_script(
             'eprocurement-admin',
             EPROC_PLUGIN_URL . 'admin/admin.js',
@@ -638,10 +647,12 @@ class Eprocurement_Admin {
             $storage = Eprocurement_Storage_Interface::get_active_provider();
             if ( $storage ) {
                 try {
-                    $result = $storage->upload( $file['tmp_name'], $file['name'], 'message-attachments' );
+                    // Security fix M-03: sanitise filename before cloud upload.
+                    $safe_name = sanitize_file_name( $file['name'] );
+                    $result = $storage->upload( $file['tmp_name'], $safe_name, 'message-attachments' );
 
                     $messaging->add_attachment( $message_id, [
-                        'file_name'      => $file['name'],
+                        'file_name'      => $safe_name,
                         'file_size'      => $file['size'],
                         'file_type'      => $mime_type,
                         'cloud_provider' => $storage->get_provider_name(),
@@ -838,16 +849,18 @@ class Eprocurement_Admin {
         }
 
         try {
+            // Security fix M-03: sanitise filename before cloud upload.
+            $safe_name = sanitize_file_name( $_FILES['file']['name'] );
             $result = $storage->upload(
                 $_FILES['file']['tmp_name'],
-                $_FILES['file']['name'],
+                $safe_name,
                 'documents'
             );
 
             $documents = new Eprocurement_Documents();
             $doc_id    = $documents->add_supporting_doc( [
                 'document_id'    => absint( $_POST['document_id'] ?? 0 ),
-                'file_name'      => $_FILES['file']['name'],
+                'file_name'      => $safe_name,
                 'file_size'      => $_FILES['file']['size'],
                 'file_type'      => $_FILES['file']['type'],
                 'cloud_provider' => $storage->get_provider_name(),
@@ -862,7 +875,7 @@ class Eprocurement_Admin {
                 'id'      => $doc_id,
             ] );
         } catch ( \Exception $e ) {
-            wp_send_json_error( [ 'message' => $e->getMessage() ] );
+            wp_send_json_error( [ 'message' => esc_html( $e->getMessage() ) ] );
         }
     }
 
@@ -911,15 +924,17 @@ class Eprocurement_Admin {
         }
 
         try {
+            // Security fix M-03: sanitise filename before cloud upload.
+            $safe_name = sanitize_file_name( $_FILES['file']['name'] );
             $result = $storage->upload(
                 $_FILES['file']['tmp_name'],
-                $_FILES['file']['name'],
+                $safe_name,
                 'compliance'
             );
 
             $compliance = new Eprocurement_Compliance_Docs();
             $doc_id     = $compliance->add( [
-                'file_name'      => $_FILES['file']['name'],
+                'file_name'      => $safe_name,
                 'file_size'      => $_FILES['file']['size'],
                 'file_type'      => $_FILES['file']['type'],
                 'cloud_provider' => $storage->get_provider_name(),
@@ -934,7 +949,7 @@ class Eprocurement_Admin {
                 'id'      => $doc_id,
             ] );
         } catch ( \Exception $e ) {
-            wp_send_json_error( [ 'message' => $e->getMessage() ] );
+            wp_send_json_error( [ 'message' => esc_html( $e->getMessage() ) ] );
         }
     }
 
@@ -1088,6 +1103,11 @@ class Eprocurement_Admin {
 
     /**
      * Handle OAuth callbacks from cloud providers.
+     *
+     * Validates the `state` parameter against a transient-stored random value
+     * to prevent OAuth CSRF attacks (storage-account takeover).
+     *
+     * @since 2.13.1  Added state-parameter verification (security fix C-01).
      */
     public function handle_oauth_callback(): void {
         if ( empty( $_GET['eproc_oauth_callback'] ) || empty( $_GET['code'] ) ) {
@@ -1098,8 +1118,23 @@ class Eprocurement_Admin {
             return;
         }
 
-        $provider  = sanitize_text_field( $_GET['eproc_oauth_callback'] );
-        $auth_code = sanitize_text_field( $_GET['code'] );
+        $provider  = sanitize_text_field( wp_unslash( $_GET['eproc_oauth_callback'] ) );
+        $auth_code = sanitize_text_field( wp_unslash( $_GET['code'] ) );
+        $state     = sanitize_text_field( wp_unslash( $_GET['state'] ?? '' ) );
+
+        // Verify the OAuth state parameter to prevent CSRF.
+        $state_key = 'eproc_oauth_state_' . get_current_user_id();
+        $saved     = get_transient( $state_key );
+
+        if ( ! $saved || ! hash_equals( $saved, $state ) ) {
+            wp_safe_redirect(
+                admin_url( 'admin.php?page=eprocurement-settings&oauth_error=' . urlencode( __( 'OAuth state verification failed. Please try linking your cloud storage again.', 'eprocurement' ) ) )
+            );
+            exit;
+        }
+
+        // Single-use — delete after verification.
+        delete_transient( $state_key );
 
         try {
             $storage = match ( $provider ) {

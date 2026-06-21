@@ -1,0 +1,828 @@
+/**
+ * eProcurement Premium Polish Layer (v2.14.0)
+ *
+ * This stylesheet is layered ON TOP of the existing admin-shell.css and
+ * frontend.css. It enhances the design with:
+ *
+ *   • Refined shadows (layered, soft, modern)
+ *   • Smooth micro-interactions (hover, focus, active states)
+ *   • Gradient accents for primary actions
+ *   • Modern toast notification system
+ *   • Improved focus-visible rings for accessibility
+ *   • Skeleton loading placeholders
+ *   • Subtle entrance animations
+ *   • Better empty states
+ *
+ * All enhancements degrade gracefully — if a browser doesn't support
+ * a feature, the underlying base style still applies.
+ *
+ * @package Eprocurement
+ * @since   2.14.0
+ */
+
+/* ──────────────────────────────────────────
+   1. PREMIUM DESIGN TOKENS
+   ────────────────────────────────────────── */
+
+:root {
+    /* Refined shadow system — softer, more layered */
+    --eproc-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --eproc-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+    --eproc-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+    --eproc-shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.05);
+    --eproc-shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
+    --eproc-shadow-2xl: 0 25px 50px -12px rgba(15, 23, 42, 0.18);
+    --eproc-shadow-primary: 0 4px 14px 0 rgba(139, 26, 43, 0.25);
+    --eproc-shadow-primary-hover: 0 6px 20px 0 rgba(139, 26, 43, 0.35);
+
+    /* Smooth easing curves */
+    --eproc-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --eproc-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --eproc-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Standardised transition durations */
+    --eproc-duration-fast: 120ms;
+    --eproc-duration-base: 200ms;
+    --eproc-duration-slow: 350ms;
+}
+
+/* ──────────────────────────────────────────
+   2. REFINED TYPOGRAPHY & SPACING
+   ────────────────────────────────────────── */
+
+.eproc-admin-shell,
+.eproc-wrap {
+    /* Better font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* Headings get tighter tracking and better hierarchy */
+.eproc-page-title,
+.eproc-admin-shell h1,
+.eproc-admin-shell h2,
+.eproc-admin-shell h3 {
+    letter-spacing: -0.025em;
+}
+
+/* ──────────────────────────────────────────
+   3. ELEVATED CARDS — softer, more refined
+   ────────────────────────────────────────── */
+
+.eproc-card,
+.eproc-admin-shell .eproc-card,
+.eproc-stat-card,
+.eproc-admin-shell .eproc-stat-card {
+    box-shadow: var(--eproc-shadow-sm);
+    transition: transform var(--eproc-duration-base) var(--eproc-ease-out),
+                box-shadow var(--eproc-duration-base) var(--eproc-ease-out),
+                border-color var(--eproc-duration-base) var(--eproc-ease-out);
+}
+
+/* Hover lift for interactive cards */
+.eproc-card.is-interactive:hover,
+.eproc-stat-card:hover,
+a.eproc-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--eproc-shadow-md);
+}
+
+/* ──────────────────────────────────────────
+   4. PREMIUM BUTTONS — gradient + glow
+   ────────────────────────────────────────── */
+
+.eproc-btn-primary,
+.eproc-admin-shell .eproc-btn-primary,
+.eproc-wrap .eproc-btn-primary,
+button.eproc-btn-primary,
+a.eproc-btn-primary {
+    background: linear-gradient(135deg, var(--eproc-primary) 0%, var(--eproc-primary-hover, var(--eproc-primary)) 100%);
+    color: #fff;
+    border: none;
+    box-shadow: var(--eproc-shadow-primary);
+    transition: all var(--eproc-duration-base) var(--eproc-ease-out);
+    position: relative;
+    overflow: hidden;
+}
+
+.eproc-btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity var(--eproc-duration-base) var(--eproc-ease-out);
+    pointer-events: none;
+}
+
+.eproc-btn-primary:hover {
+    box-shadow: var(--eproc-shadow-primary-hover);
+    transform: translateY(-1px);
+}
+
+.eproc-btn-primary:hover::before {
+    opacity: 1;
+}
+
+.eproc-btn-primary:active {
+    transform: translateY(0);
+    box-shadow: var(--eproc-shadow-sm);
+}
+
+/* Secondary / outline button */
+.eproc-btn-secondary,
+.eproc-admin-shell .eproc-btn-secondary,
+.eproc-wrap .eproc-btn-secondary {
+    background: #fff;
+    color: var(--eproc-text, #334155);
+    border: 1px solid var(--eproc-border, #e2e8f0);
+    box-shadow: var(--eproc-shadow-xs);
+    transition: all var(--eproc-duration-base) var(--eproc-ease-out);
+}
+
+.eproc-btn-secondary:hover {
+    border-color: var(--eproc-primary);
+    color: var(--eproc-primary);
+    background: var(--eproc-primary-bg, #fdf2f4);
+    transform: translateY(-1px);
+    box-shadow: var(--eproc-shadow-sm);
+}
+
+/* Danger button */
+.eproc-btn-danger {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 14px 0 rgba(231, 76, 60, 0.25);
+    transition: all var(--eproc-duration-base) var(--eproc-ease-out);
+}
+
+.eproc-btn-danger:hover {
+    box-shadow: 0 6px 20px 0 rgba(231, 76, 60, 0.35);
+    transform: translateY(-1px);
+}
+
+/* ──────────────────────────────────────────
+   5. FOCUS VISIBLE — accessibility-first
+   ────────────────────────────────────────── */
+
+.eproc-admin-shell :focus-visible,
+.eproc-wrap :focus-visible {
+    outline: 2px solid var(--eproc-primary, #8b1a2b);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.eproc-admin-shell button:focus-visible,
+.eproc-wrap button:focus-visible,
+.eproc-admin-shell a:focus-visible,
+.eproc-wrap a:focus-visible {
+    outline: 2px solid var(--eproc-primary, #8b1a2b);
+    outline-offset: 2px;
+}
+
+/* Form inputs — refined focus state */
+.eproc-admin-shell input[type="text"]:focus,
+.eproc-admin-shell input[type="email"]:focus,
+.eproc-admin-shell input[type="password"]:focus,
+.eproc-admin-shell input[type="search"]:focus,
+.eproc-admin-shell input[type="tel"]:focus,
+.eproc-admin-shell input[type="url"]:focus,
+.eproc-admin-shell input[type="number"]:focus,
+.eproc-admin-shell select:focus,
+.eproc-admin-shell textarea:focus,
+.eproc-wrap input[type="text"]:focus,
+.eproc-wrap input[type="email"]:focus,
+.eproc-wrap input[type="password"]:focus,
+.eproc-wrap input[type="search"]:focus,
+.eproc-wrap select:focus,
+.eproc-wrap textarea:focus {
+    border-color: var(--eproc-primary, #8b1a2b);
+    box-shadow: 0 0 0 3px var(--eproc-primary-focus, rgba(139, 26, 43, 0.12));
+    outline: none;
+    transition: border-color var(--eproc-duration-fast) var(--eproc-ease-out),
+                box-shadow var(--eproc-duration-fast) var(--eproc-ease-out);
+}
+
+/* ──────────────────────────────────────────
+   6. ENHANCED STAT CARDS — animated counters
+   ────────────────────────────────────────── */
+
+.eproc-stat-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.eproc-stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, var(--eproc-primary-bg, rgba(139, 26, 43, 0.05)) 0%, transparent 70%);
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.eproc-stat-number {
+    background: linear-gradient(135deg, var(--eproc-text-heading, #1e293b) 0%, var(--eproc-text, #334155) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+/* ──────────────────────────────────────────
+   7. MODERN TOAST NOTIFICATIONS
+   ────────────────────────────────────────── */
+
+.eproc-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 99999;
+    min-width: 320px;
+    max-width: 400px;
+    padding: 14px 18px 14px 16px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: var(--eproc-shadow-xl);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    opacity: 0;
+    transform: translateX(100%) translateY(0);
+    transition: opacity var(--eproc-duration-base) var(--eproc-ease-out),
+                transform var(--eproc-duration-base) var(--eproc-ease-spring);
+    border-left: 4px solid var(--eproc-primary, #8b1a2b);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.eproc-toast.show {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+}
+
+.eproc-toast--success { border-left-color: #16a34a; }
+.eproc-toast--error   { border-left-color: #dc2626; }
+.eproc-toast--warning { border-left-color: #f59e0b; }
+.eproc-toast--info    { border-left-color: #3b82f6; }
+
+.eproc-toast::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 14px;
+    margin-top: 1px;
+}
+
+.eproc-toast--success::before { background-color: #16a34a; }
+.eproc-toast--error::before   { background-color: #dc2626; }
+.eproc-toast--warning::before { background-color: #f59e0b; }
+.eproc-toast--info::before    { background-color: #3b82f6; }
+
+/* ──────────────────────────────────────────
+   8. SKELETON LOADING PLACEHOLDERS
+   ────────────────────────────────────────── */
+
+@keyframes eproc-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.eproc-skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--eproc-border-light, #f1f5f9) 25%,
+        var(--eproc-border, #e2e8f0) 50%,
+        var(--eproc-border-light, #f1f5f9) 75%
+    );
+    background-size: 200% 100%;
+    animation: eproc-shimmer 1.6s var(--eproc-ease-in-out) infinite;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.eproc-skeleton-line { height: 14px; margin-bottom: 8px; }
+.eproc-skeleton-line:last-child { width: 60%; }
+.eproc-skeleton-avatar { width: 40px; height: 40px; border-radius: 50%; }
+.eproc-skeleton-card { height: 120px; width: 100%; border-radius: 8px; }
+
+/* ──────────────────────────────────────────
+   9. ENTRANCE ANIMATIONS — subtle, professional
+   ────────────────────────────────────────── */
+
+@keyframes eproc-fade-in-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes eproc-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes eproc-scale-in {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+.eproc-admin-shell .eproc-card,
+.eproc-wrap .eproc-card {
+    animation: eproc-fade-in-up var(--eproc-duration-slow) var(--eproc-ease-out) both;
+}
+
+/* Stagger child cards */
+.eproc-admin-shell .eproc-card:nth-child(2),
+.eproc-wrap .eproc-card:nth-child(2) { animation-delay: 60ms; }
+.eproc-admin-shell .eproc-card:nth-child(3),
+.eproc-wrap .eproc-card:nth-child(3) { animation-delay: 120ms; }
+.eproc-admin-shell .eproc-card:nth-child(4),
+.eproc-wrap .eproc-card:nth-child(4) { animation-delay: 180ms; }
+.eproc-admin-shell .eproc-card:nth-child(5),
+.eproc-wrap .eproc-card:nth-child(5) { animation-delay: 240ms; }
+.eproc-admin-shell .eproc-card:nth-child(6),
+.eproc-wrap .eproc-card:nth-child(6) { animation-delay: 300ms; }
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ──────────────────────────────────────────
+   10. REFINED TABLES
+   ────────────────────────────────────────── */
+
+.eproc-table,
+.eproc-admin-shell table.eproc-table,
+.eproc-wrap table.eproc-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.eproc-table thead th {
+    background: var(--eproc-table-header-bg, #f8fafc);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--eproc-text-muted, #64748b);
+    border-bottom: 1px solid var(--eproc-border, #e2e8f0);
+}
+
+.eproc-table tbody tr {
+    transition: background-color var(--eproc-duration-fast) var(--eproc-ease-out);
+}
+
+.eproc-table tbody tr:hover {
+    background: var(--eproc-primary-bg, rgba(139, 26, 43, 0.03));
+}
+
+/* ──────────────────────────────────────────
+   11. EMPTY STATES — friendly + actionable
+   ────────────────────────────────────────── */
+
+.eproc-empty-state {
+    text-align: center;
+    padding: 56px 24px;
+    color: var(--eproc-text-muted, #64748b);
+}
+
+.eproc-empty-state-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: var(--eproc-primary-bg, #fdf2f4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--eproc-primary, #8b1a2b);
+}
+
+.eproc-empty-state-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--eproc-text-heading, #1e293b);
+    margin-bottom: 6px;
+}
+
+.eproc-empty-state-text {
+    font-size: 14px;
+    max-width: 420px;
+    margin: 0 auto 20px;
+    line-height: 1.55;
+}
+
+/* ──────────────────────────────────────────
+   12. REFINED NAVIGATION — active state + indicators
+   ────────────────────────────────────────── */
+
+.eproc-nav-item {
+    position: relative;
+    transition: background-color var(--eproc-duration-base) var(--eproc-ease-out),
+                color var(--eproc-duration-base) var(--eproc-ease-out);
+}
+
+.eproc-nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: var(--eproc-primary, #8b1a2b);
+    border-radius: 0 3px 3px 0;
+}
+
+/* ──────────────────────────────────────────
+   13. ENHANCED FORM CONTROLS
+   ────────────────────────────────────────── */
+
+.eproc-form-group {
+    margin-bottom: 20px;
+}
+
+.eproc-form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--eproc-text-heading, #1e293b);
+    margin-bottom: 6px;
+    letter-spacing: -0.005em;
+}
+
+.eproc-form-hint {
+    font-size: 12px;
+    color: var(--eproc-text-muted, #64748b);
+    margin-top: 4px;
+    line-height: 1.5;
+}
+
+.eproc-form-error {
+    font-size: 12px;
+    color: var(--eproc-danger, #dc2626);
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Input with leading icon */
+.eproc-input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.eproc-input-group .eproc-input-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--eproc-text-light, #94a3b8);
+    pointer-events: none;
+}
+
+.eproc-input-group input,
+.eproc-input-group select {
+    padding-left: 38px;
+}
+
+/* ──────────────────────────────────────────
+   14. BADGES — refined with backdrop blur
+   ────────────────────────────────────────── */
+
+.eproc-badge {
+    backdrop-filter: blur(8px);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+/* ──────────────────────────────────────────
+   15. NOTICES — modern, dismissible
+   ────────────────────────────────────────── */
+
+.eproc-notice {
+    padding: 14px 16px 14px 18px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    border: 1px solid transparent;
+    animation: eproc-fade-in-up var(--eproc-duration-base) var(--eproc-ease-out);
+}
+
+.eproc-notice.success {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #15803d;
+}
+
+.eproc-notice.error {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #b91c1c;
+}
+
+.eproc-notice.warning {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #b45309;
+}
+
+.eproc-notice.info {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
+
+/* ──────────────────────────────────────────
+   16. CUSTOM SCROLLBAR — modern, subtle
+   ────────────────────────────────────────── */
+
+.eproc-admin-shell ::-webkit-scrollbar,
+.eproc-wrap ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.eproc-admin-shell ::-webkit-scrollbar-track,
+.eproc-wrap ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.eproc-admin-shell ::-webkit-scrollbar-thumb,
+.eproc-wrap ::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.3);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+.eproc-admin-shell ::-webkit-scrollbar-thumb:hover,
+.eproc-wrap ::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.5);
+    background-clip: content-box;
+}
+
+/* ──────────────────────────────────────────
+   17. MOBILE-OPTIMISED DRAWER NAV
+   ────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    .eproc-admin-sidebar {
+        position: fixed;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform var(--eproc-duration-base) var(--eproc-ease-out);
+        box-shadow: var(--eproc-shadow-2xl);
+    }
+
+    .eproc-admin-sidebar.is-open {
+        transform: translateX(0);
+    }
+
+    /* Backdrop when sidebar is open */
+    .eproc-sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--eproc-duration-base) var(--eproc-ease-out);
+    }
+
+    .eproc-sidebar-backdrop.is-visible {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+/* ──────────────────────────────────────────
+   18. PROGRESS INDICATORS
+   ────────────────────────────────────────── */
+
+@keyframes eproc-progress-indeterminate {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.eproc-progress {
+    position: relative;
+    height: 4px;
+    background: var(--eproc-border, #e2e8f0);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.eproc-progress-bar {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, var(--eproc-primary, #8b1a2b), var(--eproc-primary-light, #a52040));
+    border-radius: 2px;
+    transition: width var(--eproc-duration-slow) var(--eproc-ease-out);
+}
+
+.eproc-progress.is-indeterminate .eproc-progress-bar {
+    width: 40%;
+    animation: eproc-progress-indeterminate 1.4s var(--eproc-ease-in-out) infinite;
+}
+
+/* ──────────────────────────────────────────
+   19. PRINT-FRIENDLY OVERRIDES
+   ────────────────────────────────────────── */
+
+@media print {
+    .eproc-admin-sidebar,
+    .eproc-toast,
+    .eproc-sidebar-backdrop,
+    .eproc-btn-primary,
+    .eproc-btn-secondary,
+    .eproc-btn-danger {
+        display: none !important;
+    }
+
+    .eproc-admin-shell {
+        margin: 0 !important;
+        background: #fff !important;
+    }
+
+    .eproc-card {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+    }
+}
+
+/* ──────────────────────────────────────────
+   20. PREMIUM AUTH CARD — login/register
+   ────────────────────────────────────────── */
+
+.eproc-auth-section {
+    min-height: calc(100vh - 80px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Decorative gradient orbs in the background */
+.eproc-auth-section::before,
+.eproc-auth-section::after {
+    content: '';
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.25;
+    pointer-events: none;
+}
+
+.eproc-auth-section::before {
+    background: var(--eproc-primary, #8b1a2b);
+    top: -100px;
+    left: -100px;
+}
+
+.eproc-auth-section::after {
+    background: var(--eproc-secondary, #1a1a5e);
+    bottom: -100px;
+    right: -100px;
+}
+
+.eproc-auth-container {
+    width: 100%;
+    max-width: 440px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: var(--eproc-shadow-2xl);
+    padding: 40px;
+    position: relative;
+    z-index: 1;
+    animation: eproc-scale-in var(--eproc-duration-slow) var(--eproc-ease-spring) both;
+}
+
+.eproc-auth-header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.eproc-auth-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--eproc-text-heading, #1e293b);
+    margin-bottom: 8px;
+    letter-spacing: -0.025em;
+}
+
+.eproc-auth-subtitle {
+    font-size: 14px;
+    color: var(--eproc-text-muted, #64748b);
+    line-height: 1.55;
+    max-width: 360px;
+    margin: 0 auto;
+}
+
+.eproc-auth-footer {
+    text-align: center;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--eproc-border-light, #f1f5f9);
+    font-size: 14px;
+    color: var(--eproc-text-muted, #64748b);
+}
+
+.eproc-auth-footer a {
+    color: var(--eproc-primary, #8b1a2b);
+    font-weight: 600;
+    transition: color var(--eproc-duration-fast) var(--eproc-ease-out);
+}
+
+.eproc-auth-footer a:hover {
+    color: var(--eproc-primary-hover, #6d1522);
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+    .eproc-auth-container {
+        padding: 28px 22px;
+        border-radius: 12px;
+    }
+
+    .eproc-auth-title {
+        font-size: 22px;
+    }
+}
+
+/* ──────────────────────────────────────────
+   21. PREMIUM INPUT ENHANCEMENTS
+   ────────────────────────────────────────── */
+
+.eproc-input,
+.eproc-wrap .eproc-input,
+.eproc-admin-shell .eproc-input {
+    transition: border-color var(--eproc-duration-fast) var(--eproc-ease-out),
+                box-shadow var(--eproc-duration-fast) var(--eproc-ease-out),
+                background-color var(--eproc-duration-fast) var(--eproc-ease-out);
+    border-radius: 8px;
+}
+
+.eproc-input:hover:not(:focus) {
+    border-color: var(--eproc-text-light, #94a3b8);
+}
+
+/* ──────────────────────────────────────────
+   22. STATUS INDICATOR DOTS
+   ────────────────────────────────────────── */
+
+.eproc-status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    position: relative;
+}
+
+.eproc-status-dot::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    background: inherit;
+    opacity: 0.3;
+    animation: eproc-pulse 2s var(--eproc-ease-in-out) infinite;
+}
+
+@keyframes eproc-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.3; }
+    50%      { transform: scale(1.4); opacity: 0; }
+}
+
+.eproc-status-dot.open    { background: #16a34a; }
+.eproc-status-dot.closed  { background: #dc2626; }
+.eproc-status-dot.draft   { background: #64748b; }
+.eproc-status-dot.archived { background: #94a3b8; }
+.eproc-status-dot.cancelled { background: #a3a3a3; }
+

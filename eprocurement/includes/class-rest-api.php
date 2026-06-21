@@ -327,8 +327,24 @@ class Eprocurement_Rest_Api {
 
     /**
      * POST /register — Bidder registration.
+     *
+     * Rate-limited (security fix M-08): max 5 registrations per IP per hour,
+     * configurable via the `eprocurement_registration_rate_limit` filter.
      */
     public function register_bidder( \WP_REST_Request $request ): \WP_REST_Response {
+        // IP-based rate limiting (fix M-08).
+        $ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0' ) );
+        $rate_key   = 'eproc_reg_' . md5( $ip );
+        $rate_limit = apply_filters( 'eprocurement_registration_rate_limit', 5 );
+        $count      = (int) get_transient( $rate_key );
+
+        if ( $count >= $rate_limit ) {
+            return new \WP_REST_Response( [
+                'error' => __( 'Too many registration attempts from this IP. Please try again later.', 'eprocurement' ),
+                'code'  => 'rate_limited',
+            ], 429 );
+        }
+
         $bidder = new Eprocurement_Bidder();
 
         $result = $bidder->register( [
@@ -347,6 +363,9 @@ class Eprocurement_Rest_Api {
                 'code'    => $result->get_error_code(),
             ], 400 );
         }
+
+        // Successful registration — increment counter.
+        set_transient( $rate_key, $count + 1, HOUR_IN_SECONDS );
 
         return new \WP_REST_Response( [
             'success' => true,
@@ -405,9 +424,12 @@ class Eprocurement_Rest_Api {
             $storage = Eprocurement_Storage_Interface::get_active_provider();
             if ( $storage ) {
                 try {
+                    // Security fix M-03: sanitise filename before passing to
+                    // cloud storage to prevent path injection in cloud APIs.
+                    $safe_name = sanitize_file_name( $files['attachment']['name'] );
                     $upload_result = $storage->upload(
                         $files['attachment']['tmp_name'],
-                        $files['attachment']['name'],
+                        $safe_name,
                         'messages'
                     );
 
@@ -415,7 +437,7 @@ class Eprocurement_Rest_Api {
                     $messages = $messaging->get_messages( $thread_id );
                     if ( ! empty( $messages ) ) {
                         $messaging->add_attachment( (int) $messages[0]->id, [
-                            'file_name'      => $files['attachment']['name'],
+                            'file_name'      => $safe_name,
                             'file_size'      => $files['attachment']['size'],
                             'file_type'      => $files['attachment']['type'],
                             'cloud_provider' => $storage->get_provider_name(),
@@ -693,7 +715,7 @@ class Eprocurement_Rest_Api {
                 'file_type'      => $files['file']['type'],
             ] );
         } catch ( \Exception $e ) {
-            return new \WP_REST_Response( [ 'error' => $e->getMessage() ], 500 );
+            return new \WP_REST_Response( [ 'error' => esc_html( $e->getMessage() ) ], 500 );
         }
     }
 

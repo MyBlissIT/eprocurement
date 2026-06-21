@@ -49,14 +49,16 @@ if ( is_user_logged_in() && Eprocurement_Roles::is_bidder() ) {
 
     <!-- Registration Form -->
     <section class="eproc-auth-section">
-        <div class="eproc-auth-container">
-            <h1 class="eproc-auth-title"><?php echo esc_html__( 'Bidder Registration', 'eprocurement' ); ?></h1>
-            <p class="eproc-auth-subtitle">
-                <?php echo esc_html__( 'Create an account to submit queries and track your bid activity.', 'eprocurement' ); ?>
-            </p>
+        <div class="eproc-auth-container eproc-card">
+            <div class="eproc-auth-header">
+                <h1 class="eproc-auth-title"><?php echo esc_html__( 'Create your account', 'eprocurement' ); ?></h1>
+                <p class="eproc-auth-subtitle">
+                    <?php echo esc_html__( 'Register to submit queries, receive notifications, and submit bids for open tenders.', 'eprocurement' ); ?>
+                </p>
+            </div>
 
             <!-- Email Verification Info Box -->
-            <div class="eproc-info-box eproc-info-box--warning">
+            <div class="eproc-notice warning">
                 <p>
                     <?php echo esc_html__( 'After registering, you will receive a verification email. You must verify your email address before you can submit queries to bid contacts.', 'eprocurement' ); ?>
                 </p>

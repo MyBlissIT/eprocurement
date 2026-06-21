@@ -3,7 +3,7 @@
  * Plugin Name: eProcurement
  * Plugin URI:  https://www.myblisstech.com/eprocurement
  * Description: A mini-CRM WordPress plugin for procurement processes. Manages bid/tender notices, structured communication between procurement officials and prospective bidders, cloud-based document storage, and role-based access control.
- * Version:     2.13.1
+ * Version:     2.14.0
  * Author:      MyBliss Tech
  * Author URI:  https://www.myblisstech.com
  * License:     GPL-2.0+
@@ -12,7 +12,7 @@
  * Domain Path: /languages
  * Network:     true
  * Requires at least: 6.0
- * Requires PHP: 8.0
+ * Requires PHP: 8.1
  */
 
 // Prevent direct access
@@ -23,12 +23,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin constants
  */
-define( 'EPROC_VERSION', '2.13.1' );
+define( 'EPROC_VERSION', '2.14.0' );
 define( 'EPROC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EPROC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'EPROC_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 define( 'EPROC_TABLE_PREFIX', 'eproc_' );
 define( 'EPROC_GITHUB_REPO', 'MyBlissIT/eprocurement' );
+
+// Load shared helper functions (DRY utilities).
+require_once EPROC_PLUGIN_DIR . 'includes/helpers.php';
 
 /**
  * Autoloader for plugin classes.
@@ -244,8 +247,16 @@ function eprocurement_init(): void {
     add_action( 'eprocurement_daily_cleanup', [ $documents, 'auto_close_expired_bids' ] );
     add_action( 'eprocurement_daily_cleanup', [ $documents, 'archive_expired_closed_bids' ] );
 
-    // Also run auto-close on every page load (lightweight UPDATE query)
-    $documents->auto_close_expired_bids();
+    // Auto-close expired bids, throttled to once per 5 minutes (fix M-07/P-01).
+    // The previous implementation ran a write UPDATE query on every page load,
+    // which caused lock contention under load and added latency to every
+    // request (frontend, REST, AJAX, cron). The transient lock limits the
+    // query to at most once per 5 minutes — still responsive enough for
+    // closing bids at the right moment, without hammering the DB.
+    if ( ! get_transient( 'eproc_last_auto_close' ) ) {
+        $documents->auto_close_expired_bids();
+        set_transient( 'eproc_last_auto_close', 1, 5 * MINUTE_IN_SECONDS );
+    }
 
     // Exclude eProcurement pages from Bluehost Endurance Page Cache.
     // The file-based cache serves stale HTML for dynamic routes like
@@ -274,21 +285,29 @@ add_filter( 'plugin_action_links_' . EPROC_PLUGIN_BASENAME, 'eprocurement_settin
 /**
  * Fallback: Route mail through Mailpit in dev environments
  * when no SMTP settings are configured in the plugin.
- * Once SMTP is configured via Settings, the Eprocurement_Smtp class handles routing.
+ *
+ * Gated on EPROC_DEV_MODE (or wp_get_environment_type() === 'local') so that
+ * production sites that leave WP_DEBUG enabled for troubleshooting do not
+ * silently route all mail into a void (security/performance fix H-07).
  */
-if ( defined( 'WP_DEBUG' ) && WP_DEBUG && ! get_option( 'eprocurement_smtp_settings' ) ) {
-    add_filter( 'wp_mail_from', function ( $from ) {
-        return strpos( $from, '@localhost' ) !== false ? 'noreply@eprocurement.test' : $from;
-    } );
-    add_filter( 'wp_mail_from_name', function ( $name ) {
-        return $name === 'WordPress' ? 'eProcurement Dev' : $name;
-    } );
+if ( ! get_option( 'eprocurement_smtp_settings' ) ) {
+    $is_dev = defined( 'EPROC_DEV_MODE' ) && EPROC_DEV_MODE
+        || ( function_exists( 'wp_get_environment_type' ) && wp_get_environment_type() === 'local' );
 
-    add_action( 'phpmailer_init', function ( $phpmailer ) {
-        $phpmailer->isSMTP();
-        $phpmailer->Host        = 'mailpit';
-        $phpmailer->Port        = 1025;
-        $phpmailer->SMTPAuth    = false;
-        $phpmailer->SMTPAutoTLS = false;
-    } );
+    if ( $is_dev ) {
+        add_filter( 'wp_mail_from', function ( $from ) {
+            return strpos( $from, '@localhost' ) !== false ? 'noreply@eprocurement.test' : $from;
+        } );
+        add_filter( 'wp_mail_from_name', function ( $name ) {
+            return $name === 'WordPress' ? 'eProcurement Dev' : $name;
+        } );
+
+        add_action( 'phpmailer_init', function ( $phpmailer ) {
+            $phpmailer->isSMTP();
+            $phpmailer->Host        = 'mailpit';
+            $phpmailer->Port        = 1025;
+            $phpmailer->SMTPAuth    = false;
+            $phpmailer->SMTPAutoTLS = false;
+        } );
+    }
 }

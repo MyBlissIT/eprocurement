@@ -71,34 +71,36 @@ if ( $email ) {
 
     <!-- Login Form -->
     <section class="eproc-auth-section">
-        <div class="eproc-auth-container">
-            <h1 class="eproc-auth-title"><?php echo esc_html__( 'eProcurement Login', 'eprocurement' ); ?></h1>
-            <p class="eproc-auth-subtitle">
-                <?php echo esc_html__( 'Sign in to access the eProcurement portal.', 'eprocurement' ); ?>
-            </p>
+        <div class="eproc-auth-container eproc-card">
+            <div class="eproc-auth-header">
+                <h1 class="eproc-auth-title"><?php echo esc_html__( 'Welcome back', 'eprocurement' ); ?></h1>
+                <p class="eproc-auth-subtitle">
+                    <?php echo esc_html__( 'Sign in to your eProcurement portal to manage bids and submissions.', 'eprocurement' ); ?>
+                </p>
+            </div>
 
             <!-- Success Messages -->
             <?php if ( $verified ) : ?>
-                <div class="eproc-info-box eproc-info-box--success">
+                <div class="eproc-notice success">
                     <p><?php echo esc_html__( 'Your email address has been verified successfully! You can now log in.', 'eprocurement' ); ?></p>
                 </div>
             <?php endif; ?>
 
             <?php if ( $registered ) : ?>
-                <div class="eproc-info-box eproc-info-box--success">
+                <div class="eproc-notice success">
                     <p><?php echo esc_html__( 'Registration successful! Please check your email for the verification link, then log in.', 'eprocurement' ); ?></p>
                 </div>
             <?php endif; ?>
 
             <!-- Error Messages -->
             <?php if ( $verification_error ) : ?>
-                <div class="eproc-info-box eproc-info-box--error">
+                <div class="eproc-notice error">
                     <p><?php echo esc_html__( 'Email verification failed. The link may have expired. Please contact support or register again.', 'eprocurement' ); ?></p>
                 </div>
             <?php endif; ?>
 
             <?php if ( $login_error ) : ?>
-                <div class="eproc-info-box eproc-info-box--error">
+                <div class="eproc-notice error">
                     <p><?php echo esc_html( $login_error ); ?></p>
                 </div>
             <?php endif; ?>
@@ -111,7 +113,7 @@ if ( $email ) {
                 <?php endif; ?>
 
                 <div class="eproc-form-group">
-                    <label for="eproc-login-email" class="eproc-label">
+                    <label for="eproc-login-email" class="eproc-form-label">
                         <?php echo esc_html__( 'Email Address', 'eprocurement' ); ?>
                     </label>
                     <input
@@ -122,11 +124,12 @@ if ( $email ) {
                         required
                         autocomplete="email"
                         value="<?php echo esc_attr( $email ); ?>"
+                        placeholder="<?php echo esc_attr__( 'you@company.com', 'eprocurement' ); ?>"
                     />
                 </div>
 
                 <div class="eproc-form-group">
-                    <label for="eproc-login-password" class="eproc-label">
+                    <label for="eproc-login-password" class="eproc-form-label">
                         <?php echo esc_html__( 'Password', 'eprocurement' ); ?>
                     </label>
                     <input
@@ -136,6 +139,7 @@ if ( $email ) {
                         class="eproc-input"
                         required
                         autocomplete="current-password"
+                        placeholder="<?php echo esc_attr__( 'Enter your password', 'eprocurement' ); ?>"
                     />
                     <div class="eproc-form-help" style="text-align:right; margin-top:6px;">
                         <a href="<?php echo esc_url( wp_lostpassword_url( home_url( "/{$slug}/login/" ) ) ); ?>" class="eproc-link-muted">
@@ -146,7 +150,7 @@ if ( $email ) {
 
                 <div class="eproc-form-actions">
                     <button type="submit" class="eproc-btn eproc-btn-primary eproc-btn-lg eproc-btn-block">
-                        <?php echo esc_html__( 'Login', 'eprocurement' ); ?>
+                        <?php echo esc_html__( 'Sign in', 'eprocurement' ); ?>
                     </button>
                 </div>
             </form>

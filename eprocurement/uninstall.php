@@ -60,7 +60,6 @@ $options = [
     'eprocurement_frontend_page_slug',
     'eprocurement_frontend_page_id',
     'eprocurement_notification_settings',
-    'eprocurement_smtp_configured',
     'eprocurement_smtp_settings',
     'eprocurement_category_briefing_register',
     'eprocurement_category_closing_register',
@@ -79,6 +78,7 @@ $options = [
     'eprocurement_brand_colors',
     'eprocurement_login_title',
     'eprocurement_delete_data_on_uninstall',
+    'eproc_audit_log', // Added in 2.14.0 — audit trail for bid backdating
 ];
 
 foreach ( $options as $option ) {
@@ -89,7 +89,7 @@ foreach ( $options as $option ) {
 remove_role( 'eprocurement_scm_manager' );
 remove_role( 'eprocurement_scm_official' );
 remove_role( 'eprocurement_unit_manager' );
-remove_role( 'eprocurement_bidder' );
+remove_role( 'eprocurement_subscriber' ); // Fix L-05: was 'eprocurement_bidder' (non-existent slug)
 
 // Remove custom capabilities from admin and editor roles
 $admin_role  = get_role( 'administrator' );
@@ -122,8 +122,9 @@ foreach ( $capabilities as $cap ) {
     }
 }
 
-// Clear scheduled cron event
+// Clear scheduled cron events
 wp_clear_scheduled_hook( 'eprocurement_daily_cleanup' );
+wp_clear_scheduled_hook( 'eprocurement_weekly_digest' ); // Fix L-05: was missing — left orphaned cron firing into void
 
 // Clean up user meta for bidder profiles
 $wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE '_eproc_%'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared

@@ -32,7 +32,9 @@ class Eprocurement_External_Db {
             $pdo->query( 'SELECT 1' );
             return true;
         } catch ( \PDOException $e ) {
-            return $e->getMessage();
+            // Return a sanitized error message (security fix H-01: avoid
+            // leaking DSN/credentials into admin DOM via innerHTML).
+            return esc_html( $e->getMessage() );
         }
     }
 
@@ -51,7 +53,7 @@ class Eprocurement_External_Db {
         try {
             $pdo = $this->connect( $settings );
         } catch ( \PDOException $e ) {
-            return new \WP_Error( 'connection_failed', $e->getMessage() );
+            return new \WP_Error( 'connection_failed', esc_html( $e->getMessage() ) );
         }
 
         $table      = $settings['table'] ?? 'users';
@@ -74,7 +76,7 @@ class Eprocurement_External_Db {
             $stmt = $pdo->query( "SELECT `{$email_col}`, `{$name_col}` FROM `{$table}` WHERE `{$email_col}` IS NOT NULL AND `{$email_col}` != ''" );
             $rows = $stmt->fetchAll( \PDO::FETCH_ASSOC );
         } catch ( \PDOException $e ) {
-            return new \WP_Error( 'query_failed', $e->getMessage() );
+            return new \WP_Error( 'query_failed', esc_html( $e->getMessage() ) );
         }
 
         $created = 0;
@@ -141,16 +143,31 @@ class Eprocurement_External_Db {
     /**
      * Create a PDO connection to the external database.
      *
+     * Security note (fix M-01): the host is validated against a blocklist
+     * of internal IPs to prevent SSRF attacks via the Super-Admin-configured
+     * DSN. Link-local (169.254.x.x — AWS/GCP metadata endpoints), loopback,
+     * and RFC1918 private ranges are rejected by default.
+     *
      * @param array $settings Connection settings.
      * @return \PDO
      * @throws \PDOException
      */
     private function connect( array $settings ): \PDO {
         $host     = $settings['host'];
-        $port     = $settings['port'] ?? 3306;
+        $port     = absint( $settings['port'] ?? 3306 );
         $database = $settings['database'];
         $username = $settings['username'] ?? '';
         $password = $settings['password'] ?? '';
+
+        if ( ! $this->is_host_allowed( $host ) ) {
+            throw new \PDOException(
+                sprintf(
+                    /* translators: %s: host name */
+                    __( 'Connection refused: host "%s" is not allowed. Private, loopback, and link-local addresses are blocked to prevent SSRF.', 'eprocurement' ),
+                    $host
+                )
+            );
+        }
 
         $dsn = "mysql:host={$host};port={$port};dbname={$database};charset=utf8mb4";
 
@@ -159,6 +176,50 @@ class Eprocurement_External_Db {
             \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
             \PDO::ATTR_TIMEOUT            => 10,
         ] );
+    }
+
+    /**
+     * Validate that a host is not a private/loopback/link-local address.
+     *
+     * @since 2.14.0  Security fix M-01 — SSRF prevention.
+     * @param string $host Hostname or IP.
+     * @return bool True if the host is allowed.
+     */
+    private function is_host_allowed( string $host ): bool {
+        $host = trim( $host );
+        if ( $host === '' ) {
+            return false;
+        }
+
+        // Allow explicit opt-in via filter (for trusted internal DBs).
+        $allow_internal = apply_filters( 'eprocurement_allow_internal_db_host', false, $host );
+        if ( $allow_internal ) {
+            return true;
+        }
+
+        // If it's an IP, validate against blocklists.
+        $ip = filter_var( $host, FILTER_VALIDATE_IP );
+        if ( $ip ) {
+            if ( ! filter_var( $ip, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+                return false;
+            }
+            return true;
+        }
+
+        // Hostname — resolve and check each resolved IP.
+        $resolved = @gethostbynamel( $host );
+        if ( ! $resolved ) {
+            // Hostname didn't resolve — allow PDO to fail with a normal error.
+            return true;
+        }
+
+        foreach ( $resolved as $addr ) {
+            if ( ! filter_var( $addr, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

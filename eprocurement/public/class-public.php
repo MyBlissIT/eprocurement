@@ -145,6 +145,12 @@ class Eprocurement_Public {
      *
      * Removes theme CSS/JS, block library styles, global styles, and
      * theme fonts so the page renders only eProcurement assets.
+     *
+     * Note (fix M-10): the keep-list is filterable via
+     * `eproc_keep_styles` and `eproc_keep_scripts` so site admins can
+     * opt-in to keeping specific assets (e.g., GDPR cookie banners,
+     * accessibility enhancements, analytics). We also preserve `wp-a11y`
+     * by default since WordPress core relies on it for accessibility.
      */
     public function dequeue_theme_assets(): void {
         if ( ! $this->is_eprocurement_page() ) {
@@ -153,18 +159,19 @@ class Eprocurement_Public {
 
         global $wp_styles, $wp_scripts;
 
-        // Styles we want to keep.
-        $keep_styles = [
+        // Styles we want to keep by default.
+        $default_keep_styles = [
             'eprocurement-frontend',
             'eprocurement-admin-shell',
             'eprocurement-admin',
             'eprocurement-frontend-admin',
             'admin-bar',
             'dashicons',
+            'wp-a11y',
         ];
 
-        // Scripts we want to keep.
-        $keep_scripts = [
+        // Scripts we want to keep by default.
+        $default_keep_scripts = [
             'eprocurement-frontend',
             'eprocurement-frontend-admin',
             'jquery',
@@ -172,7 +179,24 @@ class Eprocurement_Public {
             'jquery-migrate',
             'admin-bar',
             'wp-hooks',
+            'wp-a11y',
         ];
+
+        /**
+         * Filter the list of style handles to preserve on eProcurement pages.
+         *
+         * @param array $keep_styles Default style handles to keep.
+         * @since 2.14.0
+         */
+        $keep_styles = apply_filters( 'eproc_keep_styles', $default_keep_styles );
+
+        /**
+         * Filter the list of script handles to preserve on eProcurement pages.
+         *
+         * @param array $keep_scripts Default script handles to keep.
+         * @since 2.14.0
+         */
+        $keep_scripts = apply_filters( 'eproc_keep_scripts', $default_keep_scripts );
 
         // Dequeue theme and block styles.
         if ( ! empty( $wp_styles->queue ) ) {
@@ -202,9 +226,6 @@ class Eprocurement_Public {
         wp_dequeue_style( 'wp-block-library-theme' );
         wp_dequeue_style( 'global-styles' );
         wp_dequeue_style( 'classic-theme-styles' );
-
-        // Remove speculation rules (prefetch).
-        wp_dequeue_script( 'wp-a11y' );
     }
 
     /**
@@ -426,6 +447,14 @@ class Eprocurement_Public {
             EPROC_VERSION
         );
 
+        // Premium polish layer — also applied to the bidder-facing portal.
+        wp_enqueue_style(
+            'eprocurement-premium',
+            EPROC_PLUGIN_URL . 'admin/admin-premium.css',
+            [ 'eprocurement-frontend' ],
+            EPROC_VERSION
+        );
+
         wp_enqueue_script(
             'eprocurement-frontend',
             EPROC_PLUGIN_URL . 'public/frontend.js',
@@ -471,6 +500,12 @@ class Eprocurement_Public {
                 'eprocurement-frontend-admin',
                 EPROC_PLUGIN_URL . 'public/frontend-admin.css',
                 [ 'eprocurement-admin' ],
+                EPROC_VERSION
+            );
+            wp_enqueue_style(
+                'eprocurement-admin-premium',
+                EPROC_PLUGIN_URL . 'admin/admin-premium.css',
+                [ 'eprocurement-frontend-admin' ],
                 EPROC_VERSION
             );
             wp_enqueue_script(

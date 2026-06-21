@@ -21,13 +21,18 @@ class Eprocurement_Roles {
 
     /**
      * All custom capabilities defined by the plugin.
+     *
+     * Note (fix L-deadcode): `eproc_close_bids` and `eproc_send_queries`
+     * were removed in 2.14.0 — they were defined but never checked
+     * anywhere in the codebase. Existing installations may still have
+     * these caps in the database (harmless), but new activations no
+     * longer grant them.
      */
     public const CAPABILITIES = [
         'eproc_manage_settings',
         'eproc_create_bids',
         'eproc_edit_bids',
         'eproc_publish_bids',
-        'eproc_close_bids',
         'eproc_delete_bids',
         'eproc_upload_documents',
         'eproc_manage_contacts',
@@ -37,7 +42,6 @@ class Eprocurement_Roles {
         'eproc_view_downloads',
         'eproc_manage_compliance',
         'eproc_view_dashboard',
-        'eproc_send_queries',
     ];
 
     /**
@@ -55,7 +59,6 @@ class Eprocurement_Roles {
                     'eproc_create_bids'       => true,
                     'eproc_edit_bids'         => true,
                     'eproc_publish_bids'      => true,
-                    'eproc_close_bids'        => true,
                     'eproc_delete_bids'       => true,
                     'eproc_upload_documents'  => true,
                     'eproc_manage_contacts'   => true,
@@ -75,7 +78,6 @@ class Eprocurement_Roles {
                     'eproc_create_bids'       => true,
                     'eproc_edit_bids'         => true,
                     'eproc_publish_bids'      => true,
-                    'eproc_close_bids'        => true,
                     'eproc_upload_documents'  => true,
                     'eproc_manage_contacts'   => true,
                     'eproc_view_threads'      => true,
@@ -99,7 +101,6 @@ class Eprocurement_Roles {
                 'label' => 'eProcurement Bidder',
                 'caps'  => [
                     'read'              => true,
-                    'eproc_send_queries'   => true,
                 ],
             ],
         ];
@@ -132,7 +133,6 @@ class Eprocurement_Roles {
                 'eproc_create_bids',
                 'eproc_edit_bids',
                 'eproc_publish_bids',
-                'eproc_close_bids',
                 'eproc_upload_documents',
                 'eproc_manage_contacts',
                 'eproc_view_threads',

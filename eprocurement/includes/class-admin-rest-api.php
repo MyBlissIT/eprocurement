@@ -27,6 +27,13 @@ class Eprocurement_Admin_Rest_Api {
      *
      * Reads allowed origins from the `eprocurement_cors_origins` option.
      * When empty, CORS headers are not added (same-origin only).
+     *
+     * Security notes (fix H-05 + M-06):
+     *   - Wildcard `*` cannot be combined with credentials per CORS spec.
+     *     When `*` is configured, we echo the request Origin back and skip
+     *     the Allow-Credentials header, forcing unauthenticated CORS only.
+     *   - The Origin header is sanitised and validated as a URL before use
+     *     to prevent CRLF/header-injection attacks.
      */
     public function register_cors(): void {
         $origins = get_option( 'eprocurement_cors_origins', '' );
@@ -42,23 +49,38 @@ class Eprocurement_Admin_Rest_Api {
             return;
         }
 
-        $request_origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+        $has_wildcard = in_array( '*', $allowed, true );
 
-        // Only add headers if the request origin is in the allowed list or wildcard is set.
-        if ( ! in_array( '*', $allowed, true ) && ! in_array( $request_origin, $allowed, true ) ) {
-            return;
+        // Sanitise and validate the Origin header (fix M-06 — header injection).
+        $request_origin = sanitize_text_field( wp_unslash( $_SERVER['HTTP_ORIGIN'] ?? '' ) );
+        if ( $request_origin && ! filter_var( $request_origin, FILTER_VALIDATE_URL ) ) {
+            $request_origin = '';
         }
 
-        $origin_header = in_array( '*', $allowed, true ) ? '*' : $request_origin;
+        // Determine which origin to echo back.
+        if ( $has_wildcard ) {
+            // Wildcard mode: reflect the request origin (or send * if none).
+            $origin_header   = $request_origin ?: '*';
+            $allow_credentials = false; // Spec forbids credentials with wildcard.
+        } else {
+            if ( ! $request_origin || ! in_array( $request_origin, $allowed, true ) ) {
+                return;
+            }
+            $origin_header     = $request_origin;
+            $allow_credentials = true;
+        }
 
         // Set CORS headers for all eprocurement REST routes.
-        add_filter( 'rest_pre_serve_request', function ( $served, $result, $request ) use ( $origin_header ) {
+        add_filter( 'rest_pre_serve_request', function ( $served, $result, $request ) use ( $origin_header, $allow_credentials ) {
             $route = $request->get_route();
             if ( strpos( $route, '/eprocurement/v1/' ) === 0 ) {
                 header( 'Access-Control-Allow-Origin: ' . $origin_header );
                 header( 'Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS' );
                 header( 'Access-Control-Allow-Headers: Authorization, Content-Type, X-WP-Nonce' );
-                header( 'Access-Control-Allow-Credentials: true' );
+                if ( $allow_credentials ) {
+                    header( 'Access-Control-Allow-Credentials: true' );
+                }
+                header( 'Vary: Origin' );
             }
             return $served;
         }, 10, 3 );
@@ -70,8 +92,11 @@ class Eprocurement_Admin_Rest_Api {
                 header( 'Access-Control-Allow-Origin: ' . $origin_header );
                 header( 'Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS' );
                 header( 'Access-Control-Allow-Headers: Authorization, Content-Type, X-WP-Nonce' );
-                header( 'Access-Control-Allow-Credentials: true' );
+                if ( $allow_credentials ) {
+                    header( 'Access-Control-Allow-Credentials: true' );
+                }
                 header( 'Access-Control-Max-Age: 86400' );
+                header( 'Vary: Origin' );
                 header( 'Content-Length: 0' );
                 header( 'Content-Type: text/plain' );
                 status_header( 204 );
@@ -313,19 +338,19 @@ class Eprocurement_Admin_Rest_Api {
         register_rest_route( self::NAMESPACE, '/admin/bids/(?P<bid_id>\d+)/submissions', [
             'methods'             => 'GET',
             'callback'            => [ $this, 'list_submissions' ],
-            'permission_callback' => fn() => current_user_can( 'eproc_view_dashboard' ),
+            'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
         ] );
 
         register_rest_route( self::NAMESPACE, '/admin/bids/(?P<bid_id>\d+)/submissions/download', [
             'methods'             => 'GET',
             'callback'            => [ $this, 'download_submissions_zip' ],
-            'permission_callback' => fn() => current_user_can( 'eproc_view_dashboard' ),
+            'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
         ] );
 
         register_rest_route( self::NAMESPACE, '/admin/submissions/(?P<id>\d+)/download', [
             'methods'             => 'GET',
             'callback'            => [ $this, 'download_single_submission' ],
-            'permission_callback' => fn() => current_user_can( 'eproc_view_dashboard' ),
+            'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
         ] );
 
         register_rest_route( self::NAMESPACE, '/admin/submissions/(?P<id>\d+)/backdate', [
@@ -565,12 +590,14 @@ class Eprocurement_Admin_Rest_Api {
         }
 
         try {
-            $result = $storage->upload( $files['file']['tmp_name'], $files['file']['name'], 'documents' );
+            // Security fix M-03: sanitise filename before cloud upload.
+            $safe_name = sanitize_file_name( $files['file']['name'] );
+            $result = $storage->upload( $files['file']['tmp_name'], $safe_name, 'documents' );
 
             $documents = new Eprocurement_Documents();
             $doc_id    = $documents->add_supporting_doc( [
                 'document_id'    => (int) $request['id'],
-                'file_name'      => $files['file']['name'],
+                'file_name'      => $safe_name,
                 'file_size'      => $files['file']['size'],
                 'file_type'      => $files['file']['type'],
                 'cloud_provider' => $storage->get_provider_name(),
@@ -582,7 +609,7 @@ class Eprocurement_Admin_Rest_Api {
 
             return new \WP_REST_Response( [ 'message' => 'File uploaded.', 'id' => $doc_id ] );
         } catch ( \Exception $e ) {
-            return new \WP_REST_Response( [ 'message' => $e->getMessage() ], 500 );
+            return new \WP_REST_Response( [ 'message' => esc_html( $e->getMessage() ) ], 500 );
         }
     }
 
@@ -735,9 +762,11 @@ class Eprocurement_Admin_Rest_Api {
                     $storage = Eprocurement_Storage_Interface::get_active_provider();
                     if ( $storage ) {
                         try {
-                            $result = $storage->upload( $file['tmp_name'], $file['name'], 'message-attachments' );
+                            // Security fix M-03: sanitise filename before cloud upload.
+                            $safe_name = sanitize_file_name( $file['name'] );
+                            $result = $storage->upload( $file['tmp_name'], $safe_name, 'message-attachments' );
                             $messaging->add_attachment( $message_id, [
-                                'file_name'      => $file['name'],
+                                'file_name'      => $safe_name,
                                 'file_size'      => $file['size'],
                                 'file_type'      => $mime_type,
                                 'cloud_provider' => $storage->get_provider_name(),
@@ -745,7 +774,8 @@ class Eprocurement_Admin_Rest_Api {
                                 'cloud_url'      => $result['cloud_url'],
                             ] );
                         } catch ( \Exception $e ) {
-                            // Reply sent, attachment failed
+                            // Reply sent, attachment failed — log for admin visibility.
+                            error_log( 'eProcurement: attachment upload failed: ' . $e->getMessage() );
                         }
                     }
                 }
@@ -791,11 +821,13 @@ class Eprocurement_Admin_Rest_Api {
         }
 
         try {
-            $result = $storage->upload( $files['file']['tmp_name'], $files['file']['name'], 'compliance' );
+            // Security fix M-03: sanitise filename before cloud upload.
+            $safe_name = sanitize_file_name( $files['file']['name'] );
+            $result = $storage->upload( $files['file']['tmp_name'], $safe_name, 'compliance' );
 
             $compliance = new Eprocurement_Compliance_Docs();
             $doc_id     = $compliance->add( [
-                'file_name'      => $files['file']['name'],
+                'file_name'      => $safe_name,
                 'file_size'      => $files['file']['size'],
                 'file_type'      => $files['file']['type'],
                 'cloud_provider' => $storage->get_provider_name(),
@@ -807,7 +839,7 @@ class Eprocurement_Admin_Rest_Api {
 
             return new \WP_REST_Response( [ 'message' => 'SCM document uploaded.', 'id' => $doc_id ] );
         } catch ( \Exception $e ) {
-            return new \WP_REST_Response( [ 'message' => $e->getMessage() ], 500 );
+            return new \WP_REST_Response( [ 'message' => esc_html( $e->getMessage() ) ], 500 );
         }
     }
 
@@ -1481,8 +1513,12 @@ class Eprocurement_Admin_Rest_Api {
                 $bid->title
             );
 
-            // Try to load the email template, fall back to plain text
+            // Try to load the email template, fall back to plain text.
+            // Themes can override by placing /wp-content/themes/{theme}/eprocurement/email/briefing-invite.php
             $template_path = EPROC_PLUGIN_DIR . 'templates/email/briefing-invite.php';
+            $theme_override = locate_template( 'eprocurement/email/briefing-invite.php' );
+            $template_path = $theme_override ?: $template_path;
+
             if ( file_exists( $template_path ) ) {
                 $bidder_name   = $att->company_name ?: $att->bidder_email;
                 $bid_number    = $bid->bid_number;
@@ -1496,10 +1532,15 @@ class Eprocurement_Admin_Rest_Api {
                 include $template_path;
                 $body = ob_get_clean();
 
-                // Send as HTML
-                add_filter( 'wp_mail_content_type', function() { return 'text/html'; } );
+                // Send as HTML — use a stored closure reference so we can
+                // remove the filter again (security fix H-08). Previously,
+                // the add_filter and remove_filter calls each created a new
+                // closure instance, so the filter was never removed and
+                // leaked into subsequent wp_mail() calls in the same request.
+                $set_html = static fn( $ct ) => 'text/html';
+                add_filter( 'wp_mail_content_type', $set_html );
                 $sent = wp_mail( $att->bidder_email, $subject, $body );
-                remove_filter( 'wp_mail_content_type', function() { return 'text/html'; } );
+                remove_filter( 'wp_mail_content_type', $set_html );
             } else {
                 $body = sprintf(
                     __(

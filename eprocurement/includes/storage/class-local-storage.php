@@ -59,10 +59,31 @@ class Eprocurement_Local_Storage extends Eprocurement_Storage_Interface {
             }
         }
 
-        // Protect directory with .htaccess (prevent direct browsing)
+        // Protect directory with .htaccess (deny ALL direct access — security fix C-02).
+        // Sealed-bid submissions stored here must only be reachable via the
+        // nonce-protected /eproc-download/ endpoint, never by direct URL.
         $htaccess = $base_dir . '/.htaccess';
-        if ( ! file_exists( $htaccess ) ) {
-            @file_put_contents( $htaccess, "Options -Indexes\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents,WordPress.PHP.NoSilencedErrors.Discouraged
+        $htaccess_content = trim(
+            "# eProcurement protected storage — deny ALL direct HTTP access\n" .
+            "Options -Indexes\n" .
+            "Deny from all\n" .
+            "<IfModule mod_authz_core.c>\n" .
+            "  Require all denied\n" .
+            "</IfModule>\n" .
+            "<IfModule mod_php.c>\n" .
+            "  php_flag engine off\n" .
+            "</IfModule>\n" .
+            "<IfModule mod_php7.c>\n" .
+            "  php_flag engine off\n" .
+            "</IfModule>\n" .
+            "<IfModule mod_php8.c>\n" .
+            "  php_flag engine off\n" .
+            "</IfModule>"
+        );
+
+        if ( ! file_exists( $htaccess ) || sha1_file( $htaccess ) !== sha1( $htaccess_content ) ) {
+            file_put_contents( $htaccess, $htaccess_content ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+            @chmod( $htaccess, 0644 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
         }
 
         // Generate unique filename to prevent overwrites

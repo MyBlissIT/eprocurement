@@ -138,6 +138,12 @@ class Eprocurement_Updater {
             $download_url = $this->get_download_url( $release );
 
             if ( $download_url ) {
+                // Best-effort SHA-256 checksum verification (security fix C-04).
+                // If a `eprocurement.zip.sha256` asset is published alongside
+                // the release, store it for the upgrader_post_install hook to
+                // verify the downloaded package before WordPress installs it.
+                $checksum = $this->fetch_release_checksum( $release );
+
                 $transient->response[ $this->plugin_basename ] = (object) [
                     'slug'        => $this->plugin_slug,
                     'plugin'      => $this->plugin_basename,
@@ -146,11 +152,59 @@ class Eprocurement_Updater {
                     'package'     => $download_url,
                     'icons'       => [],
                     'banners'     => [],
+                    // Plugin-internal extras (consumed by upgrader_post_install).
+                    'eproc_expected_sha256' => $checksum,
                 ];
             }
         }
 
         return $transient;
+    }
+
+    /**
+     * Fetch the published SHA-256 checksum for a release, if any.
+     *
+     * The release pipeline publishes `eprocurement.zip.sha256` containing the
+     * hex-encoded digest. If absent, returns null — installs proceed without
+     * checksum verification (with a visible warning in the plugin info modal).
+     *
+     * @since 2.13.1  Security fix C-04 — supply-chain integrity.
+     * @param object $release GitHub release object.
+     * @return string|null 64-char hex SHA-256, or null if not published.
+     */
+    private function fetch_release_checksum( object $release ): ?string {
+        if ( empty( $release->assets ) ) {
+            return null;
+        }
+
+        $checksum_url = null;
+        foreach ( $release->assets as $asset ) {
+            if ( $asset->name === 'eprocurement.zip.sha256' ) {
+                $checksum_url = $asset->browser_download_url;
+                break;
+            }
+        }
+
+        if ( ! $checksum_url ) {
+            return null;
+        }
+
+        $response = wp_remote_get( $checksum_url, [
+            'timeout' => 10,
+            'headers' => [ 'User-Agent' => 'eProcurement-WP-Updater/' . EPROC_VERSION ],
+        ] );
+
+        if ( is_wp_error( $response ) ) {
+            return null;
+        }
+
+        $body = wp_remote_retrieve_body( $response );
+        // Accept "hash  filename" or bare hash formats.
+        if ( preg_match( '/\b([a-f0-9]{64})\b/', $body, $m ) ) {
+            return $m[1];
+        }
+
+        return null;
     }
 
     /**
@@ -185,7 +239,7 @@ class Eprocurement_Updater {
             'author_profile'=> 'https://www.myblisstech.com',
             'homepage'      => 'https://www.myblisstech.com/eprocurement',
             'requires'      => '6.0',
-            'requires_php'  => '8.0',
+            'requires_php'  => '8.1',
             'tested'        => '6.7',
             'downloaded'    => 0,
             'last_updated'  => $release->published_at ?? '',
@@ -211,6 +265,31 @@ class Eprocurement_Updater {
         // Only act on our plugin
         if ( ! isset( $hook_extra['plugin'] ) || $hook_extra['plugin'] !== $this->plugin_basename ) {
             return $result;
+        }
+
+        // Supply-chain integrity check (security fix C-04).
+        // If the update transient carried an expected SHA-256, verify the
+        // downloaded package before WordPress installs it.
+        $update_transient = get_site_transient( 'update_plugins' );
+        $expected_sha     = $update_transient->response[ $this->plugin_basename ]->eproc_expected_sha256 ?? null;
+
+        if ( $expected_sha && ! empty( $result['destination'] ) ) {
+            // The downloaded ZIP is at $result['source'] (temporary path).
+            $downloaded_zip = $result['source'] ?? '';
+            if ( $downloaded_zip && file_exists( $downloaded_zip ) ) {
+                $actual_sha = hash_file( 'sha256', $downloaded_zip );
+                if ( $actual_sha && ! hash_equals( strtolower( $expected_sha ), strtolower( $actual_sha ) ) ) {
+                    return new \WP_Error(
+                        'eproc_checksum_mismatch',
+                        sprintf(
+                            /* translators: 1: expected SHA-256, 2: actual SHA-256 */
+                            __( 'eProcurement update rejected: package checksum mismatch (expected %1$s, got %2$s). The downloaded package may have been tampered with.', 'eprocurement' ),
+                            $expected_sha,
+                            $actual_sha
+                        )
+                    );
+                }
+            }
         }
 
         global $wp_filesystem;
@@ -268,16 +347,28 @@ class Eprocurement_Updater {
     }
 
     /**
-     * Convert GitHub markdown release notes to basic HTML.
+     * Convert GitHub markdown release notes to safe HTML.
+     *
+     * The result is always passed through wp_kses_post() to prevent
+     * supply-chain XSS from a compromised GitHub repository or a
+     * tampered API response (security fix C-04).
+     *
+     * @param string $markdown Raw release body from GitHub API.
+     * @return string Sanitised HTML safe for wp-admin rendering.
      */
     private static function format_changelog( string $markdown ): string {
         if ( empty( $markdown ) ) {
             return '<p>No changelog provided for this release.</p>';
         }
 
+        // Strip raw HTML tags from the source — we only consume plain markdown.
+        // This neutralises any <script> payloads in the release body before
+        // our markdown pass even runs.
+        $markdown = wp_strip_all_tags( $markdown );
+
         // Convert markdown headers
         $html = preg_replace( '/^### (.+)$/m', '<h4>$1</h4>', $markdown );
-        $html = preg_replace( '/^## (.+)$/m', '<h3>$1</h3>', $markdown );
+        $html = preg_replace( '/^## (.+)$/m', '<h3>$1</h3>', $html );
 
         // Convert markdown lists
         $html = preg_replace( '/^- (.+)$/m', '<li>$1</li>', $html );
@@ -292,6 +383,9 @@ class Eprocurement_Updater {
         // Line breaks
         $html = nl2br( $html );
 
-        return $html;
+        // CRITICAL: sanitise through wp_kses_post so only a safe HTML subset
+        // is preserved. This is the defence against a compromised upstream
+        // repository injecting <script> into the admin "View details" modal.
+        return wp_kses_post( $html );
     }
 }

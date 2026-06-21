@@ -79,12 +79,14 @@ class Eprocurement_Onedrive extends Eprocurement_Storage_Interface {
 
     public function get_auth_url(): string {
         $creds = $this->get_credentials();
+        $state = self::generate_oauth_state();
         $params = http_build_query( [
             'client_id'     => $creds['client_id'] ?? '',
             'response_type' => 'code',
             'redirect_uri'  => self::get_redirect_uri(),
             'scope'         => 'Files.ReadWrite.All offline_access',
             'response_mode' => 'query',
+            'state'         => $state,
         ] );
 
         return self::AUTH_URL . '/authorize?' . $params;

@@ -85,6 +85,7 @@ class Eprocurement_Google_Drive extends Eprocurement_Storage_Interface {
         $client->setAccessType( 'offline' );
         $client->setPrompt( 'consent' );
         $client->addScope( \Google\Service\Drive::DRIVE_FILE );
+        $client->setState( self::generate_oauth_state() );
 
         return $client->createAuthUrl();
     }

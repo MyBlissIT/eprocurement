@@ -118,6 +118,36 @@
     };
 
     // =========================================================================
+    // Notice helper (XSS-safe — uses textContent for the message payload)
+    // =========================================================================
+
+    /**
+     * Render a notice message inside #eproc-message-notices (or any element).
+     * The message string is set via textContent so it cannot inject HTML.
+     *
+     * @param {string} type    'success' | 'error' | 'warning' | 'info'
+     * @param {string} message Plain-text message to display.
+     * @param {string} target  CSS selector for the container (default: '#eproc-message-notices').
+     */
+    window.eprocShowNotice = function (type, message, target = '#eproc-message-notices') {
+        const container = document.querySelector(target);
+        if (!container) {
+            // Fall back to toast if no container exists.
+            window.eprocToast(message || 'An error occurred.', type);
+            return;
+        }
+        container.innerHTML = '';
+        const notice = document.createElement('div');
+        notice.className = `eproc-notice ${type}`;
+        const p = document.createElement('p');
+        // textContent never interprets HTML — this is the XSS-safe way to
+        // display arbitrary error messages returned from the REST API.
+        p.textContent = message || 'An error occurred.';
+        notice.appendChild(p);
+        container.appendChild(notice);
+    };
+
+    // =========================================================================
     // Loading state helper
     // =========================================================================
 

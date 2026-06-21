@@ -43,11 +43,6 @@ class Eprocurement_Downloads {
             return;
         }
 
-        // Verify nonce
-        if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) ), 'eproc_download' ) ) {
-            wp_die( esc_html__( 'Invalid download link.', 'eprocurement' ), 403 );
-        }
-
         $type = sanitize_text_field( $_GET['type'] ?? 'supporting' );
         if ( ! in_array( $type, [ 'supporting', 'compliance', 'attachment' ], true ) ) {
             wp_die( esc_html__( 'Invalid download type.', 'eprocurement' ), 400 );
@@ -56,6 +51,14 @@ class Eprocurement_Downloads {
 
         if ( ! $id ) {
             wp_die( esc_html__( 'Invalid download request.', 'eprocurement' ), 400 );
+        }
+
+        // Per-file nonce verification (security fix H-04).
+        // The nonce is bound to both the file type and ID, so a valid nonce
+        // for one file cannot be reused to download a different file.
+        $nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) );
+        if ( ! wp_verify_nonce( $nonce, "eproc_download_{$type}_{$id}" ) ) {
+            wp_die( esc_html__( 'Invalid or expired download link.', 'eprocurement' ), 403 );
         }
 
         $file_record = null;
@@ -69,10 +72,21 @@ class Eprocurement_Downloads {
         } elseif ( $type === 'compliance' ) {
             $file_record = Eprocurement_Database::get_by_id( 'compliance_docs', $id );
         } elseif ( $type === 'attachment' ) {
-            $file_record = Eprocurement_Database::get_by_id( 'message_attachments', $id );
-            // Attachment downloads require login
+            // Attachment downloads require login.
             if ( ! is_user_logged_in() ) {
                 wp_die( esc_html__( 'You must be logged in to download attachments.', 'eprocurement' ), 403 );
+            }
+
+            $file_record = Eprocurement_Database::get_by_id( 'message_attachments', $id );
+
+            // IDOR protection (security fix C-03): verify the current user is
+            // a participant in the thread that owns this attachment. Without
+            // this check, any logged-in user could enumerate attachment IDs
+            // and download private bidder correspondence.
+            if ( $file_record ) {
+                if ( ! $this->user_can_access_attachment( $file_record, get_current_user_id() ) ) {
+                    wp_die( esc_html__( 'You do not have permission to download this attachment.', 'eprocurement' ), 403 );
+                }
             }
         }
 
@@ -95,20 +109,35 @@ class Eprocurement_Downloads {
                 $base_dir  = wp_upload_dir()['basedir'] . '/eprocurement';
                 $file_path = $base_dir . '/' . $file_record->cloud_key;
 
-                if ( ! file_exists( $file_path ) ) {
+                // Defence-in-depth: ensure the resolved real path is inside
+                // the eprocurement base directory (prevent path traversal).
+                $real_path  = realpath( $file_path );
+                $real_base  = realpath( $base_dir );
+                if ( ! $real_path || ! $real_base || strpos( $real_path, $real_base ) !== 0 ) {
                     wp_die( esc_html__( 'File not found on server.', 'eprocurement' ), 404 );
                 }
 
-                $filename  = $file_record->file_name ?? basename( $file_path );
-                $mime_type = $file_record->file_type ?? ( wp_check_filetype( $file_path )['type'] ?: 'application/octet-stream' );
+                if ( ! file_exists( $real_path ) ) {
+                    wp_die( esc_html__( 'File not found on server.', 'eprocurement' ), 404 );
+                }
+
+                $filename  = $file_record->file_name ?? basename( $real_path );
+                $mime_type = $file_record->file_type ?? ( wp_check_filetype( $real_path )['type'] ?: 'application/octet-stream' );
+
+                // Disable output buffering to prevent memory blow-up on large files.
+                while ( ob_get_level() > 0 ) {
+                    ob_end_clean();
+                }
 
                 header( 'Content-Type: ' . $mime_type );
                 header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $filename ) . '"' );
-                header( 'Content-Length: ' . filesize( $file_path ) );
+                header( 'Content-Length: ' . filesize( $real_path ) );
                 header( 'Cache-Control: no-cache, must-revalidate' );
                 header( 'Pragma: no-cache' );
+                header( 'X-Content-Type-Options: nosniff' );
+                header( 'X-Robots-Tag: noindex, noarchive' );
 
-                readfile( $file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
+                readfile( $real_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
                 exit;
             }
 
@@ -118,8 +147,44 @@ class Eprocurement_Downloads {
             wp_redirect( $download_url ); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
             exit;
         } catch ( \Exception $e ) {
-            wp_die( esc_html( $e->getMessage() ), 500 );
+            wp_die( esc_html__( 'An error occurred while generating the download link.', 'eprocurement' ), 500 );
         }
+    }
+
+    /**
+     * Verify that a user is allowed to download a message attachment.
+     *
+     * A user is allowed if:
+     *   - they are a staff member (SCM/Unit Manager/Admin/Editor), OR
+     *   - they are the bidder who owns the thread containing the attachment.
+     *
+     * @since 2.13.1  Security fix C-03 — IDOR prevention on attachments.
+     * @param object $file_record The message_attachments row.
+     * @param int    $user_id     The current user ID.
+     * @return bool True if access is permitted.
+     */
+    private function user_can_access_attachment( object $file_record, int $user_id ): bool {
+        if ( ! isset( $file_record->message_id ) ) {
+            return false;
+        }
+
+        // Staff can access all attachments.
+        if ( Eprocurement_Roles::is_staff( $user_id ) ) {
+            return true;
+        }
+
+        // Resolve message → thread → bidder_id, and confirm ownership.
+        $message = Eprocurement_Database::get_by_id( 'messages', (int) $file_record->message_id );
+        if ( ! $message ) {
+            return false;
+        }
+
+        $thread = Eprocurement_Database::get_by_id( 'threads', (int) $message->thread_id );
+        if ( ! $thread ) {
+            return false;
+        }
+
+        return (int) $thread->bidder_id === $user_id;
     }
 
     /**
@@ -141,11 +206,14 @@ class Eprocurement_Downloads {
     }
 
     /**
-     * Generate a secure download URL.
+     * Generate a secure download URL bound to the specific file.
+     *
+     * The nonce is per-file (type + id) so that a valid link for one file
+     * cannot be reused to download a different file (security fix H-04).
      *
      * @param int    $file_id File ID (supporting_doc, compliance_doc, or attachment).
      * @param string $type    Type: 'supporting', 'compliance', or 'attachment'.
-     * @return string Secure download URL with nonce.
+     * @return string Secure download URL with per-file nonce.
      */
     public static function get_download_link( int $file_id, string $type = 'supporting' ): string {
         return wp_nonce_url(
@@ -154,7 +222,7 @@ class Eprocurement_Downloads {
                 'type'           => $type,
                 'id'             => $file_id,
             ], home_url( '/eproc-download/' ) ),
-            'eproc_download'
+            "eproc_download_{$type}_{$file_id}"
         );
     }
 

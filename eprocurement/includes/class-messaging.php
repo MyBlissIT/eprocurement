@@ -31,6 +31,27 @@ class Eprocurement_Messaging {
             return false;
         }
 
+        // Security fix H-03: verify that the supplied contact_id is one of
+        // the bid's assigned contacts (SCM or Technical). Without this check,
+        // a bidder could route their query to any contact person in the
+        // system — potentially bypassing the assigned procurement officer.
+        if ( $contact_id > 0 ) {
+            $assigned_contacts = array_filter( [
+                (int) ( $document->scm_contact_id ?? 0 ),
+                (int) ( $document->technical_contact_id ?? 0 ),
+            ] );
+
+            if ( ! empty( $assigned_contacts ) && ! in_array( $contact_id, $assigned_contacts, true ) ) {
+                // Contact is not assigned to this bid — fall back to the SCM contact.
+                $contact_id = (int) ( $document->scm_contact_id ?? 0 );
+            }
+        }
+
+        // If still no contact, default to the SCM contact for the document.
+        if ( $contact_id <= 0 ) {
+            $contact_id = (int) ( $document->scm_contact_id ?? 0 );
+        }
+
         $subject = sprintf(
             'Query: %s — %s',
             $document->bid_number,

@@ -550,7 +550,65 @@ class Eprocurement_Bid_Submissions {
             );
         }
 
+        // Always write to the immutable audit log (security fix M-04).
+        // Even when $visible is false (the "hidden" backdate mode), the
+        // action is recorded so that forensic review can detect tampering
+        // with sealed-bid submission timestamps.
+        $this->log_backdate_action(
+            $submission_id,
+            $submission->submitted_at,
+            $formatted,
+            $original,
+            $admin_id,
+            $visible
+        );
+
         return true;
+    }
+
+    /**
+     * Write a backdate action to the audit log.
+     *
+     * The log is stored in the `eproc_audit_log` option as an append-only
+     * array. Each entry is immutable — there is no API to delete or modify
+     * entries; only a fresh site uninstall (with the explicit data-deletion
+     * gate enabled) clears it.
+     *
+     * @since 2.14.0  Security fix M-04 — sealed-bid integrity audit trail.
+     */
+    private function log_backdate_action(
+        int $submission_id,
+        string $old_datetime,
+        string $new_datetime,
+        ?string $original_datetime,
+        int $admin_id,
+        bool $visible
+    ): void {
+        $log = get_option( 'eproc_audit_log', [] );
+        if ( ! is_array( $log ) ) {
+            $log = [];
+        }
+
+        $log[] = [
+            'event'            => 'submission_backdated',
+            'submission_id'    => $submission_id,
+            'old_datetime'     => $old_datetime,
+            'new_datetime'     => $new_datetime,
+            'original_datetime' => $original_datetime,
+            'admin_id'         => $admin_id,
+            'admin_email'      => get_userdata( $admin_id )->user_email ?? '',
+            'visible'          => $visible,
+            'timestamp'        => current_time( 'mysql', true ),
+            'ip'               => sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ?? '' ) ),
+        ];
+
+        // Cap log size at 1000 entries (FIFO).
+        if ( count( $log ) > 1000 ) {
+            $log = array_slice( $log, -1000 );
+        }
+
+        // Use autoload=false — audit log should not be loaded on every page.
+        update_option( 'eproc_audit_log', $log, false );
     }
 
     /**
