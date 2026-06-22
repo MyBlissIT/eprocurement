@@ -504,6 +504,19 @@ if ( $is_edit ) {
                     <?php endif; ?>
 
                     <?php // Created/Updated system timestamps hidden — only user-set Key Dates are shown ?>
+
+                    <?php if ( is_super_admin() ) : ?>
+                    <hr class="eproc-divider">
+                    <div class="eproc-form-group" style="margin-bottom:0;">
+                        <label class="eproc-form-label" for="backdate_created_at">
+                            <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" style="vertical-align:-2px;margin-right:4px;color:var(--eproc-text-muted);"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+                            <?php esc_html_e( 'Backdate Upload (Super Admin)', 'eprocurement' ); ?>
+                        </label>
+                        <input type="datetime-local" id="backdate_created_at" name="created_at_override" class="eproc-input"
+                               value="<?php echo esc_attr( $bid && $bid->created_at ? date( 'Y-m-d\TH:i', strtotime( $bid->created_at ) ) : '' ); ?>" />
+                        <span class="eproc-form-hint"><?php esc_html_e( 'Override the upload date for tenders distributed via email before being published on the portal. The tender inherits this date for compliance tracking.', 'eprocurement' ); ?></span>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -644,6 +657,104 @@ if ( $is_edit ) {
                             <span><?php esc_html_e( 'Compulsory Briefing Attendance', 'eprocurement' ); ?></span>
                         </label>
                         <span class="eproc-form-hint"><?php esc_html_e( 'Only bidders on the attendees list can submit.', 'eprocurement' ); ?></span>
+                    </div>
+                    <div class="eproc-form-group" id="eproc-submission-mode-group" style="<?php echo ( $bid && ! empty( $bid->accept_online_submissions ) ) ? '' : 'display:none;'; ?>">
+                        <label class="eproc-form-label"><?php esc_html_e( 'Submission Mode', 'eprocurement' ); ?></label>
+                        <div class="eproc-radio-group">
+                            <label class="eproc-radio">
+                                <input type="radio" name="submission_mode" value="single" <?php checked( ! $bid || $bid->submission_mode === 'single' ); ?> />
+                                <span><strong><?php esc_html_e( 'Single File', 'eprocurement' ); ?></strong> — <?php esc_html_e( 'Bidders upload one file (e.g. a combined PDF).', 'eprocurement' ); ?></span>
+                            </label>
+                            <label class="eproc-radio">
+                                <input type="radio" name="submission_mode" value="per_document" <?php checked( $bid && $bid->submission_mode === 'per_document' ); ?> />
+                                <span><strong><?php esc_html_e( 'Per Document', 'eprocurement' ); ?></strong> — <?php esc_html_e( 'Bidders upload individual files for each required document type.', 'eprocurement' ); ?></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Required Documents (shown when per_document mode is selected) -->
+            <div class="eproc-card" id="eproc-requirements-card" style="<?php echo ( $bid && $bid->submission_mode === 'per_document' ) ? '' : 'display:none;'; ?>">
+                <div class="eproc-card-header">
+                    <h2>
+                        <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18" style="vertical-align:-3px;margin-right:4px;color:var(--eproc-primary);"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+                        <?php esc_html_e( 'Required Documents', 'eprocurement' ); ?>
+                    </h2>
+                </div>
+                <div class="eproc-card-body">
+                    <p class="eproc-form-hint" style="margin-bottom:16px;">
+                        <?php esc_html_e( 'Define the document types bidders must upload. Use the preset dropdown for common procurement documents, or add custom fields.', 'eprocurement' ); ?>
+                    </p>
+
+                    <!-- Requirements list (server-rendered) -->
+                    <?php
+                    $req_model = new Eprocurement_Submission_Requirements();
+                    $requirements = $is_edit ? $req_model->get_requirements( $bid_id ) : [];
+                    ?>
+                    <div id="eproc-requirements-list">
+                        <?php if ( empty( $requirements ) ) : ?>
+                            <div class="eproc-empty-state" style="padding:24px 16px;">
+                                <p class="eproc-empty-state-text"><?php esc_html_e( 'No required documents defined. Add fields below or use a preset.', 'eprocurement' ); ?></p>
+                            </div>
+                        <?php else : ?>
+                            <table class="eproc-table eproc-requirements-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:30px;">#</th>
+                                        <th><?php esc_html_e( 'Document Type', 'eprocurement' ); ?></th>
+                                        <th style="width:80px;"><?php esc_html_e( 'Required?', 'eprocurement' ); ?></th>
+                                        <th style="width:60px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ( $requirements as $i => $req ) : ?>
+                                        <tr data-requirement-id="<?php echo esc_attr( $req->id ); ?>">
+                                            <td class="eproc-text-muted"><?php echo esc_html( $i + 1 ); ?></td>
+                                            <td>
+                                                <strong><?php echo esc_html( $req->field_label ); ?></strong>
+                                                <?php if ( $req->description ) : ?>
+                                                    <br><span class="eproc-text-muted" style="font-size:12px;"><?php echo esc_html( $req->description ); ?></span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?php echo (int) $req->is_required ? '<span class="eproc-badge eproc-badge-unverified">' . esc_html__( 'Required', 'eprocurement' ) . '</span>' : '<span class="eproc-text-muted">' . esc_html__( 'Optional', 'eprocurement' ) . '</span>'; ?></td>
+                                            <td>
+                                                <button type="button" class="eproc-btn-icon eproc-delete-requirement" data-requirement-id="<?php echo esc_attr( $req->id ); ?>" title="<?php esc_attr_e( 'Delete', 'eprocurement' ); ?>">
+                                                    <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9z" clip-rule="evenodd"/></svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Add requirement form -->
+                    <div class="eproc-requirements-add">
+                        <div class="eproc-form-group" style="margin-bottom:12px;">
+                            <label class="eproc-form-label" for="eproc-req-preset"><?php esc_html_e( 'Quick Add (Presets)', 'eprocurement' ); ?></label>
+                            <select id="eproc-req-preset" class="eproc-input eproc-select">
+                                <option value=""><?php esc_html_e( '— Select a preset —', 'eprocurement' ); ?></option>
+                                <?php foreach ( Eprocurement_Submission_Requirements::PRESETS as $key => $label ) : ?>
+                                    <option value="<?php echo esc_attr( $key ); ?>" data-label="<?php echo esc_attr( $label ); ?>"><?php echo esc_html( $label ); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="eproc-form-row eproc-form-row--2col">
+                            <input type="text" id="eproc-req-label" class="eproc-input" placeholder="<?php esc_attr_e( 'Document name (e.g. Tax Certificate)', 'eprocurement' ); ?>" />
+                            <input type="text" id="eproc-req-desc" class="eproc-input" placeholder="<?php esc_attr_e( 'Description (optional)', 'eprocurement' ); ?>" />
+                        </div>
+                        <div class="eproc-form-row eproc-form-row--2col">
+                            <label class="eproc-checkbox" style="margin-bottom:0;">
+                                <input type="checkbox" id="eproc-req-required" checked />
+                                <span><?php esc_html_e( 'Required', 'eprocurement' ); ?></span>
+                            </label>
+                            <button type="button" class="eproc-btn eproc-btn-primary eproc-btn-sm" id="eproc-add-requirement-btn">
+                                <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" style="margin-right:4px;vertical-align:-2px;"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+                                <?php esc_html_e( 'Add Document', 'eprocurement' ); ?>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1828,5 +1939,83 @@ document.addEventListener('DOMContentLoaded', function() {
             return String(s || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
     }
+
+    // ════════════════════════════════════════════════════════════
+    // SUBMISSION REQUIREMENTS — CRUD + mode toggle
+    // ════════════════════════════════════════════════════════════
+    var requirementsCard = document.getElementById('eproc-requirements-card');
+
+    // Toggle requirements card visibility on submission_mode change.
+    document.querySelectorAll('input[name="submission_mode"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            if (requirementsCard) {
+                requirementsCard.style.display = (this.value === 'per_document') ? '' : 'none';
+            }
+        });
+    });
+
+    // Preset dropdown auto-fills the label field.
+    var presetSelect = document.getElementById('eproc-req-preset');
+    if (presetSelect) {
+        presetSelect.addEventListener('change', function() {
+            var selected = this.options[this.selectedIndex];
+            var label = selected.getAttribute('data-label');
+            if (label) {
+                document.getElementById('eproc-req-label').value = label;
+                document.getElementById('eproc-req-label').focus();
+            }
+        });
+    }
+
+    // Add requirement.
+    var addReqBtn = document.getElementById('eproc-add-requirement-btn');
+    if (addReqBtn && bidId) {
+        addReqBtn.addEventListener('click', function() {
+            var label = document.getElementById('eproc-req-label').value.trim();
+            var desc   = document.getElementById('eproc-req-desc').value.trim();
+            var isReq  = document.getElementById('eproc-req-required').checked ? 1 : 0;
+            var preset = document.getElementById('eproc-req-preset').value;
+
+            if (!label) {
+                eprocToast('<?php echo esc_js( __( 'Please enter a document name.', 'eprocurement' ) ); ?>', 'error');
+                return;
+            }
+
+            window.eprocSetLoading(addReqBtn, true);
+            eprocAPI.post('admin/bids/' + bidId + '/requirements', {
+                field_key: preset || '',
+                field_label: label,
+                description: desc,
+                is_required: isReq
+            })
+            .then(function() {
+                eprocToast('<?php echo esc_js( __( 'Document requirement added.', 'eprocurement' ) ); ?>', 'success');
+                location.reload();
+            })
+            .catch(function(err) {
+                eprocToast(err.message || '<?php echo esc_js( __( 'Failed to add requirement.', 'eprocurement' ) ); ?>', 'error');
+            })
+            .finally(function() { window.eprocSetLoading(addReqBtn, false); });
+        });
+    }
+
+    // Delete requirement (delegated).
+    document.addEventListener('click', function(e) {
+        var delBtn = e.target.closest('.eproc-delete-requirement');
+        if (!delBtn) return;
+
+        var reqId = delBtn.getAttribute('data-requirement-id');
+        if (!confirm('<?php echo esc_js( __( 'Delete this document requirement?', 'eprocurement' ) ); ?>')) return;
+
+        eprocAPI.del('admin/requirements/' + reqId)
+        .then(function() {
+            eprocToast('<?php echo esc_js( __( 'Requirement deleted.', 'eprocurement' ) ); ?>', 'success');
+            var row = delBtn.closest('tr');
+            if (row) row.remove();
+        })
+        .catch(function(err) {
+            eprocToast(err.message || '<?php echo esc_js( __( 'Failed to delete.', 'eprocurement' ) ); ?>', 'error');
+        });
+    });
 });
 </script>

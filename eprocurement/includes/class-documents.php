@@ -470,6 +470,27 @@ class Eprocurement_Documents {
             }
         }
 
+        // Submission mode: 'single' (one file) or 'per_document' (multiple named files).
+        if ( isset( $data['submission_mode'] ) ) {
+            $sanitised['submission_mode'] = in_array( $data['submission_mode'], [ 'single', 'per_document' ], true )
+                ? $data['submission_mode']
+                : 'single';
+        }
+
+        // Super Admin backdate: override created_at for tenders uploaded
+        // retroactively (e.g. distributed via email before being published
+        // on the portal for compliance).
+        if ( isset( $data['created_at_override'] ) && $data['created_at_override'] ) {
+            $override = sanitize_text_field( $data['created_at_override'] );
+            $dt = \DateTime::createFromFormat( 'Y-m-d H:i:s', $override );
+            if ( ! $dt ) {
+                $dt = \DateTime::createFromFormat( 'Y-m-d\TH:i', $override );
+            }
+            if ( $dt ) {
+                $sanitised['created_at'] = $dt->format( 'Y-m-d H:i:s' );
+            }
+        }
+
         return $sanitised;
     }
 

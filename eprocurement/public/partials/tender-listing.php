@@ -146,14 +146,17 @@ if ( ! empty( $_doc_ids ) ) {
     <section class="eproc-filter-bar">
         <form class="eproc-filter-form" method="get" action="<?php echo esc_url( home_url( "/{$slug}/" ) ); ?>">
             <div class="eproc-filter-row">
-                <div class="eproc-search-field">
+                <div class="eproc-search-field eproc-search-autocomplete">
                     <input
                         type="text"
                         name="search"
+                        id="eproc-tender-search"
                         class="eproc-input"
                         placeholder="<?php echo esc_attr__( 'Search by bid number or title...', 'eprocurement' ); ?>"
                         value="<?php echo esc_attr( $search_query ); ?>"
+                        autocomplete="off"
                     />
+                    <div class="eproc-autocomplete-dropdown" id="eproc-autocomplete-dropdown"></div>
                 </div>
                 <div class="eproc-filter-field">
                     <select name="status" class="eproc-select" onchange="this.form.submit()">
@@ -411,6 +414,67 @@ if ( ! empty( $_doc_ids ) ) {
 
     function escAttr(text) {
         return (text || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // ──── Search autocomplete ────
+    var searchInput = document.getElementById('eproc-tender-search');
+    var autocompleteDropdown = document.getElementById('eproc-autocomplete-dropdown');
+    var debounceTimer = null;
+
+    if (searchInput && autocompleteDropdown) {
+        searchInput.addEventListener('input', function() {
+            var query = this.value.trim();
+            clearTimeout(debounceTimer);
+
+            if (query.length < 2) {
+                autocompleteDropdown.classList.remove('is-visible');
+                return;
+            }
+
+            debounceTimer = setTimeout(function() {
+                fetch(eprocFrontend.restUrl + 'documents?search=' + encodeURIComponent(query) + '&per_page=5', {
+                    headers: { 'X-WP-Nonce': eprocFrontend.nonce }
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var items = data.items || data || [];
+                    if (!items.length) {
+                        autocompleteDropdown.innerHTML = '<div class="eproc-autocomplete-empty">' +
+                            '<?php echo esc_js( __( 'No matching tenders found.', 'eprocurement' ) ); ?>' +
+                            '</div>';
+                    } else {
+                        var slug = eprocFrontend.slug || 'tenders';
+                        var html = '';
+                        items.forEach(function(item) {
+                            var url = '/' + slug + '/bid/' + item.id + '/';
+                            html += '<a href="' + url + '" class="eproc-autocomplete-item">' +
+                                '<span class="eproc-autocomplete-bid-number">' + escHtml(item.bid_number) + '</span>' +
+                                '<span class="eproc-autocomplete-title">' + escHtml(item.title) + '</span>' +
+                                '</a>';
+                        });
+                        autocompleteDropdown.innerHTML = html;
+                    }
+                    autocompleteDropdown.classList.add('is-visible');
+                })
+                .catch(function() {
+                    autocompleteDropdown.classList.remove('is-visible');
+                });
+            }, 300);
+        });
+
+        // Close dropdown when clicking outside.
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.eproc-search-autocomplete')) {
+                autocompleteDropdown.classList.remove('is-visible');
+            }
+        });
+
+        // Close on Escape.
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                autocompleteDropdown.classList.remove('is-visible');
+            }
+        });
     }
 })();
 </script>

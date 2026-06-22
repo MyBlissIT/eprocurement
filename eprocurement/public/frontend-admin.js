@@ -190,7 +190,112 @@
     document.addEventListener('DOMContentLoaded', function () {
         if (window.eprocInitPasswordToggles) window.eprocInitPasswordToggles();
         if (window.eprocInitPasswordStrength) window.eprocInitPasswordStrength();
+        window.eprocInitKeyboardShortcuts();
     });
+
+    // =========================================================================
+    // Keyboard shortcuts
+    // =========================================================================
+
+    window.eprocInitKeyboardShortcuts = function () {
+        // Inject the shortcuts overlay HTML (once).
+        if (!document.getElementById('eproc-shortcut-overlay')) {
+            var overlay = document.createElement('div');
+            overlay.id = 'eproc-shortcut-overlay';
+            overlay.className = 'eproc-shortcut-overlay';
+            overlay.innerHTML =
+                '<div class="eproc-shortcut-overlay-backdrop" onclick="document.getElementById(\'eproc-shortcut-overlay\').classList.remove(\'is-visible\')"></div>' +
+                '<div class="eproc-shortcut-content">' +
+                    '<div class="eproc-shortcut-header">' +
+                        '<h2>Keyboard Shortcuts</h2>' +
+                        '<button type="button" class="eproc-modal-close" onclick="document.getElementById(\'eproc-shortcut-overlay\').classList.remove(\'is-visible\')" aria-label="Close">&times;</button>' +
+                    '</div>' +
+                    '<div class="eproc-shortcut-body">' +
+                        '<ul class="eproc-shortcut-list">' +
+                            '<li class="eproc-shortcut-item"><span class="eproc-shortcut-desc">Focus search</span><span class="eproc-shortcut-key"><kbd>/</kbd></span></li>' +
+                            '<li class="eproc-shortcut-item"><span class="eproc-shortcut-desc">New bid (admin)</span><span class="eproc-shortcut-key"><kbd>N</kbd></span></li>' +
+                            '<li class="eproc-shortcut-item"><span class="eproc-shortcut-desc">Go to dashboard</span><span class="eproc-shortcut-key"><kbd>G</kbd> <kbd>D</kbd></span></li>' +
+                            '<li class="eproc-shortcut-item"><span class="eproc-shortcut-desc">Go to messages</span><span class="eproc-shortcut-key"><kbd>G</kbd> <kbd>M</kbd></span></li>' +
+                            '<li class="eproc-shortcut-item"><span class="eproc-shortcut-desc">Go to bidders</span><span class="eproc-shortcut-key"><kbd>G</kbd> <kbd>B</kbd></span></li>' +
+                            '<li class="eproc-shortcut-item"><span class="eproc-shortcut-desc">Show this help</span><span class="eproc-shortcut-key"><kbd>?</kbd></span></li>' +
+                            '<li class="eproc-shortcut-item"><span class="eproc-shortcut-desc">Close modal / overlay</span><span class="eproc-shortcut-key"><kbd>Esc</kbd></span></li>' +
+                        '</ul>' +
+                        '<p class="eproc-shortcut-hint">Shortcuts are active on eProcurement pages when not typing in a text field.</p>' +
+                    '</div>' +
+                '</div>';
+            document.body.appendChild(overlay);
+        }
+
+        var gPressed = false;
+        var gTimer = null;
+
+        document.addEventListener('keydown', function (e) {
+            // Skip if typing in an input/textarea/select.
+            var tag = e.target.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+                if (e.key === 'Escape' && e.target.blur) {
+                    e.target.blur();
+                }
+                return;
+            }
+
+            // Escape — close any open modal or overlay.
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.eproc-modal, .eproc-shortcut-overlay').forEach(function (m) {
+                    m.style.display = 'none';
+                    m.classList.remove('is-visible');
+                });
+                return;
+            }
+
+            // ? — show shortcuts overlay.
+            if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+                e.preventDefault();
+                var ov = document.getElementById('eproc-shortcut-overlay');
+                if (ov) ov.classList.add('is-visible');
+                return;
+            }
+
+            // / — focus search.
+            if (e.key === '/') {
+                e.preventDefault();
+                var search = document.querySelector('input[type="search"], input[name="search"], #eproc-search');
+                if (search) search.focus();
+                return;
+            }
+
+            // G + key — navigation (two-key sequence).
+            if (e.key.toLowerCase() === 'g' && !gPressed) {
+                gPressed = true;
+                clearTimeout(gTimer);
+                gTimer = setTimeout(function () { gPressed = false; }, 800);
+                return;
+            }
+
+            if (gPressed) {
+                gPressed = false;
+                clearTimeout(gTimer);
+                var slug = (typeof eprocManage !== 'undefined' && eprocManage.slug) ? eprocManage.slug : 'tenders';
+                var base = window.location.origin + '/' + slug + '/manage/';
+
+                if (e.key.toLowerCase() === 'd') {
+                    window.location.href = base + 'dashboard/';
+                } else if (e.key.toLowerCase() === 'm') {
+                    window.location.href = base + 'messages/';
+                } else if (e.key.toLowerCase() === 'b') {
+                    window.location.href = base + 'bidders/';
+                }
+                return;
+            }
+
+            // N — new bid (admin only).
+            if (e.key.toLowerCase() === 'n') {
+                e.preventDefault();
+                var slug2 = (typeof eprocManage !== 'undefined' && eprocManage.slug) ? eprocManage.slug : 'tenders';
+                window.location.href = window.location.origin + '/' + slug2 + '/manage/bids/?action=new';
+            }
+        });
+    };
 
     // =========================================================================
     // Confirm delete helper

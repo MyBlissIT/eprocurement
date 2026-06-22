@@ -2497,3 +2497,355 @@ a.eproc-btn-primary {
     margin: 0;
 }
 
+/* ──────────────────────────────────────────
+   47. SUBMISSION REQUIREMENTS — radio group + table
+   ────────────────────────────────────────── */
+
+.eproc-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 0;
+}
+
+.eproc-radio {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    padding: 12px 16px;
+    border: 1px solid var(--eproc-border, #e2e8f0);
+    border-radius: 8px;
+    transition: all var(--eproc-duration-fast) var(--eproc-ease-out);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.eproc-radio:hover {
+    border-color: var(--eproc-primary, #8b1a2b);
+    background: var(--eproc-primary-bg, rgba(139, 26, 43, 0.03));
+}
+
+.eproc-radio input[type="radio"]:checked + span strong {
+    color: var(--eproc-primary, #8b1a2b);
+}
+
+.eproc-requirements-table {
+    margin-bottom: 20px;
+}
+
+.eproc-requirements-add {
+    padding-top: 16px;
+    border-top: 1px solid var(--eproc-border-light, #f1f5f9);
+}
+
+/* ──────────────────────────────────────────
+   48. RECENTLY VIEWED TENDERS — bidder dashboard
+   ────────────────────────────────────────── */
+
+.eproc-recent-viewed-card {
+    margin-top: 16px;
+}
+
+.eproc-recent-viewed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.eproc-recent-viewed-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px 16px;
+    border: 1px solid var(--eproc-border, #e2e8f0);
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all var(--eproc-duration-fast) var(--eproc-ease-out);
+    background: #fff;
+}
+
+.eproc-recent-viewed-item:hover {
+    border-color: var(--eproc-primary, #8b1a2b);
+    box-shadow: var(--eproc-shadow-sm);
+    transform: translateY(-2px);
+}
+
+.eproc-recent-viewed-status {
+    margin-bottom: 4px;
+}
+
+.eproc-recent-viewed-bid-number {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--eproc-text-muted, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.eproc-recent-viewed-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--eproc-text-heading, #1e293b);
+    line-height: 1.4;
+}
+
+/* ──────────────────────────────────────────
+   49. SEARCH AUTOCOMPLETE — tender listing
+   ────────────────────────────────────────── */
+
+.eproc-search-autocomplete {
+    position: relative;
+}
+
+.eproc-autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: #fff;
+    border: 1px solid var(--eproc-border, #e2e8f0);
+    border-radius: 0 0 10px 10px;
+    box-shadow: var(--eproc-shadow-lg);
+    max-height: 320px;
+    overflow-y: auto;
+    display: none;
+}
+
+.eproc-autocomplete-dropdown.is-visible {
+    display: block;
+}
+
+.eproc-autocomplete-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    text-decoration: none;
+    color: var(--eproc-text, #334155);
+    border-bottom: 1px solid var(--eproc-border-light, #f1f5f9);
+    transition: background-color var(--eproc-duration-fast) var(--eproc-ease-out);
+}
+
+.eproc-autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.eproc-autocomplete-item:hover {
+    background: var(--eproc-primary-bg, rgba(139, 26, 43, 0.04));
+}
+
+.eproc-autocomplete-bid-number {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--eproc-text-muted, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+    min-width: 80px;
+}
+
+.eproc-autocomplete-title {
+    font-size: 14px;
+    color: var(--eproc-text-heading, #1e293b);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.eproc-autocomplete-empty {
+    padding: 20px 16px;
+    text-align: center;
+    color: var(--eproc-text-muted, #64748b);
+    font-size: 13px;
+}
+
+/* ──────────────────────────────────────────
+   50. KEYBOARD SHORTCUTS OVERLAY
+   ────────────────────────────────────────── */
+
+.eproc-shortcut-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.eproc-shortcut-overlay.is-visible {
+    display: flex;
+}
+
+.eproc-shortcut-overlay-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.eproc-shortcut-content {
+    position: relative;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: var(--eproc-shadow-2xl);
+    max-width: 500px;
+    width: 100%;
+    overflow: hidden;
+    animation: eproc-scale-in var(--eproc-duration-base) var(--eproc-ease-spring);
+}
+
+.eproc-shortcut-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--eproc-border, #e2e8f0);
+}
+
+.eproc-shortcut-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.eproc-shortcut-body {
+    padding: 20px 24px;
+}
+
+.eproc-shortcut-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.eproc-shortcut-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.eproc-shortcut-desc {
+    font-size: 14px;
+    color: var(--eproc-text, #334155);
+}
+
+.eproc-shortcut-key {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.eproc-shortcut-key kbd {
+    display: inline-block;
+    padding: 3px 8px;
+    background: var(--eproc-surface-light, #f7f9fc);
+    border: 1px solid var(--eproc-border, #e2e8f0);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    font-family: 'DejaVu Mono', 'Courier New', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--eproc-text-heading, #1e293b);
+    min-width: 24px;
+    text-align: center;
+}
+
+.eproc-shortcut-hint {
+    font-size: 12px;
+    color: var(--eproc-text-muted, #64748b);
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--eproc-border-light, #f1f5f9);
+    text-align: center;
+}
+
+/* ──────────────────────────────────────────
+   51. SIDE-BY-SIDE COMPARISON TABLE
+   ────────────────────────────────────────── */
+
+.eproc-comparison-toggle {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    background: var(--eproc-surface-light, #f7f9fc);
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.eproc-comparison-toggle-btn {
+    flex: 1;
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--eproc-text-muted, #64748b);
+    transition: all var(--eproc-duration-fast) var(--eproc-ease-out);
+}
+
+.eproc-comparison-toggle-btn.active {
+    background: #fff;
+    color: var(--eproc-primary, #8b1a2b);
+    box-shadow: var(--eproc-shadow-xs);
+}
+
+.eproc-side-by-side-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+}
+
+.eproc-side-by-side-table th,
+.eproc-side-by-side-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--eproc-border-light, #f1f5f9);
+    text-align: center;
+}
+
+.eproc-side-by-side-table th {
+    background: var(--eproc-table-header-bg, #f8fafc);
+    font-weight: 600;
+    color: var(--eproc-text-muted, #64748b);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+}
+
+.eproc-side-by-side-table th:first-child,
+.eproc-side-by-side-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+    color: var(--eproc-text-heading, #1e293b);
+    min-width: 160px;
+}
+
+.eproc-side-by-side-table .eproc-sbs-score {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.eproc-side-by-side-table .eproc-sbs-winner {
+    background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.eproc-side-by-side-table .eproc-sbs-total-row td {
+    font-size: 16px;
+    font-weight: 800;
+    border-top: 2px solid var(--eproc-border, #e2e8f0);
+    padding-top: 14px;
+}
+
+.eproc-side-by-side-table .eproc-sbs-rank-medal {
+    font-size: 18px;
+}
+

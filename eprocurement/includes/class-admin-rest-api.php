@@ -421,6 +421,26 @@ class Eprocurement_Admin_Rest_Api {
             ],
         ] );
 
+        // --- Submission Requirements (per-document upload fields) ---
+        register_rest_route( self::NAMESPACE, '/admin/bids/(?P<bid_id>\d+)/requirements', [
+            [
+                'methods'             => 'GET',
+                'callback'            => [ $this, 'list_requirements' ],
+                'permission_callback' => fn() => current_user_can( 'eproc_create_bids' ),
+            ],
+            [
+                'methods'             => 'POST',
+                'callback'            => [ $this, 'add_requirement' ],
+                'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
+            ],
+        ] );
+
+        register_rest_route( self::NAMESPACE, '/admin/requirements/(?P<id>\d+)', [
+            'methods'             => 'DELETE',
+            'callback'            => [ $this, 'delete_requirement' ],
+            'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
+        ] );
+
         // --- Briefing Attendees (Admin) ---
         register_rest_route( self::NAMESPACE, '/admin/bids/(?P<bid_id>\d+)/attendees', [
             [
@@ -1797,5 +1817,49 @@ class Eprocurement_Admin_Rest_Api {
             return new \WP_REST_Response( [ 'message' => 'Award withdrawn.' ] );
         }
         return new \WP_REST_Response( [ 'message' => 'Failed to withdraw award.' ], 500 );
+    }
+
+    // =========================================================================
+    // Submission Requirements
+    // =========================================================================
+
+    public function list_requirements( \WP_REST_Request $request ): \WP_REST_Response {
+        $model = new Eprocurement_Submission_Requirements();
+        $requirements = $model->get_requirements( (int) $request['bid_id'] );
+
+        return new \WP_REST_Response( [
+            'requirements' => $requirements,
+            'count'        => count( $requirements ),
+            'presets'      => Eprocurement_Submission_Requirements::PRESETS,
+        ] );
+    }
+
+    public function add_requirement( \WP_REST_Request $request ): \WP_REST_Response {
+        $model = new Eprocurement_Submission_Requirements();
+        $bid_id = (int) $request['bid_id'];
+
+        $id = $model->add_requirement( [
+            'document_id'         => $bid_id,
+            'field_key'           => $request->get_param( 'field_key' ),
+            'field_label'         => $request->get_param( 'field_label' ),
+            'description'         => $request->get_param( 'description' ) ?? '',
+            'is_required'         => $request->get_param( 'is_required' ) ?? 1,
+            'accepted_extensions' => $request->get_param( 'accepted_extensions' ) ?? '',
+            'max_file_size'       => $request->get_param( 'max_file_size' ) ?? 0,
+        ] );
+
+        if ( ! $id ) {
+            return new \WP_REST_Response( [ 'message' => 'Failed to create requirement.' ], 500 );
+        }
+
+        return new \WP_REST_Response( [ 'message' => 'Requirement added.', 'id' => $id ], 201 );
+    }
+
+    public function delete_requirement( \WP_REST_Request $request ): \WP_REST_Response {
+        $model = new Eprocurement_Submission_Requirements();
+        if ( $model->delete_requirement( (int) $request['id'] ) ) {
+            return new \WP_REST_Response( [ 'message' => 'Requirement deleted.' ] );
+        }
+        return new \WP_REST_Response( [ 'message' => 'Failed to delete requirement.' ], 500 );
     }
 }

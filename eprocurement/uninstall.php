@@ -35,6 +35,7 @@ $prefix = $wpdb->prefix . 'eproc_';
 $tables = [
     'evaluation_scores',
     'evaluation_criteria',
+    'submission_requirements',
     'message_attachments',
     'messages',
     'threads',

@@ -572,6 +572,23 @@ class Eprocurement_Public {
         } elseif ( $eproc_bid_id ) {
             // Bid detail page — set $_GET['bid'] for backward compat with tender-detail.php
             $_GET['bid'] = $eproc_bid_id;
+
+            // Track recently viewed tenders for logged-in bidders.
+            if ( is_user_logged_in() && Eprocurement_Roles::is_bidder() ) {
+                $user_id = get_current_user_id();
+                $recent  = get_user_meta( $user_id, 'eproc_recently_viewed', true );
+                if ( ! is_array( $recent ) ) {
+                    $recent = [];
+                }
+                // Remove if already in list (avoid duplicates).
+                $recent = array_diff( $recent, [ (int) $eproc_bid_id ] );
+                // Prepend (newest first).
+                array_unshift( $recent, (int) $eproc_bid_id );
+                // Keep last 5.
+                $recent = array_slice( $recent, 0, 5 );
+                update_user_meta( $user_id, 'eproc_recently_viewed', $recent );
+            }
+
             require EPROC_PLUGIN_DIR . 'public/partials/tender-detail.php';
         } elseif ( $sub_path === 'register' ) {
             // Registration page

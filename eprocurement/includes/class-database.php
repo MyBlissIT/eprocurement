@@ -199,7 +199,7 @@ class Eprocurement_Database {
      */
     private static function get_table_columns( string $table ): array {
         $columns = [
-            'documents'           => [ 'id', 'bid_number', 'title', 'description', 'status', 'category', 'scm_contact_id', 'technical_contact_id', 'opening_date', 'briefing_date', 'closing_date', 'qa_deadline', 'accept_online_submissions', 'allow_late_submissions', 'briefing_compulsory', 'created_by', 'created_at', 'updated_at', 'awarded_to_user_id', 'award_amount', 'award_date', 'award_notes', 'reminder_48h_sent', 'reminder_24h_sent' ],
+            'documents'           => [ 'id', 'bid_number', 'title', 'description', 'status', 'category', 'scm_contact_id', 'technical_contact_id', 'opening_date', 'briefing_date', 'closing_date', 'qa_deadline', 'accept_online_submissions', 'submission_mode', 'allow_late_submissions', 'briefing_compulsory', 'created_by', 'created_at', 'updated_at', 'awarded_to_user_id', 'award_amount', 'award_date', 'award_notes', 'reminder_48h_sent', 'reminder_24h_sent' ],
             'contact_persons'     => [ 'id', 'user_id', 'type', 'name', 'phone', 'email', 'department', 'created_at' ],
             'supporting_docs'     => [ 'id', 'document_id', 'file_name', 'file_size', 'file_type', 'cloud_provider', 'cloud_key', 'cloud_url', 'label', 'sort_order', 'uploaded_by', 'created_at' ],
             'compliance_docs'     => [ 'id', 'file_name', 'file_size', 'file_type', 'cloud_provider', 'cloud_key', 'cloud_url', 'label', 'description', 'sort_order', 'uploaded_by', 'created_at' ],
@@ -212,6 +212,7 @@ class Eprocurement_Database {
             'briefing_attendees'  => [ 'id', 'document_id', 'user_id', 'bidder_email', 'company_name', 'token', 'invited_at', 'used_at' ],
             'evaluation_criteria' => [ 'id', 'document_id', 'name', 'description', 'weight', 'max_score', 'sort_order', 'created_by', 'created_at' ],
             'evaluation_scores'   => [ 'id', 'submission_id', 'criterion_id', 'evaluator_user_id', 'score', 'notes', 'created_at', 'updated_at' ],
+            'submission_requirements' => [ 'id', 'document_id', 'field_key', 'field_label', 'description', 'is_required', 'sort_order', 'accepted_extensions', 'max_file_size', 'created_at' ],
         ];
 
         return $columns[ $table ] ?? [ 'id' ];

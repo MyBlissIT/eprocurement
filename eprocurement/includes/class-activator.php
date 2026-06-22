@@ -346,6 +346,24 @@ class Eprocurement_Activator {
             KEY evaluator_user_id (evaluator_user_id)
         ) {$charset_collate};";
         dbDelta( $sql );
+
+        // 14. Submission Requirements (per-tender required document fields)
+        $sql = "CREATE TABLE {$prefix}submission_requirements (
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            document_id BIGINT(20) UNSIGNED NOT NULL,
+            field_key VARCHAR(100) NOT NULL,
+            field_label VARCHAR(255) NOT NULL,
+            description TEXT DEFAULT NULL,
+            is_required TINYINT(1) NOT NULL DEFAULT 1,
+            sort_order INT(11) NOT NULL DEFAULT 0,
+            accepted_extensions VARCHAR(255) DEFAULT NULL,
+            max_file_size INT(11) DEFAULT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY document_id (document_id),
+            KEY sort_order (sort_order)
+        ) {$charset_collate};";
+        dbDelta( $sql );
     }
 
     /**

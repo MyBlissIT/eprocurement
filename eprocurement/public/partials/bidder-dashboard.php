@@ -137,6 +137,46 @@ $profile_updated = isset( $_GET['profile_updated'] ) && $_GET['profile_updated']
                 </div>
             </div>
         </div>
+
+        <?php
+        // Recently viewed tenders widget.
+        $recent_viewed_ids = get_user_meta( $user_id, 'eproc_recently_viewed', true );
+        if ( is_array( $recent_viewed_ids ) && ! empty( $recent_viewed_ids ) ) :
+            $documents_model = new Eprocurement_Documents();
+            $recent_tenders = [];
+            foreach ( $recent_viewed_ids as $rid ) {
+                $doc = $documents_model->get( (int) $rid );
+                if ( $doc ) {
+                    $recent_tenders[] = $doc;
+                }
+            }
+            if ( ! empty( $recent_tenders ) ) :
+        ?>
+        <div class="eproc-card eproc-recent-viewed-card">
+            <div class="eproc-card-header">
+                <h2>
+                    <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style="vertical-align:-3px;margin-right:4px;color:var(--eproc-primary);"><path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5z" clip-rule="evenodd"/></svg>
+                    <?php esc_html_e( 'Recently Viewed Tenders', 'eprocurement' ); ?>
+                </h2>
+            </div>
+            <div class="eproc-card-body">
+                <div class="eproc-recent-viewed-grid">
+                    <?php foreach ( $recent_tenders as $rt ) : ?>
+                        <a href="<?php echo esc_url( Eprocurement_Public::bid_url( (int) $rt->id ) ); ?>" class="eproc-recent-viewed-item">
+                            <div class="eproc-recent-viewed-status">
+                                <?php echo Eprocurement_Public::status_badge( $rt->status ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                            </div>
+                            <div class="eproc-recent-viewed-bid-number"><?php echo esc_html( $rt->bid_number ); ?></div>
+                            <div class="eproc-recent-viewed-title"><?php echo esc_html( wp_trim_words( $rt->title, 6, '...' ) ); ?></div>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+        <?php
+            endif;
+        endif;
+        ?>
     </section>
 
     <!-- Tabs Navigation -->

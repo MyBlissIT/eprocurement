@@ -215,6 +215,12 @@ function eprocurement_maybe_upgrade(): void {
         // existing sites need them too).
         require_once EPROC_PLUGIN_DIR . 'includes/class-activator.php';
         Eprocurement_Activator::create_tables();
+
+        // v2.15.0: Add submission_mode column for per-document uploads.
+        $sub_mode_col = $wpdb->get_var( "SHOW COLUMNS FROM {$doc_table} LIKE 'submission_mode'" ); // phpcs:ignore
+        if ( ! $sub_mode_col ) {
+            $wpdb->query( "ALTER TABLE {$doc_table} ADD COLUMN submission_mode ENUM('single','per_document') NOT NULL DEFAULT 'single' AFTER accept_online_submissions" ); // phpcs:ignore
+        }
     }
 
     update_option( 'eprocurement_version', EPROC_VERSION );
@@ -242,6 +248,7 @@ function eprocurement_init(): void {
     $compliance     = new Eprocurement_Compliance_Docs();
     $bid_submissions = new Eprocurement_Bid_Submissions();
     $evaluation     = new Eprocurement_Evaluation();
+    $sub_reqs       = new Eprocurement_Submission_Requirements();
     $rest_api        = new Eprocurement_Rest_Api();
     $access_control  = new Eprocurement_Access_Control();
     $admin_rest_api  = new Eprocurement_Admin_Rest_Api();
