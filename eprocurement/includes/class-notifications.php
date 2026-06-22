@@ -395,7 +395,7 @@ class Eprocurement_Notifications {
      * @param int $submission_id Submission ID.
      * @param int $document_id   Document ID.
      */
-    public function notify_bid_submitted( int $submission_id, int $document_id ): void {
+    public function notify_bid_submitted( int $submission_id, int $document_id, int $user_id = 0, bool $is_late = false ): void {
         if ( ! $this->is_enabled( 'bid_submission_notify' ) ) {
             return;
         }
@@ -463,7 +463,7 @@ class Eprocurement_Notifications {
      * @param int $submission_id Submission ID.
      * @param int $document_id   Document ID.
      */
-    public function notify_bid_cancelled( int $submission_id, int $document_id ): void {
+    public function notify_bid_cancelled( int $submission_id, int $document_id, int $user_id = 0 ): void {
         if ( ! $this->is_enabled( 'bid_submission_notify' ) ) {
             return;
         }

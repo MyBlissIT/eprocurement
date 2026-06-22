@@ -348,23 +348,36 @@ class Eprocurement_Two_Factor {
      * @return string|null Data URI (data:image/svg+xml;base64,...) or null on failure.
      */
     private function generate_qr_svg_data_uri( string $data ): ?string {
-        // Try to use the Google Charts API as a fallback (works in most environments).
-        // For air-gapped environments, the manual secret entry is always available.
-        $charts_url = 'https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=' . rawurlencode( $data );
+        // Try fetching the QR code image server-side and converting to a data URI.
+        // This avoids an external <img> tag in the HTML (privacy) and provides
+        // a cached data URI that works even if the user's browser can't reach
+        // the API. For fully air-gapped environments, the manual secret entry
+        // is always shown as fallback.
+        $qr_api_url = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&format=svg&data=' . rawurlencode( $data );
 
-        // Attempt a local SVG QR code using a simple approach:
-        // We'll use the goqr.me API as primary (more reliable than Google Charts).
-        $qr_api_url = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . rawurlencode( $data );
+        $response = wp_remote_get( $qr_api_url, [
+            'timeout' => 5,
+            'headers' => [ 'Accept' => 'image/svg+xml' ],
+        ] );
 
-        // Return an <img> tag pointing to the API — this is the most reliable
-        // approach for QR codes in a WordPress admin context.
-        // For air-gapped environments, users use the manual secret entry.
-        // We return the URL as a data-attribute and let the <img> tag handle it.
-        // Since we can't generate a true data URI without a QR library,
-        // we return the API URL directly — the calling code checks for null.
-        // If the server can't reach the API, the <img> will show alt text
-        // and the manual secret entry is the fallback.
-        return $qr_api_url;
+        if ( is_wp_error( $response ) ) {
+            return null;
+        }
+
+        $body = wp_remote_retrieve_body( $response );
+        $content_type = wp_remote_retrieve_header( $response, 'content-type' );
+
+        if ( empty( $body ) ) {
+            return null;
+        }
+
+        // If SVG, encode as data URI directly.
+        if ( strpos( $content_type, 'svg' ) !== false || strpos( $body, '<svg' ) !== false ) {
+            return 'data:image/svg+xml;base64,' . base64_encode( $body ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+        }
+
+        // If PNG or other format, encode as data URI.
+        return 'data:image/png;base64,' . base64_encode( $body ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
     }
 
     /**
