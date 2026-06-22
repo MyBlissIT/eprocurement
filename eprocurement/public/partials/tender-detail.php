@@ -462,6 +462,62 @@ $is_briefing_req   = $bid_submissions->is_briefing_compulsory( $bid_id );
                 </div>
             <?php endif; ?>
 
+            <?php
+            // Check submission mode — per-document mode shows multiple file inputs.
+            $submission_mode = $document->submission_mode ?? 'single';
+            $is_per_document = ( $submission_mode === 'per_document' );
+
+            if ( $is_per_document ) :
+                // Fetch required document fields.
+                $req_model = new Eprocurement_Submission_Requirements();
+                $requirements = $req_model->get_requirements( $bid_id );
+            ?>
+
+            <!-- Per-Document Upload -->
+            <div id="eproc-per-document-upload">
+                <p class="eproc-form-hint" style="margin-bottom:16px;">
+                    <?php echo esc_html__( 'Upload each required document below. Files marked as Required must be included before you can submit.', 'eprocurement' ); ?>
+                </p>
+                <?php if ( empty( $requirements ) ) : ?>
+                    <div class="eproc-notice warning">
+                        <p><?php echo esc_html__( 'No document requirements have been defined for this tender. Please contact the SCM team.', 'eprocurement' ); ?></p>
+                    </div>
+                <?php else : ?>
+                    <div class="eproc-per-doc-fields">
+                        <?php foreach ( $requirements as $i => $req ) : ?>
+                            <div class="eproc-per-doc-field" data-field-key="<?php echo esc_attr( $req->field_key ); ?>" data-required="<?php echo esc_attr( (int) $req->is_required ); ?>">
+                                <div class="eproc-per-doc-label">
+                                    <strong><?php echo esc_html( $req->field_label ); ?></strong>
+                                    <?php if ( (int) $req->is_required ) : ?>
+                                        <span class="eproc-required">*</span>
+                                    <?php else : ?>
+                                        <span class="eproc-optional">(<?php echo esc_html__( 'optional', 'eprocurement' ); ?>)</span>
+                                    <?php endif; ?>
+                                    <?php if ( $req->description ) : ?>
+                                        <br><span class="eproc-text-muted" style="font-size:12px;"><?php echo esc_html( $req->description ); ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="eproc-per-doc-input">
+                                    <input type="file" class="eproc-per-doc-file-input" data-field-key="<?php echo esc_attr( $req->field_key ); ?>" data-field-label="<?php echo esc_attr( $req->field_label ); ?>" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip" />
+                                    <span class="eproc-per-doc-status"></span>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <button type="button" class="eproc-btn eproc-btn-primary eproc-btn-lg eproc-btn-block" id="eproc-submit-per-doc-btn" style="margin-top:20px;">
+                        <?php echo esc_html__( 'Submit All Documents', 'eprocurement' ); ?>
+                    </button>
+                    <div id="eproc-per-doc-progress" style="display:none;margin-top:16px;">
+                        <div class="eproc-progress-track">
+                            <div id="eproc-per-doc-progress-bar" class="eproc-progress-fill" style="width:0%;"></div>
+                        </div>
+                        <p id="eproc-per-doc-status" class="eproc-upload-status-text"></p>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <?php else : ?>
+            <!-- Single File Upload -->
             <div class="eproc-upload-zone eproc-submission-upload" id="eproc-submission-upload-zone">
                 <div class="eproc-upload-icon">
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.5;">
@@ -478,6 +534,7 @@ $is_briefing_req   = $bid_submissions->is_briefing_compulsory( $bid_id );
                 </p>
                 <input type="file" id="eproc-submission-file-input" accept=".pdf,.xls,.xlsx,.csv" style="display:none;" />
             </div>
+            <?php endif; // end per-document vs single ?>
 
             <!-- Upload Progress -->
             <div id="eproc-submission-progress" class="eproc-upload-progress" style="display:none;">
@@ -1040,6 +1097,121 @@ document.addEventListener('DOMContentLoaded', function() {
                 cancelBtn.disabled = false;
                 cancelBtn.textContent = '<?php echo esc_js( __( 'Cancel & Resubmit', 'eprocurement' ) ); ?>';
             });
+        });
+    }
+
+    // ──── Per-document submission ────
+    var perDocSubmitBtn = document.getElementById('eproc-submit-per-doc-btn');
+    if (perDocSubmitBtn) {
+        perDocSubmitBtn.addEventListener('click', function() {
+            var inputs = document.querySelectorAll('.eproc-per-doc-file-input');
+            var hasFiles = false;
+            var missingRequired = [];
+
+            inputs.forEach(function(input) {
+                if (input.files.length > 0) {
+                    hasFiles = true;
+                    var status = input.parentElement.querySelector('.eproc-per-doc-status');
+                    if (status) status.textContent = '';
+                } else {
+                    var field = input.closest('.eproc-per-doc-field');
+                    var isRequired = field.getAttribute('data-required') === '1';
+                    var label = input.getAttribute('data-field-label');
+                    if (isRequired) {
+                        missingRequired.push(label);
+                        var status = input.parentElement.querySelector('.eproc-per-doc-status');
+                        if (status) status.innerHTML = '<span style="color:#dc2626;font-size:12px;"><?php echo esc_js( __( 'Required', 'eprocurement' ) ); ?></span>';
+                    }
+                }
+            });
+
+            if (missingRequired.length > 0) {
+                alert('<?php echo esc_js( __( 'Please upload all required documents:', 'eprocurement' ) ); ?>\n\n' + missingRequired.join('\n'));
+                return;
+            }
+
+            if (!hasFiles) {
+                alert('<?php echo esc_js( __( 'Please select at least one file to upload.', 'eprocurement' ) ); ?>');
+                return;
+            }
+
+            // Build FormData with all selected files.
+            var formData = new FormData();
+            formData.append('document_id', <?php echo esc_js( $bid_id ); ?>);
+            formData.append('submission_mode', 'per_document');
+
+            inputs.forEach(function(input) {
+                if (input.files.length > 0) {
+                    var fieldKey = input.getAttribute('data-field-key');
+                    var fieldLabel = input.getAttribute('data-field-label');
+                    var safeName = sanitize_file_name(fieldLabel);
+                    formData.append('files[' + fieldKey + ']', input.files[0], safeName + '_' + fieldKey);
+                }
+            });
+
+            // Progress UI.
+            var progressEl = document.getElementById('eproc-per-doc-progress');
+            var progressBar = document.getElementById('eproc-per-doc-progress-bar');
+            var statusEl = document.getElementById('eproc-per-doc-status');
+            var feedbackEl = document.getElementById('eproc-submission-feedback');
+
+            if (feedbackEl) feedbackEl.style.display = 'none';
+            if (progressEl) progressEl.style.display = 'block';
+            if (progressBar) progressBar.style.width = '0%';
+            if (statusEl) statusEl.textContent = '<?php echo esc_js( __( 'Uploading documents...', 'eprocurement' ) ); ?>';
+            perDocSubmitBtn.disabled = true;
+            perDocSubmitBtn.textContent = '<?php echo esc_js( __( 'Uploading...', 'eprocurement' ) ); ?>';
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', eprocFrontend.restUrl + 'submissions');
+            xhr.setRequestHeader('X-WP-Nonce', eprocFrontend.nonce);
+
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    var pct = Math.round((e.loaded / e.total) * 100);
+                    if (progressBar) progressBar.style.width = pct + '%';
+                    if (statusEl) statusEl.textContent = '<?php echo esc_js( __( 'Uploading...', 'eprocurement' ) ); ?> ' + pct + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                var data = JSON.parse(xhr.responseText || '{}');
+                if (xhr.status === 200 || xhr.status === 201) {
+                    if (feedbackEl) {
+                        feedbackEl.className = 'eproc-form-feedback eproc-feedback-success';
+                        feedbackEl.textContent = '<?php echo esc_js( __( 'Bid submitted successfully! Refreshing...', 'eprocurement' ) ); ?>';
+                        feedbackEl.style.display = 'block';
+                    }
+                    if (progressEl) progressEl.style.display = 'none';
+                    setTimeout(function() { location.reload(); }, 1500);
+                } else {
+                    if (feedbackEl) {
+                        feedbackEl.className = 'eproc-form-feedback eproc-feedback-error';
+                        feedbackEl.textContent = data.error || data.message || '<?php echo esc_js( __( 'Upload failed. Please try again.', 'eprocurement' ) ); ?>';
+                        feedbackEl.style.display = 'block';
+                    }
+                    if (progressEl) progressEl.style.display = 'none';
+                    perDocSubmitBtn.disabled = false;
+                    perDocSubmitBtn.textContent = '<?php echo esc_js( __( 'Submit All Documents', 'eprocurement' ) ); ?>';
+                }
+            };
+
+            xhr.onerror = function() {
+                if (feedbackEl) {
+                    feedbackEl.className = 'eproc-form-feedback eproc-feedback-error';
+                    feedbackEl.textContent = '<?php echo esc_js( __( 'Network error. Please try again.', 'eprocurement' ) ); ?>';
+                    feedbackEl.style.display = 'block';
+                }
+                if (progressEl) progressEl.style.display = 'none';
+                perDocSubmitBtn.disabled = false;
+                perDocSubmitBtn.textContent = '<?php echo esc_js( __( 'Submit All Documents', 'eprocurement' ) ); ?>';
+            };
+
+            xhr.send(formData);
+
+            function sanitize_file_name(name) {
+                return name.replace(/[^a-zA-Z0-9_\-]/g, '_').substring(0, 50);
+            }
         });
     }
 });

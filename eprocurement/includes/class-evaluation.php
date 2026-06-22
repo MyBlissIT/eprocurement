@@ -306,6 +306,8 @@ class Eprocurement_Evaluation {
                 'criteria_scored' => $score_data['count'],
                 'is_late'       => (bool) $sub->is_late,
                 'submitted_at'  => $sub->submitted_at,
+                // Per-criterion average scores for side-by-side comparison.
+                'scores_by_criterion' => $score_data['by_criterion'],
             ];
         }
 

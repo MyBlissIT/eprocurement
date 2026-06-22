@@ -724,9 +724,13 @@ class Eprocurement_Rest_Api {
     /**
      * POST /submissions — Submit a bid document.
      *
-     * Expects multipart/form-data with:
-     * - document_id (int) — Bid/tender ID
-     * - file (file)       — The bid document (PDF, XLS, XLSX, or CSV, max 10MB)
+     * Supports two modes:
+     * - Single file: expects multipart with 'file' field.
+     * - Per-document: expects multipart with 'files[field_key]' fields
+     *   and 'submission_mode=per_document'. Multiple files are uploaded
+     *   to cloud storage and a single submission record is created with
+     *   the first file as the primary document; the remaining files
+     *   are stored as supporting docs linked to the submission.
      */
     public function submit_bid( \WP_REST_Request $request ): \WP_REST_Response {
         $document_id = absint( $request->get_param( 'document_id' ) );
@@ -735,6 +739,14 @@ class Eprocurement_Rest_Api {
         }
 
         $files = $request->get_file_params();
+        $submission_mode = sanitize_text_field( $request->get_param( 'submission_mode' ) ?? 'single' );
+
+        // Per-document mode: multiple files keyed by field_key.
+        if ( $submission_mode === 'per_document' && ! empty( $files['files'] ) && is_array( $files['files'] ) ) {
+            return $this->submit_per_document( $document_id, $files['files'] );
+        }
+
+        // Single file mode (original behaviour).
         if ( empty( $files['file'] ) ) {
             return new \WP_REST_Response( [ 'error' => __( 'No file provided.', 'eprocurement' ) ], 400 );
         }
@@ -755,6 +767,198 @@ class Eprocurement_Rest_Api {
             'id'      => $result,
             'message' => __( 'Your bid has been submitted successfully.', 'eprocurement' ),
         ], 201 );
+    }
+
+    /**
+     * Handle per-document submission: validate requirements, upload all
+     * files, create a single submission record.
+     *
+     * @param int   $document_id Tender ID.
+     * @param array $files       Associative array of field_key => $_FILES element.
+     * @return \WP_REST_Response
+     */
+    private function submit_per_document( int $document_id, array $files ): \WP_REST_Response {
+        $user_id = get_current_user_id();
+
+        // Validate required documents.
+        $req_model = new Eprocurement_Submission_Requirements();
+        $uploaded_keys = array_keys( $files );
+        $validation = $req_model->validate_submission( $document_id, $uploaded_keys );
+
+        if ( ! $validation['valid'] ) {
+            return new \WP_REST_Response( [
+                'error' => __( 'Missing required documents: ', 'eprocurement' ) . implode( ', ', $validation['missing'] ),
+                'code'  => 'missing_documents',
+            ], 400 );
+        }
+
+        // Upload each file to cloud storage.
+        $storage = Eprocurement_Storage_Interface::get_active_provider();
+        if ( ! $storage ) {
+            return new \WP_REST_Response( [ 'error' => __( 'Cloud storage not configured.', 'eprocurement' ) ], 500 );
+        }
+
+        $uploaded_docs = [];
+        $first_file = null;
+
+        foreach ( $files as $field_key => $file ) {
+            // Normalise: WordPress REST API may structure nested files differently.
+            if ( isset( $file['name'] ) && is_string( $file['name'] ) ) {
+                // Single file per key — normal structure.
+            } elseif ( isset( $file['name'] ) && is_array( $file['name'] ) ) {
+                // Multiple files per key — take the first.
+                $file = [
+                    'name'     => $file['name'][0],
+                    'type'     => $file['type'][0] ?? '',
+                    'tmp_name' => $file['tmp_name'][0],
+                    'error'    => $file['error'][0] ?? UPLOAD_ERR_OK,
+                    'size'     => $file['size'][0] ?? 0,
+                ];
+            }
+
+            $validation_result = Eprocurement_Storage_Interface::validate_file( $file, 10485760 ); // 10MB.
+            if ( is_wp_error( $validation_result ) ) {
+                return new \WP_REST_Response( [
+                    'error' => sprintf(
+                        /* translators: 1: field label, 2: error message */
+                        __( 'Document "%1$s" failed validation: %2$s', 'eprocurement' ),
+                        $field_key,
+                        $validation_result->get_error_message()
+                    ),
+                ], 400 );
+            }
+
+            try {
+                $safe_name = sanitize_file_name( $file['name'] );
+                $upload_result = $storage->upload( $file['tmp_name'], $safe_name, 'submissions/' . $document_id );
+                $doc_entry = [
+                    'field_key'     => $field_key,
+                    'file_name'     => $safe_name,
+                    'file_size'     => $file['size'],
+                    'file_type'     => $file['type'],
+                    'cloud_provider'=> $storage->get_provider_name(),
+                    'cloud_key'     => $upload_result['cloud_key'],
+                    'cloud_url'     => $upload_result['cloud_url'],
+                ];
+
+                if ( $first_file === null ) {
+                    $first_file = $doc_entry;
+                } else {
+                    $uploaded_docs[] = $doc_entry;
+                }
+            } catch ( \Exception $e ) {
+                return new \WP_REST_Response( [
+                    'error' => sprintf(
+                        /* translators: 1: field key, 2: error message */
+                        __( 'Failed to upload "%1$s": %2$s', 'eprocurement' ),
+                        $field_key,
+                        esc_html( $e->getMessage() )
+                    ),
+                ], 500 );
+            }
+        }
+
+        if ( ! $first_file ) {
+            return new \WP_REST_Response( [ 'error' => __( 'No files were uploaded.', 'eprocurement' ) ], 400 );
+        }
+
+        // Create the bid submission record with the first file.
+        $submissions = new Eprocurement_Bid_Submissions();
+        $primary_file = [
+            'name'     => $first_file['file_name'],
+            'size'     => $first_file['file_size'],
+            'type'     => $first_file['file_type'],
+            'tmp_name' => '', // Already uploaded to cloud.
+            'error'    => UPLOAD_ERR_OK,
+        ];
+
+        // We need to pass the cloud info to submit(). Let's use a custom approach:
+        // Create the submission record directly.
+        $result = $this->create_submission_with_cloud(
+            $document_id,
+            $user_id,
+            $first_file,
+            $uploaded_docs
+        );
+
+        if ( is_wp_error( $result ) ) {
+            $status = $result->get_error_data()['status'] ?? 400;
+            return new \WP_REST_Response( [
+                'error' => $result->get_error_message(),
+                'code'  => $result->get_error_code(),
+            ], $status );
+        }
+
+        return new \WP_REST_Response( [
+            'success'       => true,
+            'id'            => $result,
+            'message'       => __( 'All documents submitted successfully.', 'eprocurement' ),
+            'files_uploaded'=> count( $uploaded_docs ) + 1,
+        ], 201 );
+    }
+
+    /**
+     * Create a bid submission record with pre-uploaded cloud info.
+     *
+     * Used by per-document submission mode where files are already
+     * uploaded to cloud storage before creating the record.
+     */
+    private function create_submission_with_cloud(
+        int $document_id,
+        int $user_id,
+        array $primary_file,
+        array $additional_files = []
+    ): int|\WP_Error {
+        // Check eligibility.
+        $submissions = new Eprocurement_Bid_Submissions();
+        $eligibility = $submissions->can_submit( $document_id, $user_id );
+        if ( is_wp_error( $eligibility ) ) {
+            return $eligibility;
+        }
+
+        // Insert the primary submission record.
+        $submission_id = Eprocurement_Database::insert( 'bid_submissions', [
+            'document_id'     => $document_id,
+            'user_id'         => $user_id,
+            'file_name'       => $primary_file['file_name'],
+            'file_size'       => $primary_file['file_size'],
+            'file_type'       => $primary_file['file_type'],
+            'cloud_provider'  => $primary_file['cloud_provider'],
+            'cloud_key'       => $primary_file['cloud_key'],
+            'cloud_url'       => $primary_file['cloud_url'],
+            'status'          => 'submitted',
+            'is_late'         => Eprocurement_Documents::is_closing_date_past(
+                Eprocurement_Database::get_by_id( 'documents', $document_id )->closing_date ?? null
+            ) ? 1 : 0,
+            'submitted_at'    => current_time( 'mysql' ),
+            'created_at'      => current_time( 'mysql' ),
+        ] );
+
+        if ( ! $submission_id ) {
+            return new \WP_Error( 'db_error', __( 'Failed to create submission record.', 'eprocurement' ) );
+        }
+
+        // Store additional files as supporting docs linked to the document.
+        foreach ( $additional_files as $doc ) {
+            Eprocurement_Database::insert( 'supporting_docs', [
+                'document_id'    => $document_id,
+                'file_name'      => $doc['file_name'],
+                'file_size'      => $doc['file_size'],
+                'file_type'      => $doc['file_type'],
+                'cloud_provider' => $doc['cloud_provider'],
+                'cloud_key'      => $doc['cloud_key'],
+                'cloud_url'      => $doc['cloud_url'],
+                'label'          => $doc['field_key'] ?? '',
+                'sort_order'     => 0,
+                'uploaded_by'    => $user_id,
+                'created_at'     => current_time( 'mysql' ),
+            ] );
+        }
+
+        // Fire the bid_submitted action.
+        do_action( 'eprocurement_bid_submitted', $submission_id, $document_id, $user_id, false );
+
+        return $submission_id;
     }
 
     /**

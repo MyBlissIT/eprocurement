@@ -1710,7 +1710,101 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            compBody.innerHTML = renderRankedTable(ranked, criteria, award);
+            // Build toggle + ranked view (default).
+            var html = '';
+            if (criteria.length > 0 && ranked.some(function(r) { return r.criteria_scored > 0; })) {
+                html += '<div class="eproc-comparison-toggle">' +
+                    '<button type="button" class="eproc-comparison-toggle-btn active" data-view="ranked"><?php echo esc_js( __( 'Ranked', 'eprocurement' ) ); ?></button>' +
+                    '<button type="button" class="eproc-comparison-toggle-btn" data-view="side-by-side"><?php echo esc_js( __( 'Side-by-Side', 'eprocurement' ) ); ?></button>' +
+                    '</div>';
+            }
+
+            html += '<div id="eproc-comparison-ranked">' + renderRankedTable(ranked, criteria, award) + '</div>';
+            html += '<div id="eproc-comparison-sidebyside" style="display:none;">' + renderSideBySide(ranked, criteria, award) + '</div>';
+
+            compBody.innerHTML = html;
+
+            // Wire up toggle.
+            compBody.querySelectorAll('.eproc-comparison-toggle-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    compBody.querySelectorAll('.eproc-comparison-toggle-btn').forEach(function(b) { b.classList.remove('active'); });
+                    this.classList.add('active');
+                    var view = this.getAttribute('data-view');
+                    var rankedEl = document.getElementById('eproc-comparison-ranked');
+                    var sbsEl = document.getElementById('eproc-comparison-sidebyside');
+                    if (view === 'ranked') {
+                        if (rankedEl) rankedEl.style.display = '';
+                        if (sbsEl) sbsEl.style.display = 'none';
+                    } else {
+                        if (rankedEl) rankedEl.style.display = 'none';
+                        if (sbsEl) sbsEl.style.display = '';
+                    }
+                });
+            });
+        }
+
+        function renderSideBySide(ranked, criteria, award) {
+            if (criteria.length === 0) {
+                return '<div class="eproc-notice warning"><p><?php echo esc_js( __( 'No evaluation criteria defined. Add criteria to enable the side-by-side view.', 'eprocurement' ) ); ?></p></div>';
+            }
+
+            var html = '<div class="eproc-table-responsive"><table class="eproc-side-by-side-table"><thead><tr><th><?php echo esc_js( __( 'Criterion', 'eprocurement' ) ); ?></th>';
+            ranked.forEach(function(r) {
+                var medal = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : '';
+                var isWinner = award && award.user_id === r.submission.user_id;
+                html += '<th' + (isWinner ? ' class="eproc-sbs-winner"' : '') + '>' +
+                    '<div class="eproc-sbs-rank-medal">' + medal + '</div>' +
+                    '<div style="font-weight:700;font-size:13px;">' + escHtml(r.company_name || r.bidder_name) + '</div>' +
+                    '</th>';
+            });
+            html += '</tr></thead><tbody>';
+
+            // One row per criterion.
+            criteria.forEach(function(c) {
+                html += '<tr><td>' + escHtml(c.name) + '<br><span class="eproc-text-muted" style="font-size:11px;">w:' + c.weight + ' · max:' + c.max_score + '</span></td>';
+                ranked.forEach(function(r) {
+                    var isWinner = award && award.user_id === r.submission.user_id;
+                    // Get this criterion's score from the computed data.
+                    var critData = r.scores_by_criterion ? r.scores_by_criterion[c.id] : null;
+                    var scoreText = '—';
+                    if (critData && critData.avg_score > 0) {
+                        scoreText = '<span class="eproc-sbs-score">' + critData.avg_score.toFixed(1) + '</span>' +
+                            '<span class="eproc-text-muted" style="font-size:11px;">/' + c.max_score + '</span>';
+                    }
+                    html += '<td' + (isWinner ? ' class="eproc-sbs-winner"' : '') + '>' + scoreText + '</td>';
+                });
+                html += '</tr>';
+            });
+
+            // Total row.
+            html += '<tr class="eproc-sbs-total-row"><td><?php echo esc_js( __( 'Weighted Total', 'eprocurement' ) ); ?></td>';
+            ranked.forEach(function(r) {
+                var isWinner = award && award.user_id === r.submission.user_id;
+                var hasScores = r.criteria_scored > 0;
+                var totalText = hasScores ? '<span style="color:' + (r.rank === 1 ? '#15803d' : '#1e293b') + ';">' + r.score_total.toFixed(1) + '</span><span class="eproc-text-muted" style="font-size:11px;">/100</span>' : '<span class="eproc-text-muted">—</span>';
+                html += '<td' + (isWinner ? ' class="eproc-sbs-winner"' : '') + '>' + totalText + '</td>';
+            });
+            html += '</tr>';
+
+            // Late submission row.
+            html += '<tr><td><?php echo esc_js( __( 'Late?', 'eprocurement' ) ); ?></td>';
+            ranked.forEach(function(r) {
+                var isWinner = award && award.user_id === r.submission.user_id;
+                html += '<td' + (isWinner ? ' class="eproc-sbs-winner"' : '') + '>' + (r.is_late ? '<span class="eproc-badge eproc-badge-unverified">' + '<?php echo esc_js( __( 'Late', 'eprocurement' ) ); ?>' + '</span>' : '—') + '</td>';
+            });
+            html += '</tr>';
+
+            // Award button row.
+            if (!award) {
+                html += '<tr><td></td>';
+                ranked.forEach(function(r) {
+                    html += '<td><button type="button" class="eproc-btn eproc-btn-sm eproc-btn-primary eproc-award-btn" data-user-id="' + r.submission.user_id + '" data-bidder-name="' + escAttr(r.bidder_name) + '" data-company="' + escAttr(r.company_name || '') + '"><?php echo esc_js( __( 'Award', 'eprocurement' ) ); ?></button></td>';
+                });
+                html += '</tr>';
+            }
+
+            html += '</tbody></table></div>';
+            return html;
         }
 
         function renderRankedTable(ranked, criteria, award) {
