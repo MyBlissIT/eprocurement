@@ -615,7 +615,16 @@ class Eprocurement_Bid_Submissions {
      * Generate a ZIP archive of all active submissions for a bid.
      *
      * ZIP filename format: {Bid No} - {Title} - {Date}.zip
-     * Internal files: {company_name}_{original_filename}
+     * Internal structure:
+     *   {Company Name}/
+     *     ├── Primary Submission.pdf
+     *     ├── Tax_Certificate.pdf
+     *     ├── BBBEE_Certificate.pdf
+     *     └── ...
+     *
+     * For per-document submissions, additional files (stored as supporting_docs)
+     * are included inside the company folder. A summary CSV is also added at
+     * the root of the ZIP.
      *
      * @param int $document_id Bid/tender ID.
      * @return string|\WP_Error Path to the generated ZIP file, or WP_Error.
@@ -649,29 +658,112 @@ class Eprocurement_Bid_Submissions {
         }
 
         $temp_files = [];
+        $summary_rows = [];
+
+        // Fetch supporting docs linked to this document (per-document uploads).
+        $documents_model = new Eprocurement_Documents();
+        $all_supporting = $documents_model->get_supporting_docs( $document_id );
+
+        // Group supporting docs by uploaded_by (user_id) so we can match them to submissions.
+        $supporting_by_user = [];
+        foreach ( $all_supporting as $sd ) {
+            $uid = (int) $sd->uploaded_by;
+            if ( ! isset( $supporting_by_user[ $uid ] ) ) {
+                $supporting_by_user[ $uid ] = [];
+            }
+            $supporting_by_user[ $uid ][] = $sd;
+        }
 
         foreach ( $submissions as $sub ) {
-            // Build local filename: {company_name}_{original_filename}
-            $company = $sub->company_name
+            // Build company folder name.
+            $company_folder = $sub->company_name
                 ? sanitize_file_name( $sub->company_name )
                 : 'bidder-' . $sub->user_id;
 
-            $local_name = $company . '_' . $sub->file_name;
+            // Sanitise folder name — replace multiple underscores/spaces.
+            $company_folder = preg_replace( '/_{2,}/', '_', $company_folder );
+            $company_folder = trim( $company_folder, '_' );
+
+            $late_tag = (int) $sub->is_late ? ' [LATE]' : '';
+
+            // Add primary submission file.
+            $primary_local = $company_folder . '/' . sanitize_file_name( $sub->file_name );
 
             try {
                 $download_url = $provider->get_download_url( $sub->cloud_key );
                 $tmp_file     = download_url( $download_url, 60 );
 
                 if ( is_wp_error( $tmp_file ) ) {
-                    continue; // Skip files that can't be downloaded.
+                    $primary_local = $company_folder . '/' . sanitize_file_name( $sub->file_name ) . ' [DOWNLOAD FAILED].txt';
+                    $zip->addFromString( $primary_local, 'This file could not be downloaded from cloud storage.' );
+                } else {
+                    $temp_files[] = $tmp_file;
+                    $zip->addFile( $tmp_file, $primary_local );
+                }
+            } catch ( \RuntimeException $e ) {
+                $zip->addFromString( $company_folder . '/' . sanitize_file_name( $sub->file_name ) . ' [ERROR].txt', $e->getMessage() );
+            }
+
+            // Add per-document supporting files uploaded by this bidder.
+            $user_supporting = $supporting_by_user[ (int) $sub->user_id ] ?? [];
+            foreach ( $user_supporting as $sd ) {
+                // Only include files uploaded AFTER the submission was created
+                // (i.e. part of the per-document submission, not admin-uploaded tender docs).
+                if ( strtotime( $sd->created_at ) < strtotime( $sub->submitted_at ) - 3600 ) {
+                    continue; // Skip if uploaded more than 1h before submission (likely admin docs).
                 }
 
-                $temp_files[] = $tmp_file;
-                $zip->addFile( $tmp_file, $local_name );
-            } catch ( \RuntimeException $e ) {
-                continue; // Skip on error, don't block entire ZIP.
+                $doc_label = $sd->label ? sanitize_file_name( $sd->label ) : '';
+                $doc_name  = $doc_label ? $doc_label . '_' . sanitize_file_name( $sd->file_name ) : sanitize_file_name( $sd->file_name );
+                $local_path = $company_folder . '/' . $doc_name;
+
+                try {
+                    $dl_url = $provider->get_download_url( $sd->cloud_key );
+                    $tmp_f  = download_url( $dl_url, 60 );
+
+                    if ( is_wp_error( $tmp_f ) ) {
+                        $zip->addFromString( $local_path . ' [DOWNLOAD FAILED].txt', 'This file could not be downloaded.' );
+                    } else {
+                        $temp_files[] = $tmp_f;
+                        $zip->addFile( $tmp_f, $local_path );
+                    }
+                } catch ( \RuntimeException $e ) {
+                    $zip->addFromString( $local_path . ' [ERROR].txt', $e->getMessage() );
+                }
             }
+
+            // Add to summary.
+            $summary_rows[] = [
+                'company'       => $sub->company_name ?: 'Bidder #' . $sub->user_id,
+                'bidder_name'   => $sub->display_name ?? '',
+                'email'         => $sub->user_email ?? '',
+                'file_name'     => $sub->file_name,
+                'file_size'     => (int) $sub->file_size,
+                'submitted_at'  => $sub->submitted_at,
+                'is_late'       => (int) $sub->is_late ? 'Yes' : 'No',
+                'additional_docs' => count( $user_supporting ),
+            ];
         }
+
+        // Add summary CSV at root of ZIP.
+        $csv_output = fopen( 'php://temp', 'r+' );
+        fputcsv( $csv_output, [ 'Company', 'Bidder Name', 'Email', 'Primary File', 'File Size (bytes)', 'Submitted At', 'Late?', 'Additional Docs' ] );
+        foreach ( $summary_rows as $row ) {
+            fputcsv( $csv_output, [
+                $row['company'],
+                $row['bidder_name'],
+                $row['email'],
+                $row['file_name'],
+                $row['file_size'],
+                $row['submitted_at'],
+                $row['is_late'],
+                $row['additional_docs'],
+            ] );
+        }
+        rewind( $csv_output );
+        $csv_content = stream_get_contents( $csv_output );
+        fclose( $csv_output );
+        $zip->addFromString( '_submissions_summary.csv', $csv_content );
 
         $zip->close();
 

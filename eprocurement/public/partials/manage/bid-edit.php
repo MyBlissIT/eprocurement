@@ -384,6 +384,10 @@ if ( $is_edit ) {
                     </div>
                 </div>
                 <div class="eproc-modal-footer">
+                    <button type="button" class="eproc-btn eproc-btn-outline" id="eproc-export-comparison-btn">
+                        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" style="margin-right:4px;vertical-align:-2px;"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                        <?php esc_html_e( 'Export CSV', 'eprocurement' ); ?>
+                    </button>
                     <button type="button" class="eproc-btn eproc-btn-outline" data-close-modal="eproc-comparison-modal"><?php esc_html_e( 'Close', 'eprocurement' ); ?></button>
                 </div>
             </div>
@@ -1668,6 +1672,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // ── Comparison modal ──
         var compBtn = document.getElementById('eproc-comparison-btn');
         var compBody = document.getElementById('eproc-comparison-body');
+
+        // Export CSV button.
+        var exportCsvBtn = document.getElementById('eproc-export-comparison-btn');
+        if (exportCsvBtn) {
+            exportCsvBtn.addEventListener('click', function() {
+                window.open(eprocManage.restUrl + 'admin/bids/' + bidId + '/comparison/export?_wpnonce=' + eprocManage.nonce, '_blank');
+            });
+        }
 
         function openModal(id) {
             var m = document.getElementById(id);

@@ -407,6 +407,13 @@ class Eprocurement_Admin_Rest_Api {
             'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
         ] );
 
+        // --- Comparison CSV Export ---
+        register_rest_route( self::NAMESPACE, '/admin/bids/(?P<bid_id>\d+)/comparison/export', [
+            'methods'             => 'GET',
+            'callback'            => [ $this, 'export_comparison_csv' ],
+            'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
+        ] );
+
         // --- Award ---
         register_rest_route( self::NAMESPACE, '/admin/bids/(?P<bid_id>\d+)/award', [
             [
@@ -1781,6 +1788,137 @@ class Eprocurement_Admin_Rest_Api {
             'ranked'   => $ranked,
             'award'    => $award,
         ] );
+    }
+
+    /**
+     * Export the evaluation comparison as a CSV file download.
+     *
+     * Generates a side-by-side CSV with criteria as rows, submissions as
+     * columns, weighted totals, rank, late status, and award info.
+     * Suitable for audit trails and procurement committee review.
+     */
+    public function export_comparison_csv( \WP_REST_Request $request ): void {
+        $bid_id = (int) $request['bid_id'];
+        $evaluation = new Eprocurement_Evaluation();
+        $documents = new Eprocurement_Documents();
+
+        $bid       = $documents->get( $bid_id );
+        $criteria  = $evaluation->get_criteria( $bid_id );
+        $ranked    = $evaluation->get_ranked_comparison( $bid_id );
+        $award     = $documents->get_award( $bid_id );
+
+        // Build CSV filename.
+        $filename = sanitize_file_name(
+            ( $bid ? $bid->bid_number : 'tender' ) . '_evaluation_' . gmdate( 'Y-m-d' ) . '.csv'
+        );
+
+        header( 'Content-Type: text/csv; charset=utf-8' );
+        header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+        header( 'Pragma: no-cache' );
+        header( 'Expires: 0' );
+
+        $output = fopen( 'php://output', 'w' );
+
+        // ── Header section: tender info ──
+        fputcsv( $output, [ 'eProcurement Evaluation Report' ] );
+        fputcsv( $output, [ 'Bid Number', $bid ? $bid->bid_number : '' ] );
+        fputcsv( $output, [ 'Title', $bid ? $bid->title : '' ] );
+        fputcsv( $output, [ 'Status', $bid ? ucfirst( $bid->status ) : '' ] );
+        fputcsv( $output, [ 'Closing Date', $bid && $bid->closing_date ? wp_date( 'j F Y, H:i', strtotime( $bid->closing_date ) ) : '' ] );
+        fputcsv( $output, [ 'Export Date', wp_date( 'j F Y, H:i' ) ] );
+
+        if ( $award ) {
+            fputcsv( $output, [ 'Awarded To', $award->company_name ?: $award->display_name ] );
+            fputcsv( $output, [ 'Award Amount', $award->award_amount !== null ? number_format_i18n( $award->award_amount, 2 ) : 'Not disclosed' ] );
+            fputcsv( $output, [ 'Award Date', wp_date( 'j F Y', strtotime( $award->award_date ) ) ] );
+        }
+
+        fputcsv( $output, [] ); // Blank line.
+
+        // ── Side-by-side comparison matrix ──
+        if ( empty( $ranked ) ) {
+            fputcsv( $output, [ 'No submissions received.' ] );
+            fclose( $output );
+            exit;
+        }
+
+        // Build header row: Criterion | Weight | Max | Sub1 | Sub2 | ...
+        $header = [ 'Criterion', 'Weight', 'Max Score' ];
+        foreach ( $ranked as $r ) {
+            $company = $r['company_name'] ?: $r['bidder_name'];
+            $header[] = '#' . $r['rank'] . ' ' . $company;
+        }
+        fputcsv( $output, $header );
+
+        // One row per criterion.
+        if ( ! empty( $criteria ) ) {
+            foreach ( $criteria as $c ) {
+                $row = [ $c->name, number_format_i18n( (float) $c->weight, 1 ), $c->max_score ];
+                foreach ( $ranked as $r ) {
+                    $crit_data = $r['scores_by_criterion'][ (int) $c->id ] ?? null;
+                    if ( $crit_data && $crit_data['avg_score'] > 0 ) {
+                        $row[] = number_format_i18n( (float) $crit_data['avg_score'], 1 ) . '/' . $c->max_score;
+                    } else {
+                        $row[] = '—';
+                    }
+                }
+                fputcsv( $output, $row );
+            }
+        }
+
+        // Weighted total row.
+        $total_row = [ 'Weighted Total', '', '' ];
+        foreach ( $ranked as $r ) {
+            $total_row[] = $r['criteria_scored'] > 0
+                ? number_format_i18n( $r['score_total'], 1 ) . '/100'
+                : '—';
+        }
+        fputcsv( $output, $total_row );
+
+        // Rank row.
+        $rank_row = [ 'Rank', '', '' ];
+        foreach ( $ranked as $r ) {
+            $rank_row[] = '#' . $r['rank'];
+        }
+        fputcsv( $output, $rank_row );
+
+        // Late submission row.
+        $late_row = [ 'Late Submission', '', '' ];
+        foreach ( $ranked as $r ) {
+            $late_row[] = $r['is_late'] ? 'Yes' : 'No';
+        }
+        fputcsv( $output, $late_row );
+
+        // Submitted at row.
+        $submitted_row = [ 'Submitted At', '', '' ];
+        foreach ( $ranked as $r ) {
+            $submitted_row[] = $r['submitted_at'];
+        }
+        fputcsv( $output, $submitted_row );
+
+        // Bidder email row.
+        $email_row = [ 'Bidder Email', '', '' ];
+        foreach ( $ranked as $r ) {
+            $email_row[] = $r['bidder_email'];
+        }
+        fputcsv( $output, $email_row );
+
+        // Award row.
+        $award_row = [ 'Award Status', '', '' ];
+        foreach ( $ranked as $r ) {
+            if ( $award && $award->user_id === (int) $r['submission']->user_id ) {
+                $award_row[] = 'AWARDED';
+            } else {
+                $award_row[] = '';
+            }
+        }
+        fputcsv( $output, $award_row );
+
+        fputcsv( $output, [] ); // Blank line.
+        fputcsv( $output, [ 'Generated by eProcurement Plugin v' . EPROC_VERSION ] );
+
+        fclose( $output );
+        exit;
     }
 
     // =========================================================================
