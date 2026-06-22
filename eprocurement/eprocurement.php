@@ -249,6 +249,9 @@ function eprocurement_init(): void {
     // SMTP configuration
     $smtp = new Eprocurement_Smtp();
 
+    // Activity log — register hooks for key procurement actions.
+    Eprocurement_Activity_Log::register_hooks();
+
     // Self-update via GitHub Releases
     require_once EPROC_PLUGIN_DIR . 'includes/class-updater.php';
     $updater = new Eprocurement_Updater( EPROC_GITHUB_REPO );

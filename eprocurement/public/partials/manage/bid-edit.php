@@ -239,6 +239,9 @@ if ( $is_edit ) {
                                     <th><?php esc_html_e( 'File', 'eprocurement' ); ?></th>
                                     <th><?php esc_html_e( 'Submitted', 'eprocurement' ); ?></th>
                                     <th><?php esc_html_e( 'Status', 'eprocurement' ); ?></th>
+                                    <?php if ( $is_edit && $current_status === 'closed' ) : ?>
+                                    <th style="width:90px;"><?php esc_html_e( 'Score', 'eprocurement' ); ?></th>
+                                    <?php endif; ?>
                                     <th class="eproc-col-action"><?php esc_html_e( 'Download', 'eprocurement' ); ?></th>
                                 </tr>
                             </thead>
@@ -427,6 +430,34 @@ if ( $is_edit ) {
             </div>
         </div>
         <?php endif; // end award modal ?>
+
+        <!-- Scoring Modal -->
+        <?php if ( $is_edit && $current_status === 'closed' ) : ?>
+        <div class="eproc-modal" id="eproc-scoring-modal" style="display:none;" aria-hidden="true">
+            <div class="eproc-modal-backdrop" data-close-modal="eproc-scoring-modal"></div>
+            <div class="eproc-modal-content">
+                <div class="eproc-modal-header">
+                    <h2>
+                        <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18" style="vertical-align:-3px;margin-right:4px;color:var(--eproc-primary);"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
+                        <?php esc_html_e( 'Score Submission', 'eprocurement' ); ?>
+                    </h2>
+                    <button type="button" class="eproc-modal-close" data-close-modal="eproc-scoring-modal" aria-label="<?php esc_attr_e( 'Close', 'eprocurement' ); ?>">&times;</button>
+                </div>
+                <div class="eproc-modal-body" id="eproc-scoring-body">
+                    <div class="eproc-text-center" style="padding:40px 0;">
+                        <p class="eproc-muted"><?php esc_html_e( 'Loading...', 'eprocurement' ); ?></p>
+                    </div>
+                </div>
+                <div class="eproc-modal-footer">
+                    <button type="button" class="eproc-btn eproc-btn-outline" data-close-modal="eproc-scoring-modal"><?php esc_html_e( 'Cancel', 'eprocurement' ); ?></button>
+                    <button type="button" class="eproc-btn eproc-btn-primary" id="eproc-save-scores-btn">
+                        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" style="margin-right:4px;vertical-align:-2px;"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        <?php esc_html_e( 'Save Scores', 'eprocurement' ); ?>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <?php endif; // end scoring modal ?>
 
 
         <!-- Right Column: Status, Contacts, Dates -->
@@ -1244,6 +1275,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         '<td>' + escHtml(sub.file_name) + '</td>' +
                         timestampCell +
                         '<td>' + escHtml(sub.status) + '</td>' +
+                        (evaluationCard ? '<td><button type="button" class="eproc-btn eproc-btn-sm eproc-btn-outline eproc-score-btn" data-sub-id="' + sub.id + '" data-company="' + escAttr(sub.company_name || sub.display_name || 'Unknown') + '">' + escHtml(<?php echo wp_json_encode( __( 'Score', 'eprocurement' ) ); ?>) + '</button></td>' : '') +
                         '<td><a href="' + eprocManage.restUrl + 'admin/submissions/' + sub.id + '/download" class="eproc-btn eproc-btn-sm eproc-btn-outline" target="_blank">Download</a></td>';
 
                     tbody.appendChild(row);
@@ -1662,6 +1694,128 @@ document.addEventListener('DOMContentLoaded', function() {
                     eprocToast(err.message || '<?php echo esc_js( __( 'Failed to award tender.', 'eprocurement' ) ); ?>', 'error');
                 })
                 .finally(function() { window.eprocSetLoading(confirmAwardBtn, false); });
+            });
+        }
+
+        // ── Scoring modal ──
+        var scoringBody = document.getElementById('eproc-scoring-body');
+        var saveScoresBtn = document.getElementById('eproc-save-scores-btn');
+        var currentScoringSubId = 0;
+
+        // Delegate click for score buttons.
+        document.addEventListener('click', function(e) {
+            var scoreBtn = e.target.closest('.eproc-score-btn');
+            if (!scoreBtn) return;
+
+            currentScoringSubId = parseInt(scoreBtn.getAttribute('data-sub-id'), 10);
+            var company = scoreBtn.getAttribute('data-company');
+
+            openModal('eproc-scoring-modal');
+
+            // Load criteria + existing scores in parallel.
+            Promise.all([
+                eprocAPI.get('admin/bids/' + bidId + '/criteria'),
+                eprocAPI.get('admin/submissions/' + currentScoringSubId + '/scores')
+            ])
+            .then(function(results) {
+                var criteria = results[0].criteria || [];
+                var scoresData = results[1];
+                var scores = scoresData.scores || [];
+                var computed = scoresData.computed || {};
+
+                if (criteria.length === 0) {
+                    scoringBody.innerHTML = '<div class="eproc-notice warning"><p>' +
+                        '<?php echo esc_js( __( 'No evaluation criteria defined. Add criteria in the Evaluation Matrix card above first.', 'eprocurement' ) ); ?>' +
+                        '</p></div>';
+                    if (saveScoresBtn) saveScoresBtn.style.display = 'none';
+                    return;
+                }
+
+                if (saveScoresBtn) saveScoresBtn.style.display = '';
+
+                // Build a map of existing scores: criterion_id → {score, notes}
+                var scoreMap = {};
+                scores.forEach(function(s) {
+                    scoreMap[s.criterion_id] = s;
+                });
+
+                // Render scoring form.
+                var html = '<div style="margin-bottom:16px;padding:12px 16px;background:var(--eproc-surface-light,#f7f9fc);border-radius:8px;">' +
+                    '<strong style="font-size:14px;color:var(--eproc-text-heading);">' + escHtml(company) + '</strong>' +
+                    (computed.total > 0 ? ' <span style="float:right;font-size:14px;font-weight:700;color:var(--eproc-primary);">Current: ' + computed.total.toFixed(1) + '/100</span>' : '') +
+                    '</div>';
+
+                html += '<div class="eproc-scoring-form">';
+                criteria.forEach(function(c) {
+                    var existing = scoreMap[c.id];
+                    var val = existing ? existing.score : '';
+                    html += '<div class="eproc-scoring-row">' +
+                        '<div class="eproc-scoring-label">' +
+                            '<strong>' + escHtml(c.name) + '</strong>' +
+                            (c.description ? '<br><span class="eproc-text-muted" style="font-size:12px;">' + escHtml(c.description) + '</span>' : '') +
+                        '</div>' +
+                        '<div class="eproc-scoring-input">' +
+                            '<input type="number" class="eproc-input eproc-score-input" data-criterion-id="' + c.id + '" data-max-score="' + c.max_score + '"' +
+                            ' value="' + escAttr(String(val)) + '" min="0" max="' + c.max_score + '" step="0.5" style="width:80px;text-align:center;" />' +
+                            '<span class="eproc-scoring-max">/ ' + c.max_score + '</span>' +
+                            '<span class="eproc-weight-pill" style="margin-left:8px;">w: ' + c.weight + '</span>' +
+                        '</div>' +
+                    '</div>';
+                });
+                html += '</div>';
+
+                // Show computed total preview area.
+                html += '<div id="eproc-score-preview" class="eproc-score-preview"' + (computed.total > 0 ? '' : ' style="display:none;"') + '>' +
+                    '<div class="eproc-score-preview-bar"><div class="eproc-score-preview-fill" style="width:' + computed.total + '%;"></div></div>' +
+                    '<span class="eproc-score-preview-label">' + (computed.total > 0 ? computed.total.toFixed(1) + '/100' : '') + '</span>' +
+                    '</div>';
+
+                scoringBody.innerHTML = html;
+            })
+            .catch(function(err) {
+                scoringBody.innerHTML = '<div class="eproc-notice error"><p>' + escHtml(err.message || 'Failed to load scoring data.') + '</p></div>';
+            });
+        });
+
+        // Save scores.
+        if (saveScoresBtn) {
+            saveScoresBtn.addEventListener('click', function() {
+                var inputs = scoringBody.querySelectorAll('.eproc-score-input');
+                if (!inputs.length) return;
+
+                var promises = [];
+                inputs.forEach(function(input) {
+                    var critId = parseInt(input.getAttribute('data-criterion-id'), 10);
+                    var val = input.value.trim();
+                    if (val === '') return; // Skip empty — don't save 0 by default.
+
+                    var score = parseFloat(val);
+                    if (isNaN(score)) return;
+
+                    promises.push(
+                        eprocAPI.post('admin/submissions/' + currentScoringSubId + '/scores', {
+                            criterion_id: critId,
+                            score: score,
+                            notes: ''
+                        })
+                    );
+                });
+
+                if (promises.length === 0) {
+                    eprocToast('<?php echo esc_js( __( 'No scores entered to save.', 'eprocurement' ) ); ?>', 'warning');
+                    return;
+                }
+
+                window.eprocSetLoading(saveScoresBtn, true);
+                Promise.all(promises)
+                .then(function() {
+                    eprocToast('<?php echo esc_js( __( 'Scores saved successfully.', 'eprocurement' ) ); ?>', 'success');
+                    closeModal('eproc-scoring-modal');
+                })
+                .catch(function(err) {
+                    eprocToast(err.message || '<?php echo esc_js( __( 'Failed to save some scores.', 'eprocurement' ) ); ?>', 'error');
+                })
+                .finally(function() { window.eprocSetLoading(saveScoresBtn, false); });
             });
         }
 

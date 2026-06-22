@@ -81,6 +81,7 @@ $options = [
     'eprocurement_login_title',
     'eprocurement_delete_data_on_uninstall',
     'eproc_audit_log', // Added in 2.14.0 — audit trail for bid backdating
+    'eproc_activity_log', // Added in 2.15.0 — dashboard activity feed
 ];
 
 foreach ( $options as $option ) {

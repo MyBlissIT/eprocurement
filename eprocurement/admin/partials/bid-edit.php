@@ -120,19 +120,19 @@ if ( $is_edit ) {
                 </div>
                 <div class="eproc-card-body">
                     <div class="eproc-form-group">
-                        <label for="bid_number"><?php esc_html_e( 'Bid Number', 'eprocurement' ); ?> <span class="required">*</span></label>
+                        <label for="bid_number" class="eproc-form-label"><?php esc_html_e( 'Bid Number', 'eprocurement' ); ?> <span class="required">*</span></label>
                         <input type="text" id="bid_number" name="bid_number" required
                                value="<?php echo esc_attr( $bid ? $bid->bid_number : '' ); ?>"
                                placeholder="<?php esc_attr_e( 'e.g. BID/2026/001', 'eprocurement' ); ?>">
                     </div>
                     <div class="eproc-form-group">
-                        <label for="title"><?php esc_html_e( 'Title', 'eprocurement' ); ?> <span class="required">*</span></label>
+                        <label for="title" class="eproc-form-label"><?php esc_html_e( 'Title', 'eprocurement' ); ?> <span class="required">*</span></label>
                         <input type="text" id="title" name="title" required
                                value="<?php echo esc_attr( $bid ? $bid->title : '' ); ?>"
                                placeholder="<?php esc_attr_e( 'Bid title', 'eprocurement' ); ?>">
                     </div>
                     <div class="eproc-form-group">
-                        <label for="description"><?php esc_html_e( 'Description', 'eprocurement' ); ?></label>
+                        <label for="description" class="eproc-form-label"><?php esc_html_e( 'Description', 'eprocurement' ); ?></label>
                         <p class="eproc-text-muted eproc-text-sm" style="margin:0 0 8px;">
                             <?php esc_html_e( 'Type a description below OR click "Upload Screenshot" to insert an image of the description from the bid document. The image will display inline — no click required.', 'eprocurement' ); ?>
                         </p>
@@ -230,7 +230,7 @@ if ( $is_edit ) {
                 <div class="eproc-card-body">
                     <?php if ( $is_regular_bid && $is_edit && ! empty( $allowed_next ) && current_user_can( 'eproc_publish_bids' ) ) : ?>
                         <div class="eproc-form-group">
-                            <label for="eproc-change-status"><?php esc_html_e( 'Change Status', 'eprocurement' ); ?></label>
+                            <label for="eproc-change-status" class="eproc-form-label"><?php esc_html_e( 'Change Status', 'eprocurement' ); ?></label>
                             <div class="eproc-input-group">
                                 <select id="eproc-change-status">
                                     <option value=""><?php esc_html_e( '-- Select --', 'eprocurement' ); ?></option>
@@ -281,7 +281,7 @@ if ( $is_edit ) {
                 </div>
                 <div class="eproc-card-body">
                     <div class="eproc-form-group">
-                        <label for="scm_contact_id"><?php esc_html_e( 'SCM Contact', 'eprocurement' ); ?></label>
+                        <label for="scm_contact_id" class="eproc-form-label"><?php esc_html_e( 'SCM Contact', 'eprocurement' ); ?></label>
                         <select id="scm_contact_id" name="scm_contact_id">
                             <option value=""><?php esc_html_e( '-- None --', 'eprocurement' ); ?></option>
                             <?php foreach ( $scm_contacts as $c ) : ?>
@@ -313,7 +313,7 @@ if ( $is_edit ) {
                         </select>
                     </div>
                     <div class="eproc-form-group">
-                        <label for="technical_contact_id"><?php esc_html_e( 'Technical Contact', 'eprocurement' ); ?></label>
+                        <label for="technical_contact_id" class="eproc-form-label"><?php esc_html_e( 'Technical Contact', 'eprocurement' ); ?></label>
                         <select id="technical_contact_id" name="technical_contact_id">
                             <option value=""><?php esc_html_e( '-- None --', 'eprocurement' ); ?></option>
                             <?php foreach ( $tech_contacts as $c ) : ?>
@@ -354,22 +354,22 @@ if ( $is_edit ) {
                 </div>
                 <div class="eproc-card-body">
                     <div class="eproc-form-group">
-                        <label for="opening_date"><?php esc_html_e( 'Opening Date', 'eprocurement' ); ?></label>
+                        <label for="opening_date" class="eproc-form-label"><?php esc_html_e( 'Opening Date', 'eprocurement' ); ?></label>
                         <input type="datetime-local" id="opening_date" name="opening_date"
                                value="<?php echo esc_attr( $bid && $bid->opening_date ? date( 'Y-m-d\TH:i', strtotime( $bid->opening_date ) ) : '' ); ?>">
                     </div>
                     <div class="eproc-form-group">
-                        <label for="briefing_date"><?php esc_html_e( 'Briefing Date', 'eprocurement' ); ?></label>
+                        <label for="briefing_date" class="eproc-form-label"><?php esc_html_e( 'Briefing Date', 'eprocurement' ); ?></label>
                         <input type="datetime-local" id="briefing_date" name="briefing_date"
                                value="<?php echo esc_attr( $bid && $bid->briefing_date ? date( 'Y-m-d\TH:i', strtotime( $bid->briefing_date ) ) : '' ); ?>">
                     </div>
                     <div class="eproc-form-group">
-                        <label for="closing_date"><?php esc_html_e( 'Closing Date', 'eprocurement' ); ?></label>
+                        <label for="closing_date" class="eproc-form-label"><?php esc_html_e( 'Closing Date', 'eprocurement' ); ?></label>
                         <input type="datetime-local" id="closing_date" name="closing_date"
                                value="<?php echo esc_attr( $bid && $bid->closing_date ? date( 'Y-m-d\TH:i', strtotime( $bid->closing_date ) ) : '' ); ?>">
                     </div>
                     <div class="eproc-form-group">
-                        <label for="qa_deadline"><?php esc_html_e( 'Q&A Deadline', 'eprocurement' ); ?></label>
+                        <label for="qa_deadline" class="eproc-form-label"><?php esc_html_e( 'Q&A Deadline', 'eprocurement' ); ?></label>
                         <input type="datetime-local" id="qa_deadline" name="qa_deadline"
                                value="<?php echo esc_attr( $bid && ! empty( $bid->qa_deadline ) ? date( 'Y-m-d\TH:i', strtotime( $bid->qa_deadline ) ) : '' ); ?>">
                         <span class="eproc-form-hint"><?php esc_html_e( 'Deadline for bidders to submit queries. Must be before the closing date.', 'eprocurement' ); ?></span>

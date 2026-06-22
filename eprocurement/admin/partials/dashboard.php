@@ -55,34 +55,69 @@ $recent_threads = $messaging->get_admin_inbox( [
     </div>
 
     <!-- Stat Cards -->
-    <div id="eproc-dashboard-stats">
-        <div>
-            <h3><?php esc_html_e( 'Total Bids', 'eprocurement' ); ?></h3>
-            <p><?php echo esc_html( $total_bids ); ?></p>
+    <div id="eproc-dashboard-stats" class="eproc-stats">
+        <div class="eproc-stat-card">
+            <div class="eproc-stat-icon eproc-stat-icon--blue">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z" clip-rule="evenodd"/></svg>
+            </div>
+            <div class="eproc-stat-body">
+                <div class="eproc-stat-number"><?php echo esc_html( $total_bids ); ?></div>
+                <div class="eproc-stat-label"><?php esc_html_e( 'Total Bids', 'eprocurement' ); ?></div>
+            </div>
         </div>
-        <div>
-            <h3><?php esc_html_e( 'Open Bids', 'eprocurement' ); ?></h3>
-            <p><?php echo esc_html( $open_bids ); ?></p>
+        <div class="eproc-stat-card green">
+            <div class="eproc-stat-icon eproc-stat-icon--green">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707 9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            </div>
+            <div class="eproc-stat-body">
+                <div class="eproc-stat-number"><?php echo esc_html( $open_bids ); ?></div>
+                <div class="eproc-stat-label"><?php esc_html_e( 'Open Bids', 'eprocurement' ); ?></div>
+            </div>
         </div>
-        <div>
-            <h3><?php esc_html_e( 'Closed', 'eprocurement' ); ?></h3>
-            <p><?php echo esc_html( $closed_bids ); ?></p>
+        <div class="eproc-stat-card red">
+            <div class="eproc-stat-icon eproc-stat-icon--red">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707 6.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            </div>
+            <div class="eproc-stat-body">
+                <div class="eproc-stat-number"><?php echo esc_html( $closed_bids ); ?></div>
+                <div class="eproc-stat-label"><?php esc_html_e( 'Closed', 'eprocurement' ); ?></div>
+            </div>
         </div>
-        <div>
-            <h3><?php esc_html_e( 'Total Bidders', 'eprocurement' ); ?></h3>
-            <p><?php echo esc_html( $total_bidders ); ?></p>
+        <div class="eproc-stat-card purple">
+            <div class="eproc-stat-icon eproc-stat-icon--purple">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+            </div>
+            <div class="eproc-stat-body">
+                <div class="eproc-stat-number"><?php echo esc_html( $total_bidders ); ?></div>
+                <div class="eproc-stat-label"><?php esc_html_e( 'Bidders', 'eprocurement' ); ?></div>
+            </div>
         </div>
-        <div>
-            <h3><?php esc_html_e( 'Unread Queries', 'eprocurement' ); ?></h3>
-            <p><?php echo esc_html( $unread_count ); ?></p>
+        <div class="eproc-stat-card orange">
+            <div class="eproc-stat-icon eproc-stat-icon--orange">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7z" clip-rule="evenodd"/></svg>
+            </div>
+            <div class="eproc-stat-body">
+                <div class="eproc-stat-number"><?php echo esc_html( $unread_count ); ?></div>
+                <div class="eproc-stat-label"><?php esc_html_e( 'Unread Queries', 'eprocurement' ); ?></div>
+            </div>
         </div>
-        <div>
-            <h3><?php esc_html_e( 'Downloads Today', 'eprocurement' ); ?></h3>
-            <p><?php echo esc_html( $downloads_today ); ?></p>
+        <div class="eproc-stat-card">
+            <div class="eproc-stat-icon eproc-stat-icon--teal">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+            </div>
+            <div class="eproc-stat-body">
+                <div class="eproc-stat-number"><?php echo esc_html( $downloads_today ); ?></div>
+                <div class="eproc-stat-label"><?php esc_html_e( 'Downloads Today', 'eprocurement' ); ?></div>
+            </div>
         </div>
-        <div>
-            <h3><?php esc_html_e( 'Submissions', 'eprocurement' ); ?></h3>
-            <p><?php echo esc_html( $total_submissions ); ?></p>
+        <div class="eproc-stat-card green">
+            <div class="eproc-stat-icon eproc-stat-icon--green">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+            </div>
+            <div class="eproc-stat-body">
+                <div class="eproc-stat-number"><?php echo esc_html( $total_submissions ); ?></div>
+                <div class="eproc-stat-label"><?php esc_html_e( 'Submissions', 'eprocurement' ); ?></div>
+            </div>
         </div>
         <div class="eproc-stat-card-wide">
             <h3><?php esc_html_e( 'Most Downloaded', 'eprocurement' ); ?></h3>
@@ -206,4 +241,46 @@ $recent_threads = $messaging->get_admin_inbox( [
 
         </div>
     </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- Recent Activity Feed                                          -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <div class="eproc-card" style="margin-top:24px;">
+        <div class="eproc-card-header">
+            <h2>
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18" style="vertical-align:-3px;margin-right:4px;color:var(--eproc-primary);">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                </svg>
+                <?php esc_html_e( 'Recent Activity', 'eprocurement' ); ?>
+            </h2>
+        </div>
+        <div class="eproc-card-body">
+            <?php
+            $activity = Eprocurement_Activity_Log::get_recent( 10 );
+            if ( ! empty( $activity ) ) :
+            ?>
+                <div class="eproc-activity-feed">
+                    <?php foreach ( $activity as $entry ) : ?>
+                        <div class="eproc-activity-item">
+                            <div class="eproc-activity-icon eproc-activity-icon--<?php echo esc_attr( $entry['type'] ); ?>">
+                                <?php echo Eprocurement_Activity_Log::get_icon( $entry['type'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                            </div>
+                            <div class="eproc-activity-body">
+                                <p class="eproc-activity-text"><?php echo wp_kses_post( $entry['message'] ); ?></p>
+                                <p class="eproc-activity-meta">
+                                    <strong><?php echo esc_html( $entry['user_name'] ); ?></strong>
+                                    · <?php echo esc_html( eprocurement_relative_time( $entry['timestamp'] ) ); ?>
+                                </p>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else : ?>
+                <div class="eproc-activity-empty">
+                    <p class="eproc-activity-empty-text"><?php esc_html_e( 'No recent activity. Activity will appear here as bids are created, queries submitted, and tenders awarded.', 'eprocurement' ); ?></p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
 </div>
