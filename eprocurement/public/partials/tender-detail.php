@@ -160,6 +160,14 @@ $is_briefing_req   = $bid_submissions->is_briefing_compulsory( $bid_id );
                     ?>
                 </span>
             </div>
+            <?php if ( ! empty( $document->qa_deadline ) && $document->qa_deadline !== '0000-00-00 00:00:00' ) : ?>
+            <div class="eproc-date-card eproc-date-card--compact">
+                <span class="eproc-date-label"><?php echo esc_html__( 'Q&A Deadline', 'eprocurement' ); ?></span>
+                <span class="eproc-date-value">
+                    <?php echo esc_html( date_i18n( 'j M Y, H:i', strtotime( $document->qa_deadline ) ) ); ?>
+                </span>
+            </div>
+            <?php endif; ?>
         </div>
 
         <?php
@@ -205,6 +213,41 @@ $is_briefing_req   = $bid_submissions->is_briefing_compulsory( $bid_id );
         endif;
         ?>
     </section>
+
+    <?php
+    // Show award result if the tender has been awarded.
+    $award_info = $documents->get_award( $bid_id );
+    if ( $award_info ) :
+    ?>
+    <!-- Award Result -->
+    <section class="eproc-detail-section eproc-award-result-section">
+        <div class="eproc-award-result-banner">
+            <div class="eproc-award-result-icon">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zm7-10a1 1 0 01.945.671L14.118 6H17a1 1 0 110 2h-.018l-.382 1.428a1 1 0 01-1.94-.514L14.732 8h-2.99l-.276.829a1 1 0 11-1.94-.514l2-6A1 1 0 0112 2zm1.382 6l-.667-2-.667 2h1.334zM9 14a1 1 0 011-1h6a1 1 0 110 2h-6a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+            </div>
+            <div class="eproc-award-result-body">
+                <h2 class="eproc-award-result-title"><?php esc_html_e( 'Tender Awarded', 'eprocurement' ); ?></h2>
+                <p class="eproc-award-result-winner">
+                    <strong><?php esc_html_e( 'Awarded to:', 'eprocurement' ); ?></strong>
+                    <?php echo esc_html( $award_info->company_name ?: $award_info->display_name ); ?>
+                </p>
+                <?php if ( $award_info->award_amount !== null && $award_info->award_amount > 0 ) : ?>
+                    <p class="eproc-award-result-amount">
+                        <strong><?php esc_html_e( 'Contract value:', 'eprocurement' ); ?></strong>
+                        <?php echo esc_html( number_format_i18n( $award_info->award_amount, 2 ) ); ?>
+                    </p>
+                <?php endif; ?>
+                <p class="eproc-award-result-date">
+                    <strong><?php esc_html_e( 'Award date:', 'eprocurement' ); ?></strong>
+                    <?php echo esc_html( wp_date( 'j F Y', strtotime( $award_info->award_date ) ) ); ?>
+                </p>
+                <?php if ( $award_info->award_notes ) : ?>
+                    <p class="eproc-award-result-notes"><?php echo esc_html( $award_info->award_notes ); ?></p>
+                <?php endif; ?>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
 
     <!-- Description -->
     <section class="eproc-detail-section eproc-description-section">

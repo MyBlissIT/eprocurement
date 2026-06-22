@@ -2924,3 +2924,117 @@ a.eproc-btn-primary {
     min-width: 60px;
 }
 
+/* ──────────────────────────────────────────
+   53. AWARD RESULT BANNER — tender detail page
+   ────────────────────────────────────────── */
+
+.eproc-award-result-section {
+    margin-bottom: 24px;
+}
+
+.eproc-award-result-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    padding: 28px 32px;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #fbbf24;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.12);
+}
+
+.eproc-award-result-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: rgba(245, 158, 11, 0.25);
+    color: #92400e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.eproc-award-result-icon svg {
+    width: 28px;
+    height: 28px;
+}
+
+.eproc-award-result-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.eproc-award-result-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #78350f;
+    margin: 0 0 10px;
+    letter-spacing: -0.02em;
+}
+
+.eproc-award-result-winner,
+.eproc-award-result-amount,
+.eproc-award-result-date {
+    font-size: 15px;
+    color: #78350f;
+    margin: 0 0 6px;
+}
+
+.eproc-award-result-winner strong,
+.eproc-award-result-amount strong,
+.eproc-award-result-date strong {
+    color: #92400e;
+}
+
+.eproc-award-result-notes {
+    font-size: 14px;
+    color: #78350f;
+    margin: 10px 0 0;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+    line-height: 1.6;
+    font-style: italic;
+}
+
+@media (max-width: 640px) {
+    .eproc-award-result-banner {
+        flex-direction: column;
+        gap: 14px;
+        padding: 20px;
+    }
+}
+
+/* ──────────────────────────────────────────
+   54. UNSAVED CHANGES WARNING
+   ────────────────────────────────────────── */
+
+.eproc-unsaved-warning {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: var(--eproc-primary, #8b1a2b);
+    color: #fff;
+    border-radius: 10px;
+    box-shadow: var(--eproc-shadow-xl);
+    font-size: 13px;
+    font-weight: 600;
+    animation: eproc-fade-in-up var(--eproc-duration-base) var(--eproc-ease-out);
+}
+
+.eproc-unsaved-warning.is-visible {
+    display: flex;
+}
+
+.eproc-unsaved-warning svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+

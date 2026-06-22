@@ -399,6 +399,16 @@ class Eprocurement_Rest_Api {
             return new \WP_REST_Response( [ 'error' => __( 'Queries can only be submitted for open bids.', 'eprocurement' ) ], 400 );
         }
 
+        // Enforce Q&A deadline — if set and past, reject new queries.
+        if ( ! empty( $document->qa_deadline ) && $document->qa_deadline !== '0000-00-00 00:00:00' ) {
+            if ( strtotime( $document->qa_deadline ) < current_time( 'timestamp' ) ) {
+                return new \WP_REST_Response( [
+                    'error' => __( 'The Q&A deadline has passed. New queries can no longer be submitted for this tender.', 'eprocurement' ),
+                    'code'  => 'qa_deadline_passed',
+                ], 400 );
+            }
+        }
+
         $messaging = new Eprocurement_Messaging();
 
         $thread_id = $messaging->create_thread( [

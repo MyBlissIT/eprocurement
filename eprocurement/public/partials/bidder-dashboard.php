@@ -365,6 +365,23 @@ $profile_updated = isset( $_GET['profile_updated'] ) && $_GET['profile_updated']
                                             <?php if ( (int) $sub->is_late ) : ?>
                                                 <span class="eproc-badge-late"><?php echo esc_html__( 'Late', 'eprocurement' ); ?></span>
                                             <?php endif; ?>
+                                            <?php
+                                            // Check if the tender has been awarded.
+                                            $_award_info = ( new Eprocurement_Documents() )->get_award( (int) $sub->document_id );
+                                            if ( $_award_info ) :
+                                                if ( $_award_info->user_id === $user_id ) :
+                                                    ?>
+                                                    <br>
+                                                    <?php echo eprocurement_status_badge( 'awarded', __( 'Awarded', 'eprocurement' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                                                    <?php
+                                                else :
+                                                    ?>
+                                                    <br>
+                                                    <span class="eproc-badge eproc-badge-cancelled" style="margin-top:4px;"><?php echo esc_html__( 'Not Awarded', 'eprocurement' ); ?></span>
+                                                    <?php
+                                                endif;
+                                            endif;
+                                            ?>
                                         <?php endif; ?>
                                     </td>
                                 </tr>

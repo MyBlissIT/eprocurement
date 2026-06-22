@@ -35,6 +35,8 @@ class Eprocurement_Notifications {
         // Premium features (2.14.0)
         add_action( 'eprocurement_bid_awarded', [ $this, 'notify_award_winner' ], 10, 2 );
         add_action( 'eprocurement_bid_awarded', [ $this, 'notify_award_losers' ], 20, 2 );
+        // Submission confirmation (2.16.3)
+        add_action( 'eprocurement_bid_submitted', [ $this, 'notify_submission_confirmation' ], 10, 4 );
     }
 
     /**
@@ -549,6 +551,84 @@ class Eprocurement_Notifications {
         if ( $thread_id ) {
             $messaging->add_message( $thread_id, 0, $message ); // sender_id 0 = system
         }
+    }
+
+    /**
+     * Send a submission confirmation email to the bidder.
+     *
+     * @param int  $submission_id Submission ID.
+     * @param int  $document_id   Document ID.
+     * @param int  $user_id       Bidder user ID.
+     * @param bool $is_late       Whether this was a late submission.
+     *
+     * @since 2.16.3
+     */
+    public function notify_submission_confirmation( int $submission_id, int $document_id, int $user_id = 0, bool $is_late = false ): void {
+        $bidder = get_userdata( $user_id );
+        if ( ! $bidder || ! $bidder->user_email ) {
+            return;
+        }
+
+        $document = Eprocurement_Database::get_by_id( 'documents', $document_id );
+        if ( ! $document ) {
+            return;
+        }
+
+        $submission = Eprocurement_Database::get_by_id( 'bid_submissions', $submission_id );
+        if ( ! $submission ) {
+            return;
+        }
+
+        $slug = eprocurement_get_slug();
+        $dashboard_url = home_url( "/{$slug}/my-account/?tab=submissions" );
+
+        $subject = sprintf(
+            /* translators: %s: bid number */
+            __( 'Submission confirmed: %s', 'eprocurement' ),
+            $document->bid_number
+        );
+
+        // Build HTML body from template.
+        ob_start();
+        eprocurement_load_template( 'email/submission-confirmation.php', [
+            'bidder_name'  => $bidder->display_name,
+            'bid_number'   => $document->bid_number,
+            'bid_title'    => $document->title,
+            'file_name'    => $submission->file_name,
+            'submitted_at' => $submission->submitted_at,
+            'is_late'      => $is_late,
+            'dashboard_url'=> $dashboard_url,
+        ] );
+        $html_body = ob_get_clean();
+
+        // Fallback plain text.
+        $text_body = sprintf(
+            /* translators: 1: bidder name, 2: bid number, 3: bid title, 4: file name, 5: submitted at, 6: late, 7: dashboard URL */
+            __(
+                "Dear %1\$s,\n\n" .
+                "Your bid submission has been received successfully.\n\n" .
+                "Bid Number: %2\$s\n" .
+                "Title: %3\$s\n" .
+                "File: %4\$s\n" .
+                "Submitted: %5\$s\n" .
+                "Late: %6\$s\n\n" .
+                "View your submissions:\n%7\$s\n\n" .
+                "Regards,\neProcurement System",
+                'eprocurement'
+            ),
+            $bidder->display_name,
+            $document->bid_number,
+            $document->title,
+            $submission->file_name,
+            $submission->submitted_at,
+            $is_late ? 'Yes' : 'No',
+            $dashboard_url
+        );
+
+        $set_html = static fn( $ct ) => 'text/html';
+        add_filter( 'wp_mail_content_type', $set_html );
+        wp_mail( $bidder->user_email, $subject, $html_body ?: $text_body );
+        remove_filter( 'wp_mail_content_type', $set_html );
     }
 
     /**
