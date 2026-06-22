@@ -144,6 +144,13 @@ class Eprocurement_Rest_Api {
             'permission_callback' => [ $this, 'is_verified_bidder' ],
         ] );
 
+        // Bidder: Retract a query thread (only if no staff reply yet).
+        register_rest_route( self::NAMESPACE, '/threads/(?P<id>\d+)/retract', [
+            'methods'             => 'DELETE',
+            'callback'            => [ $this, 'retract_thread' ],
+            'permission_callback' => 'is_user_logged_in',
+        ] );
+
         // Bidder: Check if eligible to submit for a bid
         register_rest_route( self::NAMESPACE, '/submissions/check', [
             'methods'             => 'GET',
@@ -991,6 +998,53 @@ class Eprocurement_Rest_Api {
         return new \WP_REST_Response( [
             'success' => true,
             'message' => __( 'Your submission has been cancelled. You may resubmit.', 'eprocurement' ),
+        ] );
+    }
+
+    /**
+     * DELETE /threads/{id}/retract — Retract a query thread.
+     *
+     * Only allowed if:
+     * - The current user owns the thread (is the bidder).
+     * - No staff member has replied yet (only the bidder's own messages exist).
+     *
+     * The thread is marked as 'cancelled' (not deleted — audit trail preserved).
+     */
+    public function retract_thread( \WP_REST_Request $request ): \WP_REST_Response {
+        $thread_id = (int) $request->get_param( 'id' );
+        $user_id   = get_current_user_id();
+        $messaging = new Eprocurement_Messaging();
+
+        // Get the thread — must be owned by the current user.
+        $thread = $messaging->get_thread( $thread_id, $user_id );
+        if ( ! $thread ) {
+            return new \WP_REST_Response( [ 'error' => __( 'Thread not found or access denied.', 'eprocurement' ) ], 404 );
+        }
+
+        // Check if any staff member has replied.
+        $messages = $messaging->get_messages( $thread_id );
+        foreach ( $messages as $msg ) {
+            if ( (int) $msg->sender_id !== $user_id ) {
+                return new \WP_REST_Response( [
+                    'error' => __( 'This query cannot be retracted because staff has already replied.', 'eprocurement' ),
+                    'code'  => 'has_reply',
+                ], 400 );
+            }
+        }
+
+        // Mark the thread as cancelled.
+        $result = Eprocurement_Database::update( 'threads', [
+            'status'     => 'cancelled',
+            'updated_at' => current_time( 'mysql' ),
+        ], [ 'id' => $thread_id ] );
+
+        if ( $result === false ) {
+            return new \WP_REST_Response( [ 'error' => __( 'Failed to retract query.', 'eprocurement' ) ], 500 );
+        }
+
+        return new \WP_REST_Response( [
+            'success' => true,
+            'message' => __( 'Your query has been retracted.', 'eprocurement' ),
         ] );
     }
 

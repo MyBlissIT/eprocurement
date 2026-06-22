@@ -351,6 +351,164 @@ class Eprocurement_Public {
      *
      * @return bool
      */
+    /**
+     * Inject dynamic CSS that adapts the plugin to the host site's branding.
+     *
+     * This ensures the plugin inherits the municipal website's color scheme,
+     * font stack, and visual identity — critical for embedded deployments.
+     *
+     * Priority order for colours:
+     *   1. WordPress theme.json palette (WP 5.9+)
+     *   2. Plugin settings (eprocurement_brand_colors)
+     *   3. Default maroon palette
+     *
+     * Fonts: always inherit from the parent theme via CSS — the plugin's
+     * CSS uses `inherit` for font-family on the outer container, so the
+     * theme's body font cascades into all plugin elements.
+     *
+     * @since 2.16.4
+     */
+    public function inject_brand_css(): void {
+        $brand_colors = get_option( 'eprocurement_brand_colors', [] );
+        if ( ! is_array( $brand_colors ) ) {
+            $brand_colors = [];
+        }
+
+        $primary   = $brand_colors['primary']   ?? '#8b1a2b';
+        $secondary = $brand_colors['secondary'] ?? '#1a1a5e';
+
+        // If "inherit from theme" is enabled, try to detect theme.json colours.
+        $inherit_theme = get_option( 'eprocurement_inherit_theme_colors', '0' );
+        if ( $inherit_theme === '1' ) {
+            $theme_colors = $this->detect_theme_colors();
+            if ( $theme_colors ) {
+                $primary   = $theme_colors['primary']   ?? $primary;
+                $secondary = $theme_colors['secondary'] ?? $secondary;
+            }
+        }
+
+        // Allow full programmatic override via filter.
+        $overrides = apply_filters( 'eproc_brand_colors', [
+            'primary'       => $primary,
+            'secondary'     => $secondary,
+            'primary_hover' => $this->adjust_brightness( $primary, -15 ),
+            'primary_light' => $this->adjust_brightness( $primary, 40 ),
+            'primary_bg'    => $this->adjust_brightness( $primary, 88 ),
+            'font_family'   => 'inherit',
+        ] );
+
+        // Build the CSS custom properties override.
+        $css = '<style id="eproc-brand-override">';
+        $css .= '.eproc-wrap, .eproc-admin-shell {';
+        $css .= '--eproc-primary: ' . esc_attr( $overrides['primary'] ) . ';';
+        $css .= '--eproc-primary-hover: ' . esc_attr( $overrides['primary_hover'] ) . ';';
+        $css .= '--eproc-primary-light: ' . esc_attr( $overrides['primary_light'] ) . ';';
+        $css .= '--eproc-primary-bg: ' . esc_attr( $overrides['primary_bg'] ) . ';';
+        $css .= '--eproc-primary-bg-hover: ' . esc_attr( $this->adjust_brightness( $overrides['primary'], 82 ) ) . ';';
+        $css .= '--eproc-primary-border: ' . esc_attr( $this->adjust_brightness( $overrides['primary'], 60 ) ) . ';';
+        $css .= '--eproc-primary-shadow: ' . esc_attr( $this->hex_to_rgba( $overrides['primary'], 0.2 ) ) . ';';
+        $css .= '--eproc-primary-shadow-hover: ' . esc_attr( $this->hex_to_rgba( $overrides['primary'], 0.3 ) ) . ';';
+        $css .= '--eproc-primary-focus: ' . esc_attr( $this->hex_to_rgba( $overrides['primary'], 0.12 ) ) . ';';
+        $css .= '--eproc-secondary: ' . esc_attr( $overrides['secondary'] ) . ';';
+        $css .= '--eproc-sidebar-bg: ' . esc_attr( $overrides['secondary'] ) . ';';
+        // Font family inherits from the theme's body font.
+        $css .= 'font-family: ' . esc_attr( $overrides['font_family'] ) . ';';
+        $css .= '}';
+
+        // Also override the sidebar active background to use the primary colour.
+        $css .= '.eproc-admin-sidebar { --eproc-sidebar-active-bg: ' . esc_attr( $this->hex_to_rgba( $overrides['primary'], 0.25 ) ) . '; }';
+
+        // Override the button gradient + email header with the site's primary.
+        $css .= '.eproc-btn-primary, .button { background: linear-gradient(135deg, ' . esc_attr( $overrides['primary'] ) . ' 0%, ' . esc_attr( $overrides['primary_hover'] ) . ' 100%) !important; }';
+        $css .= '.eproc-btn-primary { box-shadow: 0 4px 14px 0 ' . esc_attr( $this->hex_to_rgba( $overrides['primary'], 0.25 ) ) . '; }';
+
+        $css .= '</style>';
+
+        echo $css; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — all values are sanitised above.
+    }
+
+    /**
+     * Detect the active theme's primary colour from theme.json (WP 5.9+).
+     *
+     * @return array|null {primary, secondary} or null if not detectable.
+     */
+    private function detect_theme_colors(): ?array {
+        if ( ! function_exists( 'wp_get_global_settings' ) ) {
+            return null;
+        }
+
+        $settings = wp_get_global_settings();
+        $palette = $settings['color']['palette']['theme'] ?? $settings['color']['palette']['default'] ?? null;
+
+        if ( ! $palette || ! is_array( $palette ) ) {
+            return null;
+        }
+
+        // Heuristic: the first palette entry is usually the primary/brand colour.
+        $primary = $palette[0]['color'] ?? null;
+        $secondary = $palette[1]['color'] ?? $primary;
+
+        if ( ! $primary ) {
+            return null;
+        }
+
+        return [
+            'primary'   => sanitize_hex_color( $primary ) ?: '#8b1a2b',
+            'secondary' => sanitize_hex_color( $secondary ) ?: '#1a1a5e',
+        ];
+    }
+
+    /**
+     * Adjust the brightness of a hex colour (positive = lighter, negative = darker).
+     *
+     * @param string $hex   Hex colour (#rrggbb).
+     * @param int    $percent -100 to 100.
+     * @return string Adjusted hex colour.
+     */
+    private function adjust_brightness( string $hex, int $percent ): string {
+        $hex = ltrim( $hex, '#' );
+        if ( strlen( $hex ) === 3 ) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        if ( strlen( $hex ) !== 6 ) {
+            return $hex;
+        }
+
+        $r = hexdec( substr( $hex, 0, 2 ) );
+        $g = hexdec( substr( $hex, 2, 2 ) );
+        $b = hexdec( substr( $hex, 4, 2 ) );
+
+        $adjust = $percent / 100;
+        $r = max( 0, min( 255, (int) round( $r + ( $r * $adjust ) ) ) );
+        $g = max( 0, min( 255, (int) round( $g + ( $g * $adjust ) ) ) );
+        $b = max( 0, min( 255, (int) round( $b + ( $b * $adjust ) ) ) );
+
+        return '#' . sprintf( '%02x%02x%02x', $r, $g, $b );
+    }
+
+    /**
+     * Convert a hex colour to an rgba() string with the given alpha.
+     *
+     * @param string $hex   Hex colour.
+     * @param float  $alpha Alpha (0-1).
+     * @return string rgba(r, g, b, a)
+     */
+    private function hex_to_rgba( string $hex, float $alpha ): string {
+        $hex = ltrim( $hex, '#' );
+        if ( strlen( $hex ) === 3 ) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        if ( strlen( $hex ) !== 6 ) {
+            return 'rgba(139, 26, 43, ' . $alpha . ')';
+        }
+
+        $r = hexdec( substr( $hex, 0, 2 ) );
+        $g = hexdec( substr( $hex, 2, 2 ) );
+        $b = hexdec( substr( $hex, 4, 2 ) );
+
+        return "rgba({$r}, {$g}, {$b}, {$alpha})";
+    }
+
     private function is_eprocurement_page(): bool {
         // During AJAX/REST requests, this isn't applicable.
         if ( wp_doing_ajax() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
@@ -454,6 +612,9 @@ class Eprocurement_Public {
             [ 'eprocurement-frontend' ],
             EPROC_VERSION
         );
+
+        // Inject dynamic brand CSS that adapts to the host site.
+        $this->inject_brand_css();
 
         wp_enqueue_script(
             'eprocurement-frontend',

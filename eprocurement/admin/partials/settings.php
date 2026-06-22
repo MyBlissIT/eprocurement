@@ -153,6 +153,16 @@ $providers = [
                         <p class="eproc-text-muted eproc-text-sm"><?php esc_html_e( 'Sidebar background and secondary accents.', 'eprocurement' ); ?></p>
                     </div>
                 </div>
+
+                <div class="eproc-form-group">
+                    <label class="eproc-checkbox-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;">
+                        <input type="checkbox" name="inherit_theme_colors" id="inherit_theme_colors" value="1"
+                            <?php checked( get_option( 'eprocurement_inherit_theme_colors', '0' ), '1' ); ?>
+                            style="width:auto;margin:0;" />
+                        <span><?php esc_html_e( 'Inherit colours from the active WordPress theme', 'eprocurement' ); ?></span>
+                    </label>
+                    <p class="eproc-text-muted eproc-text-sm"><?php esc_html_e( 'When enabled, the plugin automatically detects the theme\'s primary colour from theme.json and uses it for all branding. The manual colours above are used as fallback. This ensures the plugin matches the municipal website\'s visual identity.', 'eprocurement' ); ?></p>
+                </div>
             </div>
         </div>
 

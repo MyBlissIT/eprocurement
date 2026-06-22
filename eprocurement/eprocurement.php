@@ -259,6 +259,9 @@ function eprocurement_init(): void {
     // Activity log — register hooks for key procurement actions.
     Eprocurement_Activity_Log::register_hooks();
 
+    // Two-Factor Authentication for staff users.
+    $two_factor = new Eprocurement_Two_Factor();
+
     // Self-update via GitHub Releases
     require_once EPROC_PLUGIN_DIR . 'includes/class-updater.php';
     $updater = new Eprocurement_Updater( EPROC_GITHUB_REPO );

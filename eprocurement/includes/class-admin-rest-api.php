@@ -20,6 +20,51 @@ class Eprocurement_Admin_Rest_Api {
     public function __construct() {
         add_action( 'rest_api_init', [ $this, 'register_routes' ] );
         add_action( 'rest_api_init', [ $this, 'register_cors' ] );
+
+        // Rate limiting — track all eProcurement REST requests.
+        add_filter( 'rest_pre_dispatch', [ $this, 'track_rest_request' ], 10, 4 );
+    }
+
+    /**
+     * Track REST API requests for the rate-limiting dashboard.
+     *
+     * @param mixed           $result  Pre-dispatch result (null = continue).
+     * @param WP_REST_Server  $server  REST server.
+     * @param WP_REST_Request $request Request object.
+     * @return mixed Unchanged result.
+     */
+    public function track_rest_request( $result, $server, $request ) {
+        $route = $request->get_route();
+        if ( strpos( $route, '/eprocurement/v1/' ) !== 0 ) {
+            return $result;
+        }
+
+        $user_id = get_current_user_id();
+        $ip = sanitize_text_field( $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0' );
+        $method = $request->get_method();
+
+        // Track in a transient that expires in 24h.
+        $today = gmdate( 'Y-m-d' );
+        $key = 'eproc_api_usage_' . $today;
+
+        $usage = get_transient( $key );
+        if ( ! is_array( $usage ) ) {
+            $usage = [ 'total' => 0, 'by_user' => [], 'by_ip' => [], 'by_endpoint' => [] ];
+        }
+
+        $usage['total']++;
+
+        if ( $user_id ) {
+            $usage['by_user'][ $user_id ] = ( $usage['by_user'][ $user_id ] ?? 0 ) + 1;
+        }
+        $usage['by_ip'][ $ip ] = ( $usage['by_ip'][ $ip ] ?? 0 ) + 1;
+
+        $endpoint = preg_replace( '/\d+/', '{id}', $route );
+        $usage['by_endpoint'][ $endpoint ] = ( $usage['by_endpoint'][ $endpoint ] ?? 0 ) + 1;
+
+        set_transient( $key, $usage, DAY_IN_SECONDS );
+
+        return $result;
     }
 
     /**
@@ -446,6 +491,13 @@ class Eprocurement_Admin_Rest_Api {
             'methods'             => 'DELETE',
             'callback'            => [ $this, 'delete_requirement' ],
             'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
+        ] );
+
+        // --- API Usage Dashboard (Super Admin) ---
+        register_rest_route( self::NAMESPACE, '/admin/api-usage', [
+            'methods'             => 'GET',
+            'callback'            => [ $this, 'get_api_usage' ],
+            'permission_callback' => fn() => is_super_admin(),
         ] );
 
         // --- Briefing Attendees (Admin) ---
@@ -1999,5 +2051,46 @@ class Eprocurement_Admin_Rest_Api {
             return new \WP_REST_Response( [ 'message' => 'Requirement deleted.' ] );
         }
         return new \WP_REST_Response( [ 'message' => 'Failed to delete requirement.' ], 500 );
+    }
+
+    /**
+     * GET /admin/api-usage — REST API usage dashboard data.
+     */
+    public function get_api_usage( \WP_REST_Request $request ): \WP_REST_Response {
+        $today = gmdate( 'Y-m-d' );
+        $key = 'eproc_api_usage_' . $today;
+        $usage = get_transient( $key );
+
+        if ( ! is_array( $usage ) ) {
+            $usage = [ 'total' => 0, 'by_user' => [], 'by_ip' => [], 'by_endpoint' => [] ];
+        }
+
+        // Enrich user IDs with display names.
+        $by_user_enriched = [];
+        arsort( $usage['by_user'] );
+        foreach ( $usage['by_user'] as $uid => $count ) {
+            $user = get_userdata( (int) $uid );
+            $by_user_enriched[] = [
+                'user_id'      => (int) $uid,
+                'display_name' => $user ? $user->display_name : 'User #' . $uid,
+                'request_count' => (int) $count,
+            ];
+        }
+
+        // Sort IPs by request count desc.
+        arsort( $usage['by_ip'] );
+        $by_ip = array_slice( $usage['by_ip'], 0, 20, true );
+
+        // Sort endpoints by request count desc.
+        arsort( $usage['by_endpoint'] );
+        $by_endpoint = array_slice( $usage['by_endpoint'], 0, 20, true );
+
+        return new \WP_REST_Response( [
+            'date'         => $today,
+            'total'        => (int) $usage['total'],
+            'by_user'      => $by_user_enriched,
+            'by_ip'        => $by_ip,
+            'by_endpoint'  => $by_endpoint,
+        ] );
     }
 }

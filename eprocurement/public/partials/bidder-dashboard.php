@@ -277,6 +277,27 @@ $profile_updated = isset( $_GET['profile_updated'] ) && $_GET['profile_updated']
                                 >
                                     <?php echo esc_html__( 'View', 'eprocurement' ); ?>
                                 </button>
+                                <?php
+                                // Show "Retract" button if thread is open and no staff reply yet.
+                                $has_staff_reply = false;
+                                foreach ( $msgs as $msg ) {
+                                    if ( (int) $msg->sender_id !== $user_id ) {
+                                        $has_staff_reply = true;
+                                        break;
+                                    }
+                                }
+                                if ( ! $has_staff_reply && $thread->status === 'open' ) :
+                                ?>
+                                <button
+                                    type="button"
+                                    class="eproc-btn eproc-btn-sm eproc-retract-thread-btn"
+                                    data-thread-id="<?php echo esc_attr( (int) $thread->id ); ?>"
+                                    style="margin-left:4px;color:#dc2626;border-color:#fecaca;"
+                                    title="<?php esc_attr_e( 'Retract this query (only available before staff replies)', 'eprocurement' ); ?>"
+                                >
+                                    <?php echo esc_html__( 'Retract', 'eprocurement' ); ?>
+                                </button>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -920,6 +941,44 @@ $profile_updated = isset( $_GET['profile_updated'] ) && $_GET['profile_updated']
             });
         });
     }
+
+    // =====================
+    // Retract Query
+    // =====================
+    document.querySelectorAll('.eproc-retract-thread-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var threadId = btn.getAttribute('data-thread-id');
+            if (!confirm('<?php echo esc_js( __( 'Retract this query? The thread will be marked as cancelled and staff will not see it in their inbox.', 'eprocurement' ) ); ?>')) return;
+
+            btn.disabled = true;
+            btn.textContent = '<?php echo esc_js( __( 'Retracting...', 'eprocurement' ) ); ?>';
+
+            fetch(eprocFrontend.restUrl + 'threads/' + threadId + '/retract', {
+                method: 'DELETE',
+                headers: { 'X-WP-Nonce': eprocFrontend.nonce }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    var item = btn.closest('.eproc-thread-item');
+                    if (item) {
+                        item.style.opacity = '0.5';
+                        item.querySelector('.eproc-thread-subject').textContent += ' [Retracted]';
+                    }
+                    btn.textContent = '<?php echo esc_js( __( 'Retracted', 'eprocurement' ) ); ?>';
+                } else {
+                    alert(data.error || '<?php echo esc_js( __( 'Failed to retract query.', 'eprocurement' ) ); ?>');
+                    btn.disabled = false;
+                    btn.textContent = '<?php echo esc_js( __( 'Retract', 'eprocurement' ) ); ?>';
+                }
+            })
+            .catch(function() {
+                alert('<?php echo esc_js( __( 'Network error.', 'eprocurement' ) ); ?>');
+                btn.disabled = false;
+                btn.textContent = '<?php echo esc_js( __( 'Retract', 'eprocurement' ) ); ?>';
+            });
+        });
+    });
 
     // =====================
     // Helpers

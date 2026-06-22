@@ -238,6 +238,9 @@ class Eprocurement_Admin {
             EPROC_VERSION
         );
 
+        // Inject dynamic brand CSS that adapts to the host site.
+        $this->inject_admin_brand_css();
+
         wp_enqueue_script(
             'eprocurement-admin',
             EPROC_PLUGIN_URL . 'admin/admin.js',
@@ -738,6 +741,11 @@ class Eprocurement_Admin {
             }
 
             update_option( 'eprocurement_brand_colors', wp_json_encode( $colors ) );
+        }
+
+        // Inherit theme colors toggle.
+        if ( is_super_admin() ) {
+            update_option( 'eprocurement_inherit_theme_colors', ! empty( $_POST['inherit_theme_colors'] ) ? '1' : '0' );
         }
 
         // Cloud provider — only update if key submitted
@@ -1282,5 +1290,43 @@ class Eprocurement_Admin {
         $b   = min( 255, (int) round( hexdec( substr( $hex, 4, 2 ) ) + ( 255 - hexdec( substr( $hex, 4, 2 ) ) ) * $percent / 100 ) );
 
         return sprintf( '#%02x%02x%02x', $r, $g, $b );
+    }
+
+    /**
+     * Inject brand CSS on admin pages — mirrors the frontend injection.
+     *
+     * @since 2.16.4
+     */
+    public function inject_admin_brand_css(): void {
+        $brand_colors = get_option( 'eprocurement_brand_colors', [] );
+        if ( ! is_array( $brand_colors ) ) {
+            $brand_colors = [];
+        }
+
+        $primary   = $brand_colors['primary']   ?? '#8b1a2b';
+        $secondary = $brand_colors['secondary'] ?? '#1a1a5e';
+
+        $inherit_theme = get_option( 'eprocurement_inherit_theme_colors', '0' );
+        if ( $inherit_theme === '1' && function_exists( 'wp_get_global_settings' ) ) {
+            $settings = wp_get_global_settings();
+            $palette = $settings['color']['palette']['theme'] ?? $settings['color']['palette']['default'] ?? null;
+            if ( $palette && is_array( $palette ) ) {
+                $primary   = sanitize_hex_color( $palette[0]['color'] ?? '' ) ?: $primary;
+                $secondary = sanitize_hex_color( $palette[1]['color'] ?? '' ) ?: $secondary;
+            }
+        }
+
+        $overrides = apply_filters( 'eproc_brand_colors', [
+            'primary'   => $primary,
+            'secondary' => $secondary,
+        ] );
+
+        echo '<style id="eproc-admin-brand-override">' .
+             '.eproc-admin-shell {' .
+             '--eproc-primary: ' . esc_attr( $overrides['primary'] ) . ';' .
+             '--eproc-secondary: ' . esc_attr( $overrides['secondary'] ) . ';' .
+             '--eproc-sidebar-bg: ' . esc_attr( $overrides['secondary'] ) . ';' .
+             '}' .
+             '</style>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     }
 }

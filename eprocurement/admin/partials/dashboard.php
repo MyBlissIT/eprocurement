@@ -283,4 +283,40 @@ $recent_threads = $messaging->get_admin_inbox( [
         </div>
     </div>
 
+    <?php if ( is_super_admin() ) : ?>
+    <!-- API Usage Dashboard (Super Admin only) -->
+    <div class="eproc-card" style="margin-top:24px;" id="eproc-api-usage-card">
+        <div class="eproc-card-header">
+            <h2>
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18" style="vertical-align:-3px;margin-right:4px;color:var(--eproc-primary);">
+                    <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3z" clip-rule="evenodd"/>
+                </svg>
+                <?php esc_html_e( 'API Usage Today', 'eprocurement' ); ?>
+            </h2>
+        </div>
+        <div class="eproc-card-body" id="eproc-api-usage-body">
+            <p class="eproc-muted"><?php esc_html_e( 'Loading...', 'eprocurement' ); ?></p>
+        </div>
+    </div>
+    <script>
+    jQuery(function($) {
+        $.get('<?php echo esc_url( rest_url( 'eprocurement/v1/admin/api-usage' ) ); ?>', function(data) {
+            var body = $('#eproc-api-usage-body');
+            if (!data.total) { body.html('<p class="eproc-muted"><?php esc_html_e( 'No API requests recorded today.', 'eprocurement' ); ?></p>'); return; }
+            var html = '<div style="display:flex;gap:24px;margin-bottom:20px;flex-wrap:wrap;">';
+            html += '<div><div style="font-size:28px;font-weight:800;color:var(--eproc-primary);">' + data.total + '</div><div style="font-size:12px;color:var(--eproc-text-muted);text-transform:uppercase;letter-spacing:0.05em;"><?php esc_html_e( 'Total', 'eprocurement' ); ?></div></div>';
+            html += '<div><div style="font-size:28px;font-weight:800;color:#4338ca;">' + (data.by_user || []).length + '</div><div style="font-size:12px;color:var(--eproc-text-muted);text-transform:uppercase;letter-spacing:0.05em;"><?php esc_html_e( 'Users', 'eprocurement' ); ?></div></div>';
+            html += '<div><div style="font-size:28px;font-weight:800;color:#16a34a;">' + Object.keys(data.by_ip || {}).length + '</div><div style="font-size:12px;color:var(--eproc-text-muted);text-transform:uppercase;letter-spacing:0.05em;"><?php esc_html_e( 'IPs', 'eprocurement' ); ?></div></div>';
+            html += '</div>';
+            if (data.by_user && data.by_user.length) {
+                html += '<table class="eproc-table"><thead><tr><th><?php esc_html_e( 'Top Users', 'eprocurement' ); ?></th><th style="text-align:right;"><?php esc_html_e( 'Requests', 'eprocurement' ); ?></th></tr></thead><tbody>';
+                data.by_user.slice(0,5).forEach(function(u){ html += '<tr><td>' + u.display_name + '</td><td style="text-align:right;font-weight:600;">' + u.request_count + '</td></tr>'; });
+                html += '</tbody></table>';
+            }
+            body.html(html);
+        }).fail(function() { $('#eproc-api-usage-body').html('<p class="eproc-muted"><?php esc_html_e( 'Failed to load.', 'eprocurement' ); ?></p>'); });
+    });
+    </script>
+    <?php endif; ?>
+
 </div>

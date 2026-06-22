@@ -297,6 +297,16 @@ $is_briefing_req   = $bid_submissions->is_briefing_compulsory( $bid_id );
                                             <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" style="margin-right:4px;vertical-align:-2px;"><path d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"/></svg>
                                             <?php echo esc_html__( 'Download', 'eprocurement' ); ?>
                                         </a>
+                                        <?php
+                                        $file_ext = strtolower( pathinfo( $file->file_name, PATHINFO_EXTENSION ) );
+                                        if ( $file_ext === 'pdf' ) :
+                                            $preview_url = Eprocurement_Downloads::get_download_link( (int) $file->id, 'supporting' );
+                                        ?>
+                                        <button type="button" class="eproc-btn eproc-btn-sm eproc-btn-outline eproc-preview-btn" data-preview-url="<?php echo esc_attr( $preview_url ); ?>" data-preview-name="<?php echo esc_attr( $file->label ?: $file->file_name ); ?>">
+                                            <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" style="margin-right:4px;vertical-align:-2px;"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                                            <?php echo esc_html__( 'Preview', 'eprocurement' ); ?>
+                                        </button>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -858,6 +868,39 @@ document.addEventListener('DOMContentLoaded', function() {
             window.print();
         });
     }
+
+    // ──── Document preview modal ────
+    document.addEventListener('click', function(e) {
+        var previewBtn = e.target.closest('.eproc-preview-btn');
+        if (!previewBtn) return;
+
+        var url = previewBtn.getAttribute('data-preview-url');
+        var name = previewBtn.getAttribute('data-preview-name');
+
+        // Create or reuse the preview modal.
+        var modal = document.getElementById('eproc-preview-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'eproc-preview-modal';
+            modal.className = 'eproc-modal eproc-modal-lg';
+            modal.innerHTML =
+                '<div class="eproc-modal-backdrop" onclick="this.parentElement.style.display=\'none\'"></div>' +
+                '<div class="eproc-modal-content" style="max-width:900px;height:85vh;">' +
+                    '<div class="eproc-modal-header">' +
+                        '<h2 id="eproc-preview-title"></h2>' +
+                        '<button type="button" class="eproc-modal-close" onclick="document.getElementById(\'eproc-preview-modal\').style.display=\'none\'" aria-label="Close">&times;</button>' +
+                    '</div>' +
+                    '<div class="eproc-modal-body" style="padding:0;flex:1;overflow:hidden;">' +
+                        '<iframe id="eproc-preview-iframe" style="width:100%;height:100%;border:none;" allowfullscreen></iframe>' +
+                    '</div>' +
+                '</div>';
+            document.body.appendChild(modal);
+        }
+
+        document.getElementById('eproc-preview-title').textContent = name;
+        document.getElementById('eproc-preview-iframe').src = url;
+        modal.style.display = 'flex';
+    });
 
     // ──── Original modal logic ────
     var modal          = document.getElementById('eproc-query-modal');
