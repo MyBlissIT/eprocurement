@@ -33,6 +33,8 @@ $prefix = $wpdb->prefix . 'eproc_';
 
 // Drop all plugin tables in correct order (respecting foreign key dependencies)
 $tables = [
+    'evaluation_scores',
+    'evaluation_criteria',
     'message_attachments',
     'messages',
     'threads',
@@ -124,7 +126,11 @@ foreach ( $capabilities as $cap ) {
 
 // Clear scheduled cron events
 wp_clear_scheduled_hook( 'eprocurement_daily_cleanup' );
+wp_clear_scheduled_hook( 'eprocurement_hourly_reminder_check' );
 wp_clear_scheduled_hook( 'eprocurement_weekly_digest' ); // Fix L-05: was missing — left orphaned cron firing into void
 
 // Clean up user meta for bidder profiles
 $wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE '_eproc_%'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+// Also clear last_login tracking meta added in 2.14.0
+$wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key = 'eproc_last_login'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared

@@ -443,6 +443,7 @@ if ( ! function_exists( 'eprocurement_status_badge' ) ) {
             'unverified'=> '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12zm0-9a1 1 0 011 1v3a1 1 0 11-2 0V8a1 1 0 011-1zm0 7a1 1 0 100-2 1 1 0 000 2z"/></svg>',
             'public'    => '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12zm-1-9a1 1 0 112 0v4a1 1 0 11-2 0V7zm1 7a1 1 0 100-2 1 1 0 000 2z"/></svg>',
             'private'   => '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M5 9V7a5 5 0 0110 0v2h1a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2v-6a2 2 0 012-2h1zm2 0h6V7a3 3 0 00-6 0v2z"/></svg>',
+            'awarded'   => '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zm7-10a1 1 0 01.945.671L14.118 6H17a1 1 0 110 2h-.018l-.382 1.428a1 1 0 01-1.94-.514L14.732 8h-2.99l-.276.829a1 1 0 11-1.94-.514l2-6A1 1 0 0112 2zm1.382 6l-.667-2-.667 2h1.334zM9 14a1 1 0 011-1h6a1 1 0 110 2h-6a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>',
         ];
 
         $icon = $icons[ $status ] ?? '';

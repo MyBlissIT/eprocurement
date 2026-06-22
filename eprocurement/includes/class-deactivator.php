@@ -19,6 +19,7 @@ class Eprocurement_Deactivator {
     public static function deactivate(): void {
         // Remove scheduled cron events
         wp_clear_scheduled_hook( 'eprocurement_daily_cleanup' );
+        wp_clear_scheduled_hook( 'eprocurement_hourly_reminder_check' );
         wp_clear_scheduled_hook( 'eprocurement_weekly_digest' );
 
         // Flush rewrite rules

@@ -32,6 +32,9 @@ class Eprocurement_Notifications {
         add_action( 'eprocurement_weekly_digest', [ $this, 'send_weekly_digest' ] );
         add_action( 'eprocurement_bid_submitted', [ $this, 'notify_bid_submitted' ], 10, 2 );
         add_action( 'eprocurement_bid_cancelled', [ $this, 'notify_bid_cancelled' ], 10, 2 );
+        // Premium features (2.14.0)
+        add_action( 'eprocurement_bid_awarded', [ $this, 'notify_award_winner' ], 10, 2 );
+        add_action( 'eprocurement_bid_awarded', [ $this, 'notify_award_losers' ], 20, 2 );
     }
 
     /**
@@ -665,5 +668,242 @@ class Eprocurement_Notifications {
         foreach ( $recipients as $user ) {
             wp_mail( $user->user_email, $subject, $body );
         }
+    }
+
+    /**
+     * Send a closing reminder to all bidders who have shown interest
+     * in a tender (downloaded a document or submitted a query).
+     *
+     * Called by the hourly cron 48h and 24h before the closing date.
+     *
+     * @param int $document_id    Tender ID.
+     * @param int $hours_remaining Hours remaining (48 or 24).
+     *
+     * @since 2.14.0
+     */
+    public function send_closing_reminder( int $document_id, int $hours_remaining ): void {
+        $document = Eprocurement_Database::get_by_id( 'documents', $document_id );
+        if ( ! $document ) {
+            return;
+        }
+
+        // Find bidders who have interacted with this tender:
+        // either downloaded a document or started a thread.
+        global $wpdb;
+        $downloads_table = Eprocurement_Database::table( 'downloads' );
+        $threads_table   = Eprocurement_Database::table( 'threads' );
+
+        $bidder_ids = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT DISTINCT user_id FROM (
+                    SELECT user_id FROM {$downloads_table} WHERE document_id = %d AND user_id > 0
+                    UNION
+                    SELECT bidder_id AS user_id FROM {$threads_table} WHERE document_id = %d AND bidder_id > 0
+                ) AS interested_bidders", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                $document_id, $document_id
+            )
+        );
+
+        if ( empty( $bidder_ids ) ) {
+            return;
+        }
+
+        $slug = eprocurement_get_slug();
+        $tender_url = home_url( "/{$slug}/bid/{$document_id}/" );
+
+        $subject = sprintf(
+            /* translators: 1: hours remaining, 2: bid number */
+            __( 'Reminder: %1$d hours left to submit for %2$s', 'eprocurement' ),
+            $hours_remaining,
+            $document->bid_number
+        );
+
+        // Build HTML body from template.
+        ob_start();
+        eprocurement_load_template( 'email/closing-reminder.php', [
+            'bid_number'      => $document->bid_number,
+            'bid_title'       => $document->title,
+            'hours_remaining' => $hours_remaining,
+            'closing_date'    => $document->closing_date,
+            'tender_url'      => $tender_url,
+        ] );
+        $html_body = ob_get_clean();
+
+        // Fallback plain text.
+        $text_body = sprintf(
+            /* translators: 1: hours remaining, 2: bid number, 3: bid title, 4: closing date, 5: tender URL */
+            __(
+                "Reminder: This tender closes in %1\$d hours.\n\n" .
+                "Bid Number: %2\$s\n" .
+                "Title: %3\$s\n" .
+                "Closing: %4\$s\n\n" .
+                "View tender and submit your bid:\n%5\$s\n\n" .
+                "If you have already submitted, you can ignore this email.\n\n" .
+                "Regards,\neProcurement System",
+                'eprocurement'
+            ),
+            $hours_remaining,
+            $document->bid_number,
+            $document->title,
+            $document->closing_date ? wp_date( 'j F Y, H:i', strtotime( $document->closing_date ) ) : __( 'TBC', 'eprocurement' ),
+            $tender_url
+        );
+
+        $set_html = static fn( $ct ) => 'text/html';
+        add_filter( 'wp_mail_content_type', $set_html );
+
+        foreach ( $bidder_ids as $bidder_id ) {
+            $bidder = get_userdata( (int) $bidder_id );
+            if ( $bidder && $bidder->user_email ) {
+                wp_mail( $bidder->user_email, $subject, $html_body ?: $text_body );
+            }
+        }
+
+        remove_filter( 'wp_mail_content_type', $set_html );
+    }
+
+    /**
+     * Send award notification to the winning bidder.
+     *
+     * Hooked to 'eprocurement_bid_awarded' action.
+     *
+     * @param int $document_id    Tender ID.
+     * @param int $winner_user_id Winning bidder user ID.
+     *
+     * @since 2.14.0
+     */
+    public function notify_award_winner( int $document_id, int $winner_user_id ): void {
+        $documents_model = new Eprocurement_Documents();
+        $award = $documents_model->get_award( $document_id );
+        if ( ! $award ) {
+            return;
+        }
+
+        $document = $documents_model->get( $document_id );
+        if ( ! $document ) {
+            return;
+        }
+
+        $slug = eprocurement_get_slug();
+        $tender_url = home_url( "/{$slug}/bid/{$document_id}/" );
+
+        $subject = sprintf(
+            /* translators: %s: bid number */
+            __( 'Award notification: %s', 'eprocurement' ),
+            $document->bid_number
+        );
+
+        ob_start();
+        eprocurement_load_template( 'email/award-winner.php', [
+            'bidder_name'  => $award->display_name,
+            'company_name' => $award->company_name,
+            'bid_number'   => $document->bid_number,
+            'bid_title'    => $document->title,
+            'award_amount' => $award->award_amount,
+            'award_date'   => $award->award_date,
+            'award_notes'  => $award->award_notes,
+            'tender_url'   => $tender_url,
+        ] );
+        $html_body = ob_get_clean();
+
+        $text_body = sprintf(
+            /* translators: 1: bidder name, 2: bid number, 3: bid title, 4: tender URL */
+            __(
+                "Dear %1\$s,\n\n" .
+                "Congratulations — your bid for the following tender has been awarded:\n\n" .
+                "Bid Number: %2\$s\n" .
+                "Title: %3\$s\n\n" .
+                "The procurement team will contact you shortly with next steps.\n\n" .
+                "View tender details:\n%4\$s\n\n" .
+                "Regards,\neProcurement System",
+                'eprocurement'
+            ),
+            $award->display_name,
+            $document->bid_number,
+            $document->title,
+            $tender_url
+        );
+
+        $set_html = static fn( $ct ) => 'text/html';
+        add_filter( 'wp_mail_content_type', $set_html );
+        wp_mail( $award->bidder_email, $subject, $html_body ?: $text_body );
+        remove_filter( 'wp_mail_content_type', $set_html );
+    }
+
+    /**
+     * Send award notification to non-winning bidders who submitted.
+     *
+     * Hooked to 'eprocurement_bid_awarded' action.
+     *
+     * @param int $document_id    Tender ID.
+     * @param int $winner_user_id Winning bidder user ID.
+     *
+     * @since 2.14.0
+     */
+    public function notify_award_losers( int $document_id, int $winner_user_id ): void {
+        $documents_model = new Eprocurement_Documents();
+        $document = $documents_model->get( $document_id );
+        if ( ! $document ) {
+            return;
+        }
+
+        $submissions_model = new Eprocurement_Bid_Submissions();
+        $submissions = $submissions_model->get_submissions_for_document( $document_id );
+
+        if ( empty( $submissions ) ) {
+            return;
+        }
+
+        $slug = eprocurement_get_slug();
+        $subject = sprintf(
+            /* translators: %s: bid number */
+            __( 'Tender award notice: %s', 'eprocurement' ),
+            $document->bid_number
+        );
+
+        $set_html = static fn( $ct ) => 'text/html';
+        add_filter( 'wp_mail_content_type', $set_html );
+
+        foreach ( $submissions as $sub ) {
+            // Skip the winner — they get a separate email.
+            if ( (int) $sub->user_id === $winner_user_id ) {
+                continue;
+            }
+
+            $bidder = get_userdata( (int) $sub->user_id );
+            if ( ! $bidder || ! $bidder->user_email ) {
+                continue;
+            }
+
+            ob_start();
+            eprocurement_load_template( 'email/award-loser.php', [
+                'bidder_name' => $bidder->display_name,
+                'bid_number'  => $document->bid_number,
+                'bid_title'   => $document->title,
+            ] );
+            $html_body = ob_get_clean();
+
+            $text_body = sprintf(
+                /* translators: 1: bidder name, 2: bid number, 3: bid title */
+                __(
+                    "Dear %1\$s,\n\n" .
+                    "Thank you for your submission for the following tender. " .
+                    "We regret to inform you that the contract has been awarded to another bidder.\n\n" .
+                    "Bid Number: %2\$s\n" .
+                    "Title: %3\$s\n\n" .
+                    "We appreciate the time and effort you invested in preparing your bid " .
+                    "and encourage you to participate in future tenders.\n\n" .
+                    "Regards,\neProcurement System",
+                    'eprocurement'
+                ),
+                $bidder->display_name,
+                $document->bid_number,
+                $document->title
+            );
+
+            wp_mail( $bidder->user_email, $subject, $html_body ?: $text_body );
+        }
+
+        remove_filter( 'wp_mail_content_type', $set_html );
     }
 }

@@ -205,6 +205,13 @@ if ( ! empty( $_doc_ids ) ) {
                     <div class="eproc-card-header">
                         <?php echo Eprocurement_Public::status_badge( $doc->status ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- method returns escaped HTML ?>
                         <?php
+                        // "Awarded" badge — shown when a winner has been recorded.
+                        if ( ! empty( $doc->awarded_to_user_id ) ) :
+                            ?>
+                            <?php echo eprocurement_status_badge( 'awarded', __( 'Awarded', 'eprocurement' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                            <?php
+                        endif;
+
                         // "Closing soon" badge for open bids closing within 48h.
                         if ( $doc->status === 'open' && $doc->closing_date && $doc->closing_date !== '0000-00-00 00:00:00' ) :
                             $hours_left = ( strtotime( $doc->closing_date ) - current_time( 'timestamp' ) ) / 3600;

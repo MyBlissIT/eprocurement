@@ -32,6 +32,11 @@ class Eprocurement_Activator {
             wp_schedule_event( time(), 'daily', 'eprocurement_daily_cleanup' );
         }
 
+        // Schedule hourly cron for closing reminders (48h + 24h before deadline).
+        if ( ! wp_next_scheduled( 'eprocurement_hourly_reminder_check' ) ) {
+            wp_schedule_event( time(), 'hourly', 'eprocurement_hourly_reminder_check' );
+        }
+
         // Schedule weekly digest (Monday 9 AM local time)
         if ( ! wp_next_scheduled( 'eprocurement_weekly_digest' ) ) {
             $next_monday = strtotime( 'next Monday 09:00' );
@@ -304,6 +309,41 @@ class Eprocurement_Activator {
             KEY document_id (document_id),
             KEY user_id (user_id),
             KEY token (token)
+        ) {$charset_collate};";
+        dbDelta( $sql );
+
+        // 12. Evaluation Criteria (per-tender scoring criteria)
+        $sql = "CREATE TABLE {$prefix}evaluation_criteria (
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            document_id BIGINT(20) UNSIGNED NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            description TEXT DEFAULT NULL,
+            weight DECIMAL(5,2) NOT NULL DEFAULT 1.00,
+            max_score TINYINT(3) UNSIGNED NOT NULL DEFAULT 10,
+            sort_order INT(11) NOT NULL DEFAULT 0,
+            created_by BIGINT(20) UNSIGNED NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY document_id (document_id),
+            KEY sort_order (sort_order)
+        ) {$charset_collate};";
+        dbDelta( $sql );
+
+        // 13. Evaluation Scores (per submission × criterion × evaluator)
+        $sql = "CREATE TABLE {$prefix}evaluation_scores (
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            submission_id BIGINT(20) UNSIGNED NOT NULL,
+            criterion_id BIGINT(20) UNSIGNED NOT NULL,
+            evaluator_user_id BIGINT(20) UNSIGNED NOT NULL,
+            score DECIMAL(5,2) NOT NULL DEFAULT 0,
+            notes TEXT DEFAULT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            UNIQUE KEY sub_crit_eval (submission_id, criterion_id, evaluator_user_id),
+            KEY submission_id (submission_id),
+            KEY criterion_id (criterion_id),
+            KEY evaluator_user_id (evaluator_user_id)
         ) {$charset_collate};";
         dbDelta( $sql );
     }

@@ -189,6 +189,34 @@ function eprocurement_maybe_upgrade(): void {
         }
     }
 
+    // v2.14.0: Add award + Q&A deadline columns for premium evaluation features.
+    if ( version_compare( $installed_version, '2.14.0', '<' ) ) {
+        global $wpdb;
+        $doc_table = $wpdb->prefix . EPROC_TABLE_PREFIX . 'documents';
+
+        $cols_to_add = [
+            'qa_deadline'           => "ADD COLUMN qa_deadline DATETIME DEFAULT NULL AFTER closing_date",
+            'awarded_to_user_id'    => "ADD COLUMN awarded_to_user_id BIGINT(20) UNSIGNED DEFAULT NULL AFTER updated_at",
+            'award_amount'          => "ADD COLUMN award_amount DECIMAL(15,2) DEFAULT NULL AFTER awarded_to_user_id",
+            'award_date'            => "ADD COLUMN award_date DATETIME DEFAULT NULL AFTER award_amount",
+            'award_notes'           => "ADD COLUMN award_notes TEXT DEFAULT NULL AFTER award_date",
+            'reminder_48h_sent'     => "ADD COLUMN reminder_48h_sent TINYINT(1) NOT NULL DEFAULT 0 AFTER award_notes",
+            'reminder_24h_sent'     => "ADD COLUMN reminder_24h_sent TINYINT(1) NOT NULL DEFAULT 0 AFTER reminder_48h_sent",
+        ];
+
+        foreach ( $cols_to_add as $col_name => $alter_sql ) {
+            $exists = $wpdb->get_var( "SHOW COLUMNS FROM {$doc_table} LIKE '{$col_name}'" ); // phpcs:ignore
+            if ( ! $exists ) {
+                $wpdb->query( "ALTER TABLE {$doc_table} {$alter_sql}" ); // phpcs:ignore
+            }
+        }
+
+        // Create evaluation tables (also created on fresh activation, but
+        // existing sites need them too).
+        require_once EPROC_PLUGIN_DIR . 'includes/class-activator.php';
+        Eprocurement_Activator::create_tables();
+    }
+
     update_option( 'eprocurement_version', EPROC_VERSION );
 }
 
@@ -213,6 +241,7 @@ function eprocurement_init(): void {
     $notifications  = new Eprocurement_Notifications();
     $compliance     = new Eprocurement_Compliance_Docs();
     $bid_submissions = new Eprocurement_Bid_Submissions();
+    $evaluation     = new Eprocurement_Evaluation();
     $rest_api        = new Eprocurement_Rest_Api();
     $access_control  = new Eprocurement_Access_Control();
     $admin_rest_api  = new Eprocurement_Admin_Rest_Api();
@@ -246,6 +275,24 @@ function eprocurement_init(): void {
     // Hook cron callback (scheduling happens on activation only)
     add_action( 'eprocurement_daily_cleanup', [ $documents, 'auto_close_expired_bids' ] );
     add_action( 'eprocurement_daily_cleanup', [ $documents, 'archive_expired_closed_bids' ] );
+
+    // Hourly reminder check — sends 48h and 24h closing reminders to bidders.
+    add_action( 'eprocurement_hourly_reminder_check', function (): void {
+        $documents_model = new Eprocurement_Documents();
+        $notifications   = new Eprocurement_Notifications();
+
+        // 48-hour reminder.
+        foreach ( $documents_model->get_tenders_needing_reminder( 48, 'reminder_48h_sent' ) as $tender ) {
+            $notifications->send_closing_reminder( (int) $tender->id, 48 );
+            $documents_model->mark_reminder_sent( (int) $tender->id, 'reminder_48h_sent' );
+        }
+
+        // 24-hour reminder.
+        foreach ( $documents_model->get_tenders_needing_reminder( 24, 'reminder_24h_sent' ) as $tender ) {
+            $notifications->send_closing_reminder( (int) $tender->id, 24 );
+            $documents_model->mark_reminder_sent( (int) $tender->id, 'reminder_24h_sent' );
+        }
+    } );
 
     // Auto-close expired bids, throttled to once per 5 minutes (fix M-07/P-01).
     // The previous implementation ran a write UPDATE query on every page load,

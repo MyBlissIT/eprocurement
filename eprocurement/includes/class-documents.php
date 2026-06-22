@@ -456,7 +456,7 @@ class Eprocurement_Documents {
             }
         }
 
-        $date_fields = [ 'opening_date', 'briefing_date', 'closing_date' ];
+        $date_fields = [ 'opening_date', 'briefing_date', 'closing_date', 'qa_deadline' ];
         foreach ( $date_fields as $field ) {
             if ( isset( $data[ $field ] ) ) {
                 $sanitised[ $field ] = $data[ $field ] ? sanitize_text_field( $data[ $field ] ) : null;
@@ -471,5 +471,146 @@ class Eprocurement_Documents {
         }
 
         return $sanitised;
+    }
+
+    /**
+     * Award a tender to a winning bidder.
+     *
+     * @param int    $document_id    Tender ID.
+     * @param int    $winner_user_id Winning bidder's user ID.
+     * @param float  $award_amount   Contract value (optional, 0 if not disclosed).
+     * @param string $award_notes    Public notes about the award (optional).
+     * @return true|\WP_Error True on success.
+     *
+     * @since 2.14.0
+     */
+    public function award( int $document_id, int $winner_user_id, float $award_amount = 0, string $award_notes = '' ): true|\WP_Error {
+        $document = $this->get( $document_id );
+        if ( ! $document ) {
+            return new \WP_Error( 'not_found', __( 'Tender not found.', 'eprocurement' ), [ 'status' => 404 ] );
+        }
+
+        if ( $document->status !== 'closed' ) {
+            return new \WP_Error( 'not_closed', __( 'Tender must be closed before awarding.', 'eprocurement' ), [ 'status' => 400 ] );
+        }
+
+        $result = Eprocurement_Database::update( 'documents', [
+            'awarded_to_user_id' => $winner_user_id,
+            'award_amount'       => $award_amount > 0 ? $award_amount : null,
+            'award_date'         => current_time( 'mysql' ),
+            'award_notes'        => $award_notes ? sanitize_textarea_field( $award_notes ) : null,
+        ], [ 'id' => $document_id ] );
+
+        if ( $result === false ) {
+            return new \WP_Error( 'db_error', __( 'Failed to record award.', 'eprocurement' ) );
+        }
+
+        /**
+         * Fires after a tender is awarded.
+         *
+         * @param int $document_id    Tender ID.
+         * @param int $winner_user_id Winning bidder user ID.
+         *
+         * @since 2.14.0
+         */
+        do_action( 'eprocurement_bid_awarded', $document_id, $winner_user_id );
+
+        return true;
+    }
+
+    /**
+     * Withdraw an award (e.g. if awarded to the wrong bidder).
+     *
+     * @param int $document_id Tender ID.
+     * @return bool True on success.
+     *
+     * @since 2.14.0
+     */
+    public function withdraw_award( int $document_id ): bool {
+        $result = Eprocurement_Database::update( 'documents', [
+            'awarded_to_user_id' => null,
+            'award_amount'       => null,
+            'award_date'         => null,
+            'award_notes'        => null,
+        ], [ 'id' => $document_id ] );
+
+        return $result !== false;
+    }
+
+    /**
+     * Get the winner for a tender (or null if not awarded).
+     *
+     * @param int $document_id Tender ID.
+     * @return object|null {user_id, display_name, company_name, award_amount, award_date, award_notes}
+     */
+    public function get_award( int $document_id ): ?object {
+        $document = $this->get( $document_id );
+        if ( ! $document || empty( $document->awarded_to_user_id ) ) {
+            return null;
+        }
+
+        $user    = get_userdata( (int) $document->awarded_to_user_id );
+        $profile = ( new Eprocurement_Bidder() )->get_profile( (int) $document->awarded_to_user_id );
+
+        return (object) [
+            'user_id'       => (int) $document->awarded_to_user_id,
+            'display_name'  => $user ? $user->display_name : '',
+            'company_name'  => $profile ? $profile->company_name : '',
+            'bidder_email'  => $user ? $user->user_email : '',
+            'award_amount'  => $document->award_amount !== null ? (float) $document->award_amount : null,
+            'award_date'    => $document->award_date,
+            'award_notes'   => $document->award_notes,
+        ];
+    }
+
+    /**
+     * Find tenders that need reminder emails sent (closing within X hours).
+     *
+     * @param int $within_hours   Send reminder for tenders closing within this many hours.
+     * @param int $sent_flag_col  Which DB column to check ('reminder_48h_sent' or 'reminder_24h_sent').
+     * @return array Array of document objects.
+     *
+     * @since 2.14.0
+     */
+    public function get_tenders_needing_reminder( int $within_hours, string $sent_flag_col ): array {
+        global $wpdb;
+        $table = Eprocurement_Database::table( 'documents' );
+
+        // Whitelist the column name to prevent SQL injection.
+        if ( ! in_array( $sent_flag_col, [ 'reminder_48h_sent', 'reminder_24h_sent' ], true ) ) {
+            return [];
+        }
+
+        $now         = current_time( 'mysql' );
+        $cutoff_time = gmdate( 'Y-m-d H:i:s', strtotime( "+{$within_hours} hours", current_time( 'timestamp' ) ) );
+
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM {$table}
+                 WHERE status = 'open'
+                   AND closing_date IS NOT NULL
+                   AND closing_date > '0000-00-00 00:00:00'
+                   AND closing_date > %s
+                   AND closing_date <= %s
+                   AND {$sent_flag_col} = 0", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                $now,
+                $cutoff_time
+            )
+        );
+    }
+
+    /**
+     * Mark a reminder as sent for a tender.
+     *
+     * @param int    $document_id Tender ID.
+     * @param string $sent_flag_col 'reminder_48h_sent' or 'reminder_24h_sent'.
+     *
+     * @since 2.14.0
+     */
+    public function mark_reminder_sent( int $document_id, string $sent_flag_col ): void {
+        if ( ! in_array( $sent_flag_col, [ 'reminder_48h_sent', 'reminder_24h_sent' ], true ) ) {
+            return;
+        }
+        Eprocurement_Database::update( 'documents', [ $sent_flag_col => 1 ], [ 'id' => $document_id ] );
     }
 }

@@ -359,6 +359,68 @@ class Eprocurement_Admin_Rest_Api {
             'permission_callback' => fn() => is_super_admin(),
         ] );
 
+        // --- Evaluation Criteria (per-tender scoring rubric) ---
+        register_rest_route( self::NAMESPACE, '/admin/bids/(?P<bid_id>\d+)/criteria', [
+            [
+                'methods'             => 'GET',
+                'callback'            => [ $this, 'list_criteria' ],
+                'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
+            ],
+            [
+                'methods'             => 'POST',
+                'callback'            => [ $this, 'save_criterion' ],
+                'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
+            ],
+        ] );
+
+        register_rest_route( self::NAMESPACE, '/admin/criteria/(?P<id>\d+)', [
+            [
+                'methods'             => 'PATCH',
+                'callback'            => [ $this, 'update_criterion' ],
+                'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
+            ],
+            [
+                'methods'             => 'DELETE',
+                'callback'            => [ $this, 'delete_criterion' ],
+                'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
+            ],
+        ] );
+
+        // --- Scoring ---
+        register_rest_route( self::NAMESPACE, '/admin/submissions/(?P<id>\d+)/scores', [
+            [
+                'methods'             => 'GET',
+                'callback'            => [ $this, 'get_scores' ],
+                'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
+            ],
+            [
+                'methods'             => 'POST',
+                'callback'            => [ $this, 'set_score' ],
+                'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
+            ],
+        ] );
+
+        // --- Ranked comparison ---
+        register_rest_route( self::NAMESPACE, '/admin/bids/(?P<bid_id>\d+)/comparison', [
+            'methods'             => 'GET',
+            'callback'            => [ $this, 'get_comparison' ],
+            'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
+        ] );
+
+        // --- Award ---
+        register_rest_route( self::NAMESPACE, '/admin/bids/(?P<bid_id>\d+)/award', [
+            [
+                'methods'             => 'POST',
+                'callback'            => [ $this, 'award_bid' ],
+                'permission_callback' => fn() => current_user_can( 'eproc_publish_bids' ),
+            ],
+            [
+                'methods'             => 'DELETE',
+                'callback'            => [ $this, 'withdraw_award' ],
+                'permission_callback' => fn() => is_super_admin(),
+            ],
+        ] );
+
         // --- Briefing Attendees (Admin) ---
         register_rest_route( self::NAMESPACE, '/admin/bids/(?P<bid_id>\d+)/attendees', [
             [
@@ -1580,5 +1642,160 @@ class Eprocurement_Admin_Rest_Api {
                 count( $attendees )
             ),
         ] );
+    }
+
+    // =========================================================================
+    // Evaluation Criteria
+    // =========================================================================
+
+    public function list_criteria( \WP_REST_Request $request ): \WP_REST_Response {
+        $evaluation = new Eprocurement_Evaluation();
+        $criteria = $evaluation->get_criteria( (int) $request['bid_id'] );
+
+        return new \WP_REST_Response( [
+            'criteria' => $criteria,
+            'count'    => count( $criteria ),
+        ] );
+    }
+
+    public function save_criterion( \WP_REST_Request $request ): \WP_REST_Response {
+        $evaluation = new Eprocurement_Evaluation();
+        $bid_id = (int) $request['bid_id'];
+
+        $id = $evaluation->add_criterion( [
+            'document_id' => $bid_id,
+            'name'        => $request->get_param( 'name' ),
+            'description' => $request->get_param( 'description' ) ?? '',
+            'weight'      => $request->get_param( 'weight' ) ?? 1,
+            'max_score'   => $request->get_param( 'max_score' ) ?? 10,
+        ] );
+
+        if ( ! $id ) {
+            return new \WP_REST_Response( [ 'message' => 'Failed to create criterion.' ], 500 );
+        }
+
+        return new \WP_REST_Response( [ 'message' => 'Criterion added.', 'id' => $id ], 201 );
+    }
+
+    public function update_criterion( \WP_REST_Request $request ): \WP_REST_Response {
+        $evaluation = new Eprocurement_Evaluation();
+        $result = $evaluation->update_criterion( (int) $request['id'], [
+            'name'        => $request->get_param( 'name' ),
+            'description' => $request->get_param( 'description' ),
+            'weight'      => $request->get_param( 'weight' ),
+            'max_score'   => $request->get_param( 'max_score' ),
+        ] );
+
+        if ( $result === false ) {
+            return new \WP_REST_Response( [ 'message' => 'Failed to update criterion.' ], 500 );
+        }
+
+        return new \WP_REST_Response( [ 'message' => 'Criterion updated.' ] );
+    }
+
+    public function delete_criterion( \WP_REST_Request $request ): \WP_REST_Response {
+        $evaluation = new Eprocurement_Evaluation();
+        if ( $evaluation->delete_criterion( (int) $request['id'] ) ) {
+            return new \WP_REST_Response( [ 'message' => 'Criterion deleted.' ] );
+        }
+        return new \WP_REST_Response( [ 'message' => 'Failed to delete criterion.' ], 500 );
+    }
+
+    // =========================================================================
+    // Scoring
+    // =========================================================================
+
+    public function get_scores( \WP_REST_Request $request ): \WP_REST_Response {
+        $evaluation = new Eprocurement_Evaluation();
+        $sub_id = (int) $request['id'];
+
+        $scores = $evaluation->get_scores_for_submission( $sub_id );
+        $computed = $evaluation->compute_submission_score( $sub_id );
+
+        return new \WP_REST_Response( [
+            'scores'   => $scores,
+            'computed' => $computed,
+        ] );
+    }
+
+    public function set_score( \WP_REST_Request $request ): \WP_REST_Response {
+        $evaluation = new Eprocurement_Evaluation();
+        $sub_id      = (int) $request['id'];
+        $criterion_id = absint( $request->get_param( 'criterion_id' ) );
+        $score       = (float) $request->get_param( 'score' );
+        $notes       = $request->get_param( 'notes' ) ?? '';
+
+        if ( ! $criterion_id ) {
+            return new \WP_REST_Response( [ 'message' => 'Missing criterion_id.' ], 400 );
+        }
+
+        $id = $evaluation->set_score( $sub_id, $criterion_id, $score, $notes );
+        if ( ! $id ) {
+            return new \WP_REST_Response( [ 'message' => 'Failed to save score.' ], 500 );
+        }
+
+        // Return the recomputed totals so the UI can update in real-time.
+        $computed = $evaluation->compute_submission_score( $sub_id );
+
+        return new \WP_REST_Response( [
+            'message'  => 'Score saved.',
+            'id'       => $id,
+            'computed' => $computed,
+        ] );
+    }
+
+    // =========================================================================
+    // Ranked comparison
+    // =========================================================================
+
+    public function get_comparison( \WP_REST_Request $request ): \WP_REST_Response {
+        $evaluation = new Eprocurement_Evaluation();
+        $bid_id = (int) $request['bid_id'];
+
+        $criteria = $evaluation->get_criteria( $bid_id );
+        $ranked   = $evaluation->get_ranked_comparison( $bid_id );
+        $award    = ( new Eprocurement_Documents() )->get_award( $bid_id );
+
+        return new \WP_REST_Response( [
+            'criteria' => $criteria,
+            'ranked'   => $ranked,
+            'award'    => $award,
+        ] );
+    }
+
+    // =========================================================================
+    // Award
+    // =========================================================================
+
+    public function award_bid( \WP_REST_Request $request ): \WP_REST_Response {
+        $documents = new Eprocurement_Documents();
+        $bid_id = (int) $request['bid_id'];
+
+        $winner_user_id = absint( $request->get_param( 'winner_user_id' ) );
+        $award_amount   = (float) ( $request->get_param( 'award_amount' ) ?? 0 );
+        $award_notes    = sanitize_textarea_field( $request->get_param( 'award_notes' ) ?? '' );
+
+        if ( ! $winner_user_id ) {
+            return new \WP_REST_Response( [ 'message' => 'Missing winner_user_id.' ], 400 );
+        }
+
+        $result = $documents->award( $bid_id, $winner_user_id, $award_amount, $award_notes );
+
+        if ( is_wp_error( $result ) ) {
+            $status = $result->get_error_data()['status'] ?? 400;
+            return new \WP_REST_Response( [ 'message' => $result->get_error_message() ], $status );
+        }
+
+        return new \WP_REST_Response( [
+            'message' => 'Tender awarded. Notifications sent to all bidders.',
+        ] );
+    }
+
+    public function withdraw_award( \WP_REST_Request $request ): \WP_REST_Response {
+        $documents = new Eprocurement_Documents();
+        if ( $documents->withdraw_award( (int) $request['bid_id'] ) ) {
+            return new \WP_REST_Response( [ 'message' => 'Award withdrawn.' ] );
+        }
+        return new \WP_REST_Response( [ 'message' => 'Failed to withdraw award.' ], 500 );
     }
 }

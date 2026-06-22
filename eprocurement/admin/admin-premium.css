@@ -1056,6 +1056,7 @@ a.eproc-btn-primary {
 .eproc-badge-private   { background: #f3e8ff; color: #7c3aed; }
 .eproc-badge-scm       { background: #fef2f2; color: var(--eproc-primary, #8b1a2b); }
 .eproc-badge-technical { background: #f3e8ff; color: #7c3aed; }
+.eproc-badge-awarded   { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #92400e; box-shadow: inset 0 0 0 1px #fbbf24; }
 
 /* ──────────────────────────────────────────
    27. STAT CARD ICONS — coloured circle per metric
