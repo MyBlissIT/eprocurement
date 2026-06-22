@@ -402,6 +402,17 @@ class Eprocurement_Admin {
             $data['accept_online_submissions'] = absint( $_POST['accept_online_submissions'] ?? 0 ) ? 1 : 0;
             $data['allow_late_submissions']    = absint( $_POST['allow_late_submissions'] ?? 0 ) ? 1 : 0;
             $data['briefing_compulsory']       = absint( $_POST['briefing_compulsory'] ?? 0 ) ? 1 : 0;
+
+            // CRITICAL: submission_mode, qa_deadline, created_at_override
+            // must be explicitly added to $data — sanitise_input() handles them
+            // but only if they're present in the array.
+            $data['submission_mode'] = sanitize_text_field( $_POST['submission_mode'] ?? 'single' );
+            $data['qa_deadline']     = self::parse_date_input( $_POST['qa_deadline'] ?? '' );
+
+            // Super Admin backdate override.
+            if ( is_super_admin() && ! empty( $_POST['created_at_override'] ) ) {
+                $data['created_at_override'] = sanitize_text_field( wp_unslash( $_POST['created_at_override'] ) );
+            }
         }
 
         // Validate bid number uniqueness (scoped to category)

@@ -54,7 +54,7 @@
     // ──── Show Notice ────
     function showNotice(message, type) {
         type = type || 'blue';
-        const $notice = $('<div class="eproc-info-box"></div>').addClass(type).text(message);
+        const $notice = $('<div class="eproc-notice"></div>').addClass(type).text(message);
         $('.eproc-wrap').prepend($notice);
         setTimeout(function () {
             $notice.fadeOut(300, function () { $(this).remove(); });
@@ -311,7 +311,7 @@
 
         apiRequest('threads/' + threadId, 'GET').then(function (data) {
             if (data.error) {
-                $detail.html('<p class="eproc-info-box red">' + escHtml(data.error) + '</p>');
+                $detail.html('<p class="eproc-notice red">' + escHtml(data.error) + '</p>');
                 return;
             }
 
@@ -346,7 +346,7 @@
 
             $detail.html(html);
         }).catch(function () {
-            $detail.html('<p class="eproc-info-box red">Failed to load thread.</p>');
+            $detail.html('<p class="eproc-notice red">Failed to load thread.</p>');
         });
     });
 

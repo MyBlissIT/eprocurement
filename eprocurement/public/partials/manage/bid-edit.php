@@ -888,6 +888,18 @@ document.addEventListener('DOMContentLoaded', function() {
             if (onlineCheck) formData.accept_online_submissions = onlineCheck.checked ? 1 : 0;
             if (lateCheck)  formData.allow_late_submissions = lateCheck.checked ? 1 : 0;
             if (briefCheck) formData.briefing_compulsory    = briefCheck.checked ? 1 : 0;
+
+            // Submission mode (single vs per_document) — CRITICAL: must be sent to save the radio selection.
+            var subModeRadio = document.querySelector('input[name="submission_mode"]:checked');
+            if (subModeRadio) formData.submission_mode = subModeRadio.value;
+
+            // Q&A deadline.
+            var qaDeadline = document.getElementById('qa_deadline');
+            if (qaDeadline) formData.qa_deadline = qaDeadline.value;
+
+            // Super Admin backdate override.
+            var backdateInput = document.getElementById('backdate_created_at');
+            if (backdateInput && backdateInput.value) formData.created_at_override = backdateInput.value;
         }
 
         // Include pending doc IDs for new bids

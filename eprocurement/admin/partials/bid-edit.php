@@ -523,6 +523,17 @@ jQuery(function($) {
             formData.accept_online_submissions = $('#accept_online_submissions').is(':checked') ? 1 : 0;
             formData.allow_late_submissions    = $('#allow_late_submissions').is(':checked') ? 1 : 0;
             formData.briefing_compulsory       = $('#briefing_compulsory').is(':checked') ? 1 : 0;
+
+            // CRITICAL: submission_mode, qa_deadline, and created_at_override
+            // must be explicitly sent — they're not picked up by jQuery serialize.
+            var subModeRadio = $('input[name="submission_mode"]:checked');
+            if (subModeRadio.length) formData.submission_mode = subModeRadio.val();
+
+            var qaDeadline = $('#qa_deadline');
+            if (qaDeadline.length) formData.qa_deadline = qaDeadline.val();
+
+            var backdateInput = $('#backdate_created_at');
+            if (backdateInput.length && backdateInput.val()) formData.created_at_override = backdateInput.val();
         }
 
         // Include pending doc IDs for new bids
