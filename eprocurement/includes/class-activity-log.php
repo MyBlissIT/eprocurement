@@ -137,7 +137,7 @@ class Eprocurement_Activity_Log {
         }, 10, 2 );
 
         // Bid submitted.
-        add_action( 'eprocurement_bid_submitted', function ( int $submission_id, int $document_id ): void {
+        add_action( 'eprocurement_bid_submitted', function ( int $submission_id, int $document_id, int $user_id = 0, bool $is_late = false ): void {
             $doc = Eprocurement_Database::get_by_id( 'documents', $document_id );
             $sub = Eprocurement_Database::get_by_id( 'bid_submissions', $submission_id );
             $bidder = $sub ? get_userdata( (int) $sub->user_id ) : null;
@@ -148,7 +148,7 @@ class Eprocurement_Activity_Log {
                 esc_html( $profile ? $profile->company_name : ( $bidder ? $bidder->display_name : 'Unknown' ) ),
                 esc_html( $doc ? $doc->bid_number : 'Unknown' )
             ), $sub ? (int) $sub->user_id : 0, [ 'document_id' => $document_id, 'submission_id' => $submission_id ] );
-        }, 10, 2 );
+        }, 10, 4 );
 
         // Bid awarded.
         add_action( 'eprocurement_bid_awarded', function ( int $document_id, int $winner_user_id ): void {

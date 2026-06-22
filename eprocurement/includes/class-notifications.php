@@ -30,8 +30,8 @@ class Eprocurement_Notifications {
         add_action( 'eprocurement_bid_published', [ $this, 'notify_new_bid' ], 10, 1 );
         add_action( 'eprocurement_visibility_changed', [ $this, 'notify_visibility_change' ], 10, 4 );
         add_action( 'eprocurement_weekly_digest', [ $this, 'send_weekly_digest' ] );
-        add_action( 'eprocurement_bid_submitted', [ $this, 'notify_bid_submitted' ], 10, 2 );
-        add_action( 'eprocurement_bid_cancelled', [ $this, 'notify_bid_cancelled' ], 10, 2 );
+        add_action( 'eprocurement_bid_submitted', [ $this, 'notify_bid_submitted' ], 10, 4 );
+        add_action( 'eprocurement_bid_cancelled', [ $this, 'notify_bid_cancelled' ], 10, 3 );
         // Premium features (2.14.0)
         add_action( 'eprocurement_bid_awarded', [ $this, 'notify_award_winner' ], 10, 2 );
         add_action( 'eprocurement_bid_awarded', [ $this, 'notify_award_losers' ], 20, 2 );

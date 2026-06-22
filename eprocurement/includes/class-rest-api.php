@@ -790,12 +790,67 @@ class Eprocurement_Rest_Api {
      * Handle per-document submission: validate requirements, upload all
      * files, create a single submission record.
      *
+     * PHP structures $_FILES['files'] with nested array keys like:
+     *   ['name']['field_key'] => 'file.pdf'
+     *   ['tmp_name']['field_key'] => '/tmp/xxx'
+     *
+     * We must normalise to per-field_key format:
+     *   ['field_key']['name'] => 'file.pdf'
+     *   ['field_key']['tmp_name'] => '/tmp/xxx'
+     *
      * @param int   $document_id Tender ID.
-     * @param array $files       Associative array of field_key => $_FILES element.
+     * @param array $files       Raw $_FILES['files'] structure from PHP.
      * @return \WP_REST_Response
      */
     private function submit_per_document( int $document_id, array $files ): \WP_REST_Response {
         $user_id = get_current_user_id();
+
+        // ── CRITICAL: Normalise PHP's $_FILES nested structure ──
+        // PHP structures files[field_key] as:
+        //   ['name']['field_key'], ['tmp_name']['field_key'], etc.
+        // We need per-field_key: ['field_key']['name'], ['field_key']['tmp_name'], etc.
+        $normalised_files = [];
+
+        if ( isset( $files['name'] ) && is_array( $files['name'] ) ) {
+            // Standard PHP nested structure: restructure.
+            $field_keys = array_keys( $files['name'] );
+            foreach ( $field_keys as $field_key ) {
+                $normalised_files[ $field_key ] = [
+                    'name'     => $files['name'][ $field_key ],
+                    'type'     => $files['type'][ $field_key ] ?? '',
+                    'tmp_name' => $files['tmp_name'][ $field_key ] ?? '',
+                    'error'    => $files['error'][ $field_key ] ?? UPLOAD_ERR_OK,
+                    'size'     => $files['size'][ $field_key ] ?? 0,
+                ];
+            }
+        } elseif ( isset( $files['tmp_name'] ) && is_array( $files['tmp_name'] ) ) {
+            // Sometimes 'name' is missing but tmp_name is present (rare WP REST edge case).
+            $field_keys = array_keys( $files['tmp_name'] );
+            foreach ( $field_keys as $field_key ) {
+                if ( empty( $files['tmp_name'][ $field_key ] ) ) continue;
+                $normalised_files[ $field_key ] = [
+                    'name'     => $files['name'][ $field_key ] ?? $field_key . '.pdf',
+                    'type'     => $files['type'][ $field_key ] ?? '',
+                    'tmp_name' => $files['tmp_name'][ $field_key ],
+                    'error'    => $files['error'][ $field_key ] ?? UPLOAD_ERR_OK,
+                    'size'     => $files['size'][ $field_key ] ?? 0,
+                ];
+            }
+        } else {
+            // Already in per-field_key format (some WP REST API configurations
+            // or direct $_FILES access).
+            foreach ( $files as $field_key => $file ) {
+                if ( is_array( $file ) && isset( $file['tmp_name'] ) && $file['tmp_name'] ) {
+                    $normalised_files[ $field_key ] = $file;
+                }
+            }
+        }
+
+        if ( empty( $normalised_files ) ) {
+            return new \WP_REST_Response( [ 'error' => __( 'No files were uploaded.', 'eprocurement' ) ], 400 );
+        }
+
+        $files = $normalised_files;
 
         // Validate required documents.
         $req_model = new Eprocurement_Submission_Requirements();
@@ -819,18 +874,10 @@ class Eprocurement_Rest_Api {
         $first_file = null;
 
         foreach ( $files as $field_key => $file ) {
-            // Normalise: WordPress REST API may structure nested files differently.
-            if ( isset( $file['name'] ) && is_string( $file['name'] ) ) {
-                // Single file per key — normal structure.
-            } elseif ( isset( $file['name'] ) && is_array( $file['name'] ) ) {
-                // Multiple files per key — take the first.
-                $file = [
-                    'name'     => $file['name'][0],
-                    'type'     => $file['type'][0] ?? '',
-                    'tmp_name' => $file['tmp_name'][0],
-                    'error'    => $file['error'][0] ?? UPLOAD_ERR_OK,
-                    'size'     => $file['size'][0] ?? 0,
-                ];
+            // Each $file is now properly structured: ['name' => ..., 'tmp_name' => ..., ...]
+            // Skip if this entry doesn't have a valid file.
+            if ( empty( $file['name'] ) || empty( $file['tmp_name'] ) || $file['error'] !== UPLOAD_ERR_OK ) {
+                continue;
             }
 
             $validation_result = Eprocurement_Storage_Interface::validate_file( $file, 10485760 ); // 10MB.

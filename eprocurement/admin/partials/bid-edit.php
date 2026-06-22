@@ -409,6 +409,33 @@ if ( $is_edit ) {
                         </label>
                         <span class="eproc-form-hint"><?php esc_html_e( 'Only bidders on the attendees list can submit.', 'eprocurement' ); ?></span>
                     </div>
+                    <div class="eproc-form-group" id="eproc-submission-mode-group" style="<?php echo ( $bid && ! empty( $bid->accept_online_submissions ) ) ? '' : 'display:none;'; ?>">
+                        <label class="eproc-form-label"><?php esc_html_e( 'Submission Mode', 'eprocurement' ); ?></label>
+                        <div class="eproc-radio-group">
+                            <label class="eproc-radio">
+                                <input type="radio" name="submission_mode" value="single" <?php checked( ! $bid || $bid->submission_mode === 'single' ); ?> />
+                                <span><strong><?php esc_html_e( 'Single File', 'eprocurement' ); ?></strong> — <?php esc_html_e( 'Bidders upload one file (e.g. a combined PDF).', 'eprocurement' ); ?></span>
+                            </label>
+                            <label class="eproc-radio">
+                                <input type="radio" name="submission_mode" value="per_document" <?php checked( $bid && $bid->submission_mode === 'per_document' ); ?> />
+                                <span><strong><?php esc_html_e( 'Per Document', 'eprocurement' ); ?></strong> — <?php esc_html_e( 'Bidders upload individual files for each required document type.', 'eprocurement' ); ?></span>
+                            </label>
+                        </div>
+                        <?php if ( $bid && $bid->submission_mode === 'per_document' ) : ?>
+                        <p class="eproc-form-hint" style="margin-top:8px;">
+                            <?php
+                            echo wp_kses(
+                                sprintf(
+                                    /* translators: %s: link to manage panel */
+                                    __( 'Required document fields can be managed from the <a href="%s">frontend manage panel</a>.', 'eprocurement' ),
+                                    esc_url( home_url( '/' . get_option( 'eprocurement_frontend_page_slug', 'tenders' ) . '/manage/bids/?action=edit&id=' . $bid_id ) )
+                                ),
+                                [ 'a' => [ 'href' => [] ] ]
+                            );
+                            ?>
+                        </p>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
             <?php endif; // $is_regular_bid ?>

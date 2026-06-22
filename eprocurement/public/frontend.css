@@ -904,32 +904,27 @@
 }
 
 /* ──── Info / Warning Boxes ──── */
-.eproc-info-box {
     padding: 10px 14px;
     border-radius: 4px;
     font-size: 12px;
     margin-bottom: 16px;
 }
 
-.eproc-info-box.yellow {
     background: var(--eproc-warning-bg);
     border: 1px solid var(--eproc-warning);
     color: var(--eproc-warning-text);
 }
 
-.eproc-info-box.green {
     background: var(--eproc-primary-bg);
     border: 1px solid var(--eproc-primary);
     color: var(--eproc-primary-hover);
 }
 
-.eproc-info-box.red {
     background: var(--eproc-danger-bg);
     border: 1px solid var(--eproc-danger);
     color: var(--eproc-danger-dark);
 }
 
-.eproc-info-box.blue {
     background: var(--eproc-primary-bg);
     border: 1px solid var(--eproc-primary);
     color: var(--eproc-primary-hover);
@@ -1901,19 +1896,16 @@
 }
 
 /* ──── Info Box Variants (BEM-style) ──── */
-.eproc-info-box--warning {
     background: var(--eproc-warning-bg);
     border: 1px solid var(--eproc-warning);
     color: var(--eproc-warning-text);
 }
 
-.eproc-info-box--success {
     background: var(--eproc-primary-bg);
     border: 1px solid var(--eproc-primary);
     color: var(--eproc-primary-hover);
 }
 
-.eproc-info-box--error {
     background: var(--eproc-danger-bg);
     border: 1px solid var(--eproc-danger);
     color: var(--eproc-danger-dark);

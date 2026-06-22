@@ -135,5 +135,17 @@ wp_clear_scheduled_hook( 'eprocurement_weekly_digest' ); // Fix L-05: was missin
 // Clean up user meta for bidder profiles
 $wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE '_eproc_%'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-// Also clear last_login tracking meta added in 2.14.0
-$wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key = 'eproc_last_login'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+// Also clean up all eProcurement-prefixed user meta.
+$wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE 'eproc_%'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+// Clean up 2FA user meta (staff users).
+$wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key IN ('eproc_2fa_secret', 'eproc_2fa_enabled', 'eproc_2fa_pending_verify')" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+// Also clean up all eProcurement usermeta keys.
+$wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key IN (
+    'eproc_last_login',
+    'eproc_recently_viewed',
+    'eproc_2fa_secret',
+    'eproc_2fa_enabled',
+    'eproc_2fa_pending_verify'
+)" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
