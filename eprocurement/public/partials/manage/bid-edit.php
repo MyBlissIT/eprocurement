@@ -248,7 +248,186 @@ if ( $is_edit ) {
                 </div>
             </div>
             <?php endif; ?>
+
+            <?php
+            // ─── Evaluation Card ───────────────────────────────────────────
+            // Shown only when the bid is closed (evaluation happens post-closing).
+            // Includes: criteria management, scoring inputs, comparison view,
+            // and award form. All driven by REST endpoints.
+            if ( $is_edit && $current_status === 'closed' ) :
+                $evaluation_model = new Eprocurement_Evaluation();
+                $criteria = $evaluation_model->get_criteria( $bid_id );
+                $award    = $documents->get_award( $bid_id );
+            ?>
+            <!-- Evaluation Criteria Card -->
+            <div class="eproc-card eproc-evaluation-card" id="eproc-evaluation-card">
+                <div class="eproc-card-header">
+                    <h2>
+                        <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18" style="vertical-align:-3px;margin-right:4px;color:var(--eproc-primary);"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
+                        <?php esc_html_e( 'Evaluation Matrix', 'eprocurement' ); ?>
+                    </h2>
+                    <button type="button" class="eproc-btn eproc-btn-sm eproc-btn-outline" id="eproc-comparison-btn">
+                        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" style="margin-right:4px;vertical-align:-2px;"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-3.5L5 18V4z"/></svg>
+                        <?php esc_html_e( 'Compare & Award', 'eprocurement' ); ?>
+                    </button>
+                </div>
+                <div class="eproc-card-body">
+                    <?php if ( $award ) : ?>
+                        <div class="eproc-award-banner">
+                            <div class="eproc-award-banner-icon">
+                                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zm7-10a1 1 0 01.945.671L14.118 6H17a1 1 0 110 2h-.018l-.382 1.428a1 1 0 01-1.94-.514L14.732 8h-2.99l-.276.829a1 1 0 11-1.94-.514l2-6A1 1 0 0112 2zm1.382 6l-.667-2-.667 2h1.334zM9 14a1 1 0 011-1h6a1 1 0 110 2h-6a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+                            </div>
+                            <div class="eproc-award-banner-body">
+                                <strong><?php esc_html_e( 'Awarded to:', 'eprocurement' ); ?></strong>
+                                <?php echo esc_html( $award->company_name ?: $award->display_name ); ?>
+                                <?php if ( $award->award_amount ) : ?>
+                                    · <?php echo esc_html( number_format_i18n( $award->award_amount, 2 ) ); ?>
+                                <?php endif; ?>
+                                <span class="eproc-award-banner-date"><?php echo esc_html( wp_date( 'j M Y', strtotime( $award->award_date ) ) ); ?></span>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <p class="eproc-form-hint" style="margin-bottom:16px;">
+                        <?php esc_html_e( 'Define scoring criteria with weights. Evaluators score each submission independently; the system computes weighted totals automatically.', 'eprocurement' ); ?>
+                    </p>
+
+                    <!-- Criteria list -->
+                    <div id="eproc-criteria-list">
+                        <?php if ( empty( $criteria ) ) : ?>
+                            <div class="eproc-empty-state" style="padding:32px 16px;">
+                                <p class="eproc-empty-state-text"><?php esc_html_e( 'No evaluation criteria defined yet. Add criteria below to start scoring submissions.', 'eprocurement' ); ?></p>
+                            </div>
+                        <?php else : ?>
+                            <table class="eproc-table eproc-criteria-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:30px;">#</th>
+                                        <th><?php esc_html_e( 'Criterion', 'eprocurement' ); ?></th>
+                                        <th style="width:80px;"><?php esc_html_e( 'Weight', 'eprocurement' ); ?></th>
+                                        <th style="width:80px;"><?php esc_html_e( 'Max', 'eprocurement' ); ?></th>
+                                        <th style="width:60px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ( $criteria as $i => $c ) : ?>
+                                        <tr data-criterion-id="<?php echo esc_attr( $c->id ); ?>">
+                                            <td class="eproc-text-muted"><?php echo esc_html( $i + 1 ); ?></td>
+                                            <td>
+                                                <strong><?php echo esc_html( $c->name ); ?></strong>
+                                                <?php if ( $c->description ) : ?>
+                                                    <br><span class="eproc-text-muted" style="font-size:12px;"><?php echo esc_html( $c->description ); ?></span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><span class="eproc-weight-pill"><?php echo esc_html( number_format_i18n( (float) $c->weight, 1 ) ); ?></span></td>
+                                            <td><?php echo esc_html( $c->max_score ); ?></td>
+                                            <td>
+                                                <button type="button" class="eproc-btn-icon eproc-delete-criterion" data-criterion-id="<?php echo esc_attr( $c->id ); ?>" title="<?php esc_attr_e( 'Delete criterion', 'eprocurement' ); ?>" aria-label="<?php esc_attr_e( 'Delete criterion', 'eprocurement' ); ?>">
+                                                    <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Add new criterion form -->
+                    <div class="eproc-criteria-add" id="eproc-criteria-add">
+                        <div class="eproc-form-row eproc-form-row--2col">
+                            <input type="text" id="eproc-new-criterion-name" class="eproc-input" placeholder="<?php esc_attr_e( 'Criterion name (e.g. Technical Approach)', 'eprocurement' ); ?>" />
+                            <input type="text" id="eproc-new-criterion-desc" class="eproc-input" placeholder="<?php esc_attr_e( 'Description (optional)', 'eprocurement' ); ?>" />
+                        </div>
+                        <div class="eproc-form-row eproc-form-row--2col">
+                            <div class="eproc-form-group" style="margin-bottom:0;">
+                                <label class="eproc-form-label" for="eproc-new-criterion-weight"><?php esc_html_e( 'Weight', 'eprocurement' ); ?></label>
+                                <input type="number" id="eproc-new-criterion-weight" class="eproc-input" value="1" min="0.1" step="0.1" style="width:100px;" />
+                            </div>
+                            <div class="eproc-form-group" style="margin-bottom:0;">
+                                <label class="eproc-form-label" for="eproc-new-criterion-max"><?php esc_html_e( 'Max Score', 'eprocurement' ); ?></label>
+                                <input type="number" id="eproc-new-criterion-max" class="eproc-input" value="10" min="1" max="100" style="width:100px;" />
+                            </div>
+                        </div>
+                        <button type="button" class="eproc-btn eproc-btn-primary eproc-btn-sm" id="eproc-add-criterion-btn">
+                            <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" style="margin-right:4px;vertical-align:-2px;"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+                            <?php esc_html_e( 'Add Criterion', 'eprocurement' ); ?>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <?php endif; // end evaluation card ?>
         </div>
+
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <!-- Comparison & Award Modal                                       -->
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <?php if ( $is_edit && $current_status === 'closed' ) : ?>
+        <div class="eproc-modal eproc-modal-lg" id="eproc-comparison-modal" style="display:none;" aria-hidden="true">
+            <div class="eproc-modal-backdrop" data-close-modal="eproc-comparison-modal"></div>
+            <div class="eproc-modal-content">
+                <div class="eproc-modal-header">
+                    <h2>
+                        <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18" style="vertical-align:-3px;margin-right:4px;"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-3.5L5 18V4z"/></svg>
+                        <?php esc_html_e( 'Ranked Comparison & Award', 'eprocurement' ); ?>
+                    </h2>
+                    <button type="button" class="eproc-modal-close" data-close-modal="eproc-comparison-modal" aria-label="<?php esc_attr_e( 'Close', 'eprocurement' ); ?>">&times;</button>
+                </div>
+                <div class="eproc-modal-body" id="eproc-comparison-body">
+                    <div class="eproc-text-center" style="padding:40px 0;">
+                        <div class="eproc-skeleton eproc-skeleton-card" style="width:100%;max-width:500px;margin:0 auto 12px;"></div>
+                        <div class="eproc-skeleton eproc-skeleton-line" style="width:80%;max-width:400px;margin:0 auto;"></div>
+                        <p class="eproc-muted" style="margin-top:16px;"><?php esc_html_e( 'Loading comparison...', 'eprocurement' ); ?></p>
+                    </div>
+                </div>
+                <div class="eproc-modal-footer">
+                    <button type="button" class="eproc-btn eproc-btn-outline" data-close-modal="eproc-comparison-modal"><?php esc_html_e( 'Close', 'eprocurement' ); ?></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Award Form Modal -->
+        <div class="eproc-modal" id="eproc-award-modal" style="display:none;" aria-hidden="true">
+            <div class="eproc-modal-backdrop" data-close-modal="eproc-award-modal"></div>
+            <div class="eproc-modal-content">
+                <div class="eproc-modal-header">
+                    <h2><?php esc_html_e( 'Award Tender', 'eprocurement' ); ?></h2>
+                    <button type="button" class="eproc-modal-close" data-close-modal="eproc-award-modal" aria-label="<?php esc_attr_e( 'Close', 'eprocurement' ); ?>">&times;</button>
+                </div>
+                <div class="eproc-modal-body">
+                    <div class="eproc-notice warning" style="margin-bottom:16px;">
+                        <p><strong><?php esc_html_e( 'You are about to award this tender.', 'eprocurement' ); ?></strong> <?php esc_html_e( 'An email notification will be sent to the winning bidder and all other bidders who submitted.', 'eprocurement' ); ?></p>
+                    </div>
+                    <form id="eproc-award-form">
+                        <input type="hidden" id="eproc-award-bid-id" value="<?php echo esc_attr( $bid_id ); ?>" />
+                        <div class="eproc-form-group">
+                            <label class="eproc-form-label" for="eproc-award-winner"><?php esc_html_e( 'Award to', 'eprocurement' ); ?> <span class="eproc-required">*</span></label>
+                            <select id="eproc-award-winner" class="eproc-input eproc-select" required>
+                                <option value=""><?php esc_html_e( 'Select a bidder...', 'eprocurement' ); ?></option>
+                            </select>
+                        </div>
+                        <div class="eproc-form-group">
+                            <label class="eproc-form-label" for="eproc-award-amount"><?php esc_html_e( 'Contract Value', 'eprocurement' ); ?></label>
+                            <input type="number" id="eproc-award-amount" class="eproc-input" min="0" step="0.01" placeholder="<?php esc_attr_e( 'e.g. 1250000.00', 'eprocurement' ); ?>" />
+                            <span class="eproc-form-hint"><?php esc_html_e( 'Optional. Leave blank if not disclosed.', 'eprocurement' ); ?></span>
+                        </div>
+                        <div class="eproc-form-group">
+                            <label class="eproc-form-label" for="eproc-award-notes"><?php esc_html_e( 'Award Notes', 'eprocurement' ); ?></label>
+                            <textarea id="eproc-award-notes" class="eproc-input" rows="3" placeholder="<?php esc_attr_e( 'Public notes about the award (shown to the winner).', 'eprocurement' ); ?>"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="eproc-modal-footer">
+                    <button type="button" class="eproc-btn eproc-btn-outline" data-close-modal="eproc-award-modal"><?php esc_html_e( 'Cancel', 'eprocurement' ); ?></button>
+                    <button type="button" class="eproc-btn eproc-btn-primary" id="eproc-confirm-award">
+                        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" style="margin-right:4px;vertical-align:-2px;"><path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zm7-10a1 1 0 01.945.671L14.118 6H17a1 1 0 110 2h-.018l-.382 1.428a1 1 0 01-1.94-.514L14.732 8h-2.99l-.276.829a1 1 0 11-1.94-.514l2-6A1 1 0 0112 2zm1.382 6l-.667-2-.667 2h1.334zM9 14a1 1 0 011-1h6a1 1 0 110 2h-6a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+                        <?php esc_html_e( 'Confirm Award', 'eprocurement' ); ?>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <?php endif; // end award modal ?>
+
 
         <!-- Right Column: Status, Contacts, Dates -->
         <div class="eproc-bid-sidebar">
@@ -393,6 +572,12 @@ if ( $is_edit ) {
                         <label for="closing_date"><?php esc_html_e( 'Closing Date', 'eprocurement' ); ?></label>
                         <input type="datetime-local" id="closing_date" name="closing_date" class="eproc-input"
                                value="<?php echo esc_attr( $bid && $bid->closing_date ? date( 'Y-m-d\TH:i', strtotime( $bid->closing_date ) ) : '' ); ?>">
+                    </div>
+                    <div class="eproc-form-group">
+                        <label for="qa_deadline" class="eproc-form-label"><?php esc_html_e( 'Q&A Deadline', 'eprocurement' ); ?></label>
+                        <input type="datetime-local" id="qa_deadline" name="qa_deadline" class="eproc-input"
+                               value="<?php echo esc_attr( $bid && ! empty( $bid->qa_deadline ) ? date( 'Y-m-d\TH:i', strtotime( $bid->qa_deadline ) ) : '' ); ?>">
+                        <span class="eproc-form-hint"><?php esc_html_e( 'Deadline for bidders to submit queries. Must be before the closing date.', 'eprocurement' ); ?></span>
                     </div>
                 </div>
             </div>
@@ -1281,6 +1466,213 @@ document.addEventListener('DOMContentLoaded', function() {
                 .catch(function() { alert(eprocManage.strings.error); })
                 .finally(function() { window.eprocSetLoading(sendInvitesBtn, false); });
         });
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // EVALUATION MATRIX — criteria CRUD + comparison + award
+    // ════════════════════════════════════════════════════════════
+    var bidId = <?php echo wp_json_encode( $bid_id ); ?>;
+    var evaluationCard = document.getElementById('eproc-evaluation-card');
+
+    if (evaluationCard && bidId) {
+        // ── Add criterion ──
+        var addCritBtn = document.getElementById('eproc-add-criterion-btn');
+        if (addCritBtn) {
+            addCritBtn.addEventListener('click', function() {
+                var name   = document.getElementById('eproc-new-criterion-name').value.trim();
+                var desc   = document.getElementById('eproc-new-criterion-desc').value.trim();
+                var weight = parseFloat(document.getElementById('eproc-new-criterion-weight').value) || 1;
+                var max    = parseInt(document.getElementById('eproc-new-criterion-max').value, 10) || 10;
+
+                if (!name) {
+                    eprocToast('<?php echo esc_js( __( 'Please enter a criterion name.', 'eprocurement' ) ); ?>', 'error');
+                    return;
+                }
+
+                window.eprocSetLoading(addCritBtn, true);
+                eprocAPI.post('admin/bids/' + bidId + '/criteria', {
+                    name: name, description: desc, weight: weight, max_score: max
+                })
+                .then(function() {
+                    eprocToast('<?php echo esc_js( __( 'Criterion added.', 'eprocurement' ) ); ?>', 'success');
+                    location.reload();
+                })
+                .catch(function(err) {
+                    eprocToast(err.message || '<?php echo esc_js( __( 'Failed to add criterion.', 'eprocurement' ) ); ?>', 'error');
+                })
+                .finally(function() { window.eprocSetLoading(addCritBtn, false); });
+            });
+        }
+
+        // ── Delete criterion ──
+        document.querySelectorAll('.eproc-delete-criterion').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var critId = btn.getAttribute('data-criterion-id');
+                if (!confirm('<?php echo esc_js( __( 'Delete this criterion? All scores recorded for it will also be deleted.', 'eprocurement' ) ); ?>')) return;
+
+                eprocAPI.del('admin/criteria/' + critId)
+                .then(function() {
+                    eprocToast('<?php echo esc_js( __( 'Criterion deleted.', 'eprocurement' ) ); ?>', 'success');
+                    var row = btn.closest('tr');
+                    if (row) row.remove();
+                })
+                .catch(function(err) {
+                    eprocToast(err.message || '<?php echo esc_js( __( 'Failed to delete criterion.', 'eprocurement' ) ); ?>', 'error');
+                });
+            });
+        });
+
+        // ── Comparison modal ──
+        var compBtn = document.getElementById('eproc-comparison-btn');
+        var compBody = document.getElementById('eproc-comparison-body');
+
+        function openModal(id) {
+            var m = document.getElementById(id);
+            if (m) { m.style.display = 'flex'; m.setAttribute('aria-hidden', 'false'); }
+        }
+        function closeModal(id) {
+            var m = document.getElementById(id);
+            if (m) { m.style.display = 'none'; m.setAttribute('aria-hidden', 'true'); }
+        }
+
+        document.querySelectorAll('[data-close-modal]').forEach(function(el) {
+            el.addEventListener('click', function() {
+                closeModal(el.getAttribute('data-close-modal'));
+            });
+        });
+
+        if (compBtn) {
+            compBtn.addEventListener('click', function() {
+                openModal('eproc-comparison-modal');
+                eprocAPI.get('admin/bids/' + bidId + '/comparison')
+                .then(function(data) {
+                    renderComparison(data);
+                })
+                .catch(function(err) {
+                    compBody.innerHTML = '<div class="eproc-notice error"><p>' + escHtml(err.message || 'Failed to load comparison.') + '</p></div>';
+                });
+            });
+        }
+
+        function renderComparison(data) {
+            var criteria = data.criteria || [];
+            var ranked = data.ranked || [];
+            var award = data.award;
+
+            if (ranked.length === 0) {
+                compBody.innerHTML = '<div class="eproc-empty-state">' +
+                    '<p class="eproc-empty-state-title"><?php echo esc_js( __( 'No submissions yet', 'eprocurement' ) ); ?></p>' +
+                    '<p class="eproc-empty-state-text"><?php echo esc_js( __( 'Submissions will appear here once bidders submit their bids.', 'eprocurement' ) ); ?></p>' +
+                    '</div>';
+                return;
+            }
+
+            compBody.innerHTML = renderRankedTable(ranked, criteria, award);
+        }
+
+        function renderRankedTable(ranked, criteria, award) {
+            var hasScores = ranked.some(function(r) { return r.criteria_scored > 0; });
+            var html = '<div class="eproc-table-responsive"><table class="eproc-table eproc-comparison-table">' +
+                '<thead><tr>' +
+                '<th style="width:40px;">#</th>' +
+                '<th><?php echo esc_js( __( 'Bidder', 'eprocurement' ) ); ?></th>' +
+                '<th><?php echo esc_js( __( 'Company', 'eprocurement' ) ); ?></th>' +
+                '<th style="width:100px;"><?php echo esc_js( __( 'Score', 'eprocurement' ) ); ?></th>' +
+                '<th style="width:80px;"><?php echo esc_js( __( 'Late?', 'eprocurement' ) ); ?></th>' +
+                '<th style="width:120px;"></th>' +
+                '</tr></thead><tbody>';
+
+            ranked.forEach(function(r) {
+                var isWinner = award && award.user_id === r.submission.user_id;
+                var medal = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : '';
+                var scoreDisplay = hasScores
+                    ? '<strong style="font-size:16px;color:' + (r.rank === 1 ? '#15803d' : '#1e293b') + ';">' + r.score_total.toFixed(1) + '</strong><span class="eproc-text-muted" style="font-size:11px;">/100</span>'
+                    : '<span class="eproc-text-muted">—</span>';
+
+                html += '<tr' + (isWinner ? ' class="eproc-winner-row"' : '') + '>' +
+                    '<td class="eproc-rank-cell">' + medal + ' ' + r.rank + '</td>' +
+                    '<td>' + escHtml(r.bidder_name) + '</td>' +
+                    '<td>' + escHtml(r.company_name || '—') + '</td>' +
+                    '<td class="eproc-score-cell">' + scoreDisplay + '</td>' +
+                    '<td>' + (r.is_late ? '<span class="eproc-badge eproc-badge-unverified"><?php echo esc_js( __( 'Late', 'eprocurement' ) ); ?></span>' : '—') + '</td>' +
+                    '<td>';
+
+                if (isWinner) {
+                    html += '<?php echo esc_js( __( 'Awarded', 'eprocurement' ) ); ?> 🏆';
+                } else if (!award) {
+                    html += '<button type="button" class="eproc-btn eproc-btn-sm eproc-btn-primary eproc-award-btn" data-user-id="' + r.submission.user_id + '" data-bidder-name="' + escAttr(r.bidder_name) + '" data-company="' + escAttr(r.company_name || '') + '">' +
+                        '<?php echo esc_js( __( 'Award', 'eprocurement' ) ); ?></button>';
+                }
+
+                html += '</td></tr>';
+            });
+
+            html += '</tbody></table></div>';
+
+            if (!hasScores && criteria.length > 0) {
+                html += '<p class="eproc-form-hint" style="margin-top:12px;"><?php echo esc_js( __( 'Scores will appear once evaluators start rating submissions.', 'eprocurement' ) ); ?></p>';
+            }
+
+            return html;
+        }
+
+        // ── Award modal ──
+        document.addEventListener('click', function(e) {
+            var awardBtn = e.target.closest('.eproc-award-btn');
+            if (!awardBtn) return;
+
+            var userId = awardBtn.getAttribute('data-user-id');
+            var bidderName = awardBtn.getAttribute('data-bidder-name');
+            var company = awardBtn.getAttribute('data-company');
+
+            var winnerSelect = document.getElementById('eproc-award-winner');
+            winnerSelect.innerHTML = '<option value="' + userId + '" selected>' + escHtml(company ? company + ' (' + bidderName + ')' : bidderName) + '</option>';
+
+            closeModal('eproc-comparison-modal');
+            openModal('eproc-award-modal');
+        });
+
+        // Confirm award.
+        var confirmAwardBtn = document.getElementById('eproc-confirm-award');
+        if (confirmAwardBtn) {
+            confirmAwardBtn.addEventListener('click', function() {
+                var winnerId = parseInt(document.getElementById('eproc-award-winner').value, 10);
+                var amount   = parseFloat(document.getElementById('eproc-award-amount').value) || 0;
+                var notes    = document.getElementById('eproc-award-notes').value.trim();
+
+                if (!winnerId) {
+                    eprocToast('<?php echo esc_js( __( 'Please select a bidder to award.', 'eprocurement' ) ); ?>', 'error');
+                    return;
+                }
+
+                if (!confirm('<?php echo esc_js( __( 'Are you sure? This will send email notifications to all bidders who submitted.', 'eprocurement' ) ); ?>')) return;
+
+                window.eprocSetLoading(confirmAwardBtn, true);
+                eprocAPI.post('admin/bids/' + bidId + '/award', {
+                    winner_user_id: winnerId,
+                    award_amount: amount,
+                    award_notes: notes
+                })
+                .then(function() {
+                    eprocToast('<?php echo esc_js( __( 'Tender awarded. Notifications sent.', 'eprocurement' ) ); ?>', 'success');
+                    closeModal('eproc-award-modal');
+                    setTimeout(function() { location.reload(); }, 1500);
+                })
+                .catch(function(err) {
+                    eprocToast(err.message || '<?php echo esc_js( __( 'Failed to award tender.', 'eprocurement' ) ); ?>', 'error');
+                })
+                .finally(function() { window.eprocSetLoading(confirmAwardBtn, false); });
+            });
+        }
+
+        function escHtml(s) {
+            var d = document.createElement('div');
+            d.textContent = s || '';
+            return d.innerHTML;
+        }
+        function escAttr(s) {
+            return String(s || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
     }
 });
 </script>

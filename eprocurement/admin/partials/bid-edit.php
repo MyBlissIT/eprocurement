@@ -368,6 +368,12 @@ if ( $is_edit ) {
                         <input type="datetime-local" id="closing_date" name="closing_date"
                                value="<?php echo esc_attr( $bid && $bid->closing_date ? date( 'Y-m-d\TH:i', strtotime( $bid->closing_date ) ) : '' ); ?>">
                     </div>
+                    <div class="eproc-form-group">
+                        <label for="qa_deadline"><?php esc_html_e( 'Q&A Deadline', 'eprocurement' ); ?></label>
+                        <input type="datetime-local" id="qa_deadline" name="qa_deadline"
+                               value="<?php echo esc_attr( $bid && ! empty( $bid->qa_deadline ) ? date( 'Y-m-d\TH:i', strtotime( $bid->qa_deadline ) ) : '' ); ?>">
+                        <span class="eproc-form-hint"><?php esc_html_e( 'Deadline for bidders to submit queries. Must be before the closing date.', 'eprocurement' ); ?></span>
+                    </div>
                 </div>
             </div>
             <!-- Submission Settings -->

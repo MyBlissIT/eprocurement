@@ -2119,3 +2119,216 @@ a.eproc-btn-primary {
     background: linear-gradient(90deg, #16a34a 0%, #15803d 100%);
 }
 
+/* ──────────────────────────────────────────
+   44. EVALUATION MATRIX — criteria + comparison + award
+   ────────────────────────────────────────── */
+
+.eproc-evaluation-card .eproc-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.eproc-evaluation-card .eproc-card-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+}
+
+.eproc-criteria-table {
+    margin-bottom: 20px;
+}
+
+.eproc-criteria-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.eproc-weight-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--eproc-primary-bg, rgba(139, 26, 43, 0.08));
+    color: var(--eproc-primary, #8b1a2b);
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.eproc-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--eproc-border, #e2e8f0);
+    background: #fff;
+    color: var(--eproc-text-muted, #64748b);
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 0;
+    transition: all var(--eproc-duration-fast) var(--eproc-ease-out);
+}
+
+.eproc-btn-icon:hover {
+    background: #fee2e2;
+    border-color: #dc2626;
+    color: #dc2626;
+}
+
+.eproc-criteria-add {
+    padding-top: 16px;
+    border-top: 1px solid var(--eproc-border-light, #f1f5f9);
+}
+
+/* Award banner */
+.eproc-award-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #fbbf24;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.eproc-award-banner-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(245, 158, 11, 0.2);
+    color: #92400e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.eproc-award-banner-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.eproc-award-banner-body {
+    font-size: 14px;
+    color: #78350f;
+}
+
+.eproc-award-banner-date {
+    color: #92400e;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+/* Comparison table */
+.eproc-comparison-table {
+    width: 100%;
+}
+
+.eproc-comparison-table .eproc-rank-cell {
+    text-align: center;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.eproc-comparison-table .eproc-score-cell {
+    text-align: center;
+}
+
+.eproc-comparison-table .eproc-winner-row {
+    background: linear-gradient(90deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.eproc-comparison-table .eproc-winner-row td {
+    border-bottom-color: #86efac;
+}
+
+/* Modal enhancements */
+.eproc-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.eproc-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.eproc-modal-content {
+    position: relative;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: var(--eproc-shadow-2xl);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: eproc-scale-in var(--eproc-duration-base) var(--eproc-ease-spring);
+}
+
+.eproc-modal-lg .eproc-modal-content {
+    max-width: 900px;
+}
+
+.eproc-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--eproc-border, #e2e8f0);
+}
+
+.eproc-modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--eproc-text-heading, #1e293b);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.eproc-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    color: var(--eproc-text-muted, #64748b);
+    cursor: pointer;
+    padding: 0 4px;
+    transition: color var(--eproc-duration-fast) var(--eproc-ease-out);
+}
+
+.eproc-modal-close:hover {
+    color: var(--eproc-text-heading, #1e293b);
+}
+
+.eproc-modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.eproc-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--eproc-border, #e2e8f0);
+    background: var(--eproc-surface-light, #f7f9fc);
+}
+
