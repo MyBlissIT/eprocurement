@@ -569,12 +569,18 @@ class Eprocurement_Bid_Submissions {
     /**
      * Write a backdate action to the audit log.
      *
-     * The log is stored in the `eproc_audit_log` option as an append-only
-     * array. Each entry is immutable — there is no API to delete or modify
-     * entries; only a fresh site uninstall (with the explicit data-deletion
-     * gate enabled) clears it.
+     * Audit fix A10: now uses the dedicated `eproc_audit_log` DB table via
+     * Eprocurement_Activity_Log::log() instead of read-modify-write on the
+     * `eproc_audit_log` wp_options array. Eliminates race conditions and
+     * O(N) per-write cost. The full structured context is stored as JSON
+     * in the context column for forensic review.
+     *
+     * Each entry is immutable — there is no API to delete or modify entries;
+     * only a fresh site uninstall (with the explicit data-deletion gate
+     * enabled) clears the table.
      *
      * @since 2.14.0  Security fix M-04 — sealed-bid integrity audit trail.
+     * @since 2.18.0  Audit fix A10 — migrated to dedicated DB table.
      */
     private function log_backdate_action(
         int $submission_id,
@@ -584,31 +590,30 @@ class Eprocurement_Bid_Submissions {
         int $admin_id,
         bool $visible
     ): void {
-        $log = get_option( 'eproc_audit_log', [] );
-        if ( ! is_array( $log ) ) {
-            $log = [];
-        }
+        $admin = get_userdata( $admin_id );
 
-        $log[] = [
-            'event'            => 'submission_backdated',
-            'submission_id'    => $submission_id,
-            'old_datetime'     => $old_datetime,
-            'new_datetime'     => $new_datetime,
-            'original_datetime' => $original_datetime,
-            'admin_id'         => $admin_id,
-            'admin_email'      => get_userdata( $admin_id )->user_email ?? '',
-            'visible'          => $visible,
-            'timestamp'        => current_time( 'mysql', true ),
-            'ip'               => sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ?? '' ) ),
-        ];
-
-        // Cap log size at 1000 entries (FIFO).
-        if ( count( $log ) > 1000 ) {
-            $log = array_slice( $log, -1000 );
-        }
-
-        // Use autoload=false — audit log should not be loaded on every page.
-        update_option( 'eproc_audit_log', $log, false );
+        Eprocurement_Activity_Log::log(
+            'submission_backdated',
+            sprintf(
+                /* translators: 1: admin email, 2: submission ID, 3: old datetime, 4: new datetime */
+                __( 'Submission #%2$d backdated by %1$s from %3$s to %4$s.', 'eprocurement' ),
+                $admin ? $admin->user_email : 'Unknown',
+                $submission_id,
+                $old_datetime,
+                $new_datetime
+            ),
+            $admin_id,
+            [
+                'event'             => 'submission_backdated',
+                'submission_id'     => $submission_id,
+                'old_datetime'      => $old_datetime,
+                'new_datetime'      => $new_datetime,
+                'original_datetime' => $original_datetime,
+                'admin_id'          => $admin_id,
+                'admin_email'       => $admin ? $admin->user_email : '',
+                'visible'           => $visible,
+            ]
+        );
     }
 
     /**

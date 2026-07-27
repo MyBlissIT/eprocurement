@@ -4,7 +4,7 @@ Tags: procurement, tender, bids, crm, government, supply-chain, scm
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 2.17.0
+Stable tag: 2.18.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -72,6 +72,27 @@ By default, uninstalling the plugin preserves all data so you can reinstall with
 Email security@myblisstech.com with details. We respond within 48 hours and credit responsible disclosure in our changelog.
 
 == Changelog ==
+
+= 2.18.0 (2026-07-28) =
+
+**Security (Critical)**
+
+* Encryption: Switched credential storage from AES-256-CBC to AES-256-GCM (authenticated encryption). Existing ciphertexts auto-migrate on first read.
+* Cloud downloads: Google Drive and OneDrive no longer create public/anonymous sharing links. All cloud downloads are now proxied server-side through the WP endpoint — the cloud URL is never exposed to the browser.
+* CSP: Tightened `script-src` from `'unsafe-inline'` to per-request nonce with `'strict-dynamic'`. Inline scripts are auto-nonce'd via an output buffer. Added `base-uri` and `form-action` restrictions.
+
+**Security (High)**
+
+* Author enumeration: `?author=N` now returns 404 for ALL users (was only redirecting non-Super-Admins).
+
+**Reliability**
+
+* Audit log: Migrated from `wp_options` serialized array (race-prone, O(N) per write) to a dedicated `eproc_audit_log` DB table with append-only INSERT. Existing entries auto-migrate during upgrade.
+
+**Compatibility**
+
+* Custom themes using `eval()`, `Function()`, or `setTimeout(string, ...)` with inline strings may break under the new CSP. Test custom themes after upgrade.
+* Database migration runs automatically on plugin update (creates `audit_log` table, migrates old option entries).
 
 = 2.17.0 (2026-07-28) =
 

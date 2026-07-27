@@ -76,7 +76,7 @@ class Eprocurement_Activator {
     }
 
     /**
-     * Create all 14 custom database tables via dbDelta.
+     * Create all 15 custom database tables via dbDelta.
      *
      * NOTE: The documents table schema MUST mirror the columns added by
      * the versioned migrations in eprocurement.php (v2.12.2 → v2.16.0).
@@ -381,6 +381,30 @@ class Eprocurement_Activator {
             PRIMARY KEY  (id),
             KEY document_id (document_id),
             KEY sort_order (sort_order)
+        ) {$charset_collate};";
+        dbDelta( $sql );
+
+        // 15. Audit Log (append-only event log for procurement actions)
+        // Audit fix A10: moved from wp_options (serialized array, race-prone,
+        // O(N) per write) to a dedicated table with append-only INSERT.
+        // Replaces the previous 'eproc_audit_log' and 'eproc_activity_log'
+        // options which were subject to read-modify-write race conditions
+        // and performance degradation as the log grew.
+        $sql = "CREATE TABLE {$prefix}audit_log (
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            event_type VARCHAR(50) NOT NULL,
+            message TEXT NOT NULL,
+            user_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
+            user_name VARCHAR(255) DEFAULT '',
+            user_email VARCHAR(255) DEFAULT '',
+            context LONGTEXT DEFAULT NULL,
+            ip_address VARCHAR(45) DEFAULT '',
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY event_type (event_type),
+            KEY user_id (user_id),
+            KEY created_at (created_at),
+            KEY type_created (event_type, created_at)
         ) {$charset_collate};";
         dbDelta( $sql );
     }

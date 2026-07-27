@@ -176,6 +176,54 @@ class Eprocurement_Local_Storage extends Eprocurement_Storage_Interface {
     }
 
     /**
+     * Stream a locally-stored file to the browser.
+     *
+     * Audit fix A28: override of the base class stream_file() that reads
+     * directly from the filesystem (no temp file needed). Includes the
+     * realpath() containment check to prevent path traversal.
+     *
+     * @param string $cloud_key  The file identifier/key (relative path).
+     * @param string $file_name  Suggested filename for Content-Disposition.
+     * @param string $mime_type  MIME type for Content-Type.
+     * @return void Streams the file to php://output and exits.
+     * @throws \RuntimeException If the file is not found or path traversal detected.
+     */
+    public function stream_file( string $cloud_key, string $file_name, string $mime_type = 'application/octet-stream' ): void {
+        $base_dir   = $this->get_base_dir();
+        $file_path  = $base_dir . '/' . $cloud_key;
+
+        // realpath containment check (audit fix A23, same as delete()).
+        $real_base  = realpath( $base_dir );
+        $real_path  = realpath( $file_path );
+        if ( ! $real_base || ! $real_path ) {
+            throw new \RuntimeException( 'File not found.' );
+        }
+        if ( strpos( $real_path, $real_base . '/' ) !== 0 && $real_path !== $real_base ) {
+            throw new \RuntimeException( 'Path traversal detected.' );
+        }
+
+        if ( ! file_exists( $real_path ) ) {
+            throw new \RuntimeException( 'File not found.' );
+        }
+
+        // Disable output buffering to prevent memory blow-up on large files.
+        while ( ob_get_level() > 0 ) {
+            ob_end_clean();
+        }
+
+        header( 'Content-Type: ' . $mime_type );
+        header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $file_name ) . '"' );
+        header( 'Content-Length: ' . filesize( $real_path ) );
+        header( 'Cache-Control: no-cache, must-revalidate' );
+        header( 'Pragma: no-cache' );
+        header( 'X-Content-Type-Options: nosniff' );
+        header( 'X-Robots-Tag: noindex, noarchive' );
+
+        readfile( $real_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
+        exit;
+    }
+
+    /**
      * Test the local storage connection.
      */
     public function test_connection(): bool {

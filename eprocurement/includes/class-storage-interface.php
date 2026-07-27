@@ -29,12 +29,84 @@ abstract class Eprocurement_Storage_Interface {
     /**
      * Generate a time-limited download URL for a cloud-stored file.
      *
+     * Audit fix A28: this method is now DEPRECATED for direct browser redirect.
+     * Cloud providers that previously created public/anonymous sharing links
+     * (Google Drive, OneDrive) now return a WP endpoint URL instead. The
+     * actual file serving happens server-side via stream_file().
+     *
+     * This method is still used internally by the ZIP generator
+     * (class-bid-submissions.php) which downloads files server-side into
+     * a temp directory — for that use case, the providers return a
+     * short-lived direct URL that's consumed immediately and discarded.
+     *
      * @param string $cloud_key  The file identifier/key in cloud storage.
      * @param int    $expires_in Seconds until the URL expires (default: 3600 = 1 hour).
-     * @return string Signed/temporary download URL.
+     * @return string Signed/temporary download URL (for server-side consumption only).
      * @throws \RuntimeException On failure to generate URL.
      */
     abstract public function get_download_url( string $cloud_key, int $expires_in = 3600 ): string;
+
+    /**
+     * Stream a cloud-stored file directly to the browser (server-side proxy).
+     *
+     * Audit fix A28: this is the preferred download method for all cloud
+     * providers. It downloads the file from cloud storage server-side and
+     * streams it to the user's browser, so the cloud URL is never exposed
+     * to the client. This eliminates the risk of public sharing links
+     * leaking via browser history, referer headers, or support tickets.
+     *
+     * The default implementation fetches the file via get_download_url()
+     * and streams it. Providers can override with a more efficient
+     * streaming approach (e.g., S3's GetObject stream).
+     *
+     * @param string $cloud_key  The file identifier/key in cloud storage.
+     * @param string $file_name  Suggested filename for the Content-Disposition header.
+     * @param string $mime_type  MIME type for the Content-Type header.
+     * @return void Streams the file to php://output and exits.
+     * @throws \RuntimeException On failure.
+     */
+    public function stream_file( string $cloud_key, string $file_name, string $mime_type = 'application/octet-stream' ): void {
+        // Default implementation: fetch via get_download_url() and stream.
+        // Subclasses (S3) can override with a direct stream for efficiency.
+        $download_url = $this->get_download_url( $cloud_key );
+
+        // Download to a temp file, then stream. We can't stream in real-time
+        // because wp_remote_get doesn't support streaming reads, but we can
+        // at least keep the cloud URL hidden from the client.
+        $tmp_file = download_url( $download_url, 300 ); // 5-min timeout
+        if ( is_wp_error( $tmp_file ) ) {
+            throw new \RuntimeException( 'Failed to download file from cloud storage: ' . $tmp_file->get_error_message() );
+        }
+
+        // Disable output buffering to prevent memory blow-up on large files.
+        while ( ob_get_level() > 0 ) {
+            ob_end_clean();
+        }
+
+        header( 'Content-Type: ' . $mime_type );
+        header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $file_name ) . '"' );
+        header( 'Content-Length: ' . filesize( $tmp_file ) );
+        header( 'Cache-Control: no-cache, must-revalidate' );
+        header( 'Pragma: no-cache' );
+        header( 'X-Content-Type-Options: nosniff' );
+        header( 'X-Robots-Tag: noindex, noarchive' );
+
+        // Stream in 1MB chunks to avoid loading the whole file into memory.
+        $fp = fopen( $tmp_file, 'rb' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
+        while ( ! feof( $fp ) ) {
+            echo fread( $fp, 1024 * 1024 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped, WordPress.WP.AlternativeFunctions.file_system_operations_fread
+            // Flush to send data immediately rather than buffering.
+            if ( ob_get_level() > 0 ) {
+                ob_flush();
+            }
+            flush();
+        }
+        fclose( $fp ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+
+        // Clean up the temp file.
+        @unlink( $tmp_file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+        exit;
+    }
 
     /**
      * Delete a file from cloud storage.
@@ -142,6 +214,11 @@ abstract class Eprocurement_Storage_Interface {
     /**
      * Get encrypted credentials from options.
      *
+     * Audit fix A27: lazily re-encrypts credentials from the legacy CBC
+     * format to the new GCM format on first read. The re-encrypted blob
+     * is persisted back to the option, so subsequent reads are fast and
+     * the migration is transparent to the admin.
+     *
      * @return array Decoded credentials array.
      */
     protected function get_credentials(): array {
@@ -152,6 +229,13 @@ abstract class Eprocurement_Storage_Interface {
 
         $decrypted = self::decrypt( $encrypted );
         $decoded   = json_decode( $decrypted, true );
+
+        // Audit fix A27: if the stored ciphertext was in legacy CBC format,
+        // re-encrypt with GCM and persist. The strpos check is cheap and
+        // only triggers the write once per install.
+        if ( is_array( $decoded ) && strpos( $encrypted, 'GCM:v1:' ) !== 0 ) {
+            $this->save_credentials( $decoded );
+        }
 
         return is_array( $decoded ) ? $decoded : [];
     }
@@ -170,28 +254,70 @@ abstract class Eprocurement_Storage_Interface {
     /**
      * Encrypt a string using WordPress auth keys.
      *
+     * Audit fix A27: switched from AES-256-CBC (no authentication) to
+     * AES-256-GCM (authenticated encryption). GCM provides both
+     * confidentiality and integrity — ciphertext tampering is detected
+     * on decrypt rather than silently producing mangled output.
+     *
+     * Backward compatibility: decrypt() detects the old CBC format (no
+     * `GCM:v1:` prefix) and decrypts it with the legacy code path. New
+     * writes always use GCM. Credentials are lazily re-encrypted on the
+     * next save_credentials() call after a successful legacy decrypt.
+     *
      * @param string $data Plain text to encrypt.
      * @return string Base64-encoded encrypted string.
      * @throws \RuntimeException If AUTH_KEY is not defined — encryption
      *                           without a secret key provides no security.
      */
     public static function encrypt( string $data ): string {
-        $key    = self::get_encryption_key();
-        $iv     = openssl_random_pseudo_bytes( openssl_cipher_iv_length( 'AES-256-CBC' ) );
-        $cipher = openssl_encrypt( $data, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv );
+        $key = self::get_encryption_key();
 
-        return base64_encode( $iv . $cipher ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+        // AES-256-GCM requires a 12-byte IV (96 bits) per NIST SP 800-38D.
+        $iv  = openssl_random_pseudo_bytes( 12 );
+        $tag = ''; // populated by openssl_encrypt
+
+        $cipher = openssl_encrypt( $data, 'AES-256-GCM', $key, OPENSSL_RAW_DATA, $iv, $tag );
+        if ( $cipher === false ) {
+            throw new \RuntimeException( 'AES-256-GCM encryption failed: ' . openssl_error_string() );
+        }
+
+        // Format: GCM:v1: + base64(iv || tag || ciphertext).
+        // The version prefix lets decrypt() detect the format and fall back
+        // to legacy CBC for old ciphertexts.
+        return 'GCM:v1:' . base64_encode( $iv . $tag . $cipher ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
     }
 
     /**
      * Decrypt a string using WordPress auth keys.
      *
+     * Audit fix A27: supports both the new AES-256-GCM format (prefix
+     * `GCM:v1:`) and the legacy AES-256-CBC format (no prefix). Returns ''
+     * on any integrity failure (wrong key, tampered ciphertext, corrupted
+     * data) — never returns partial or mangled plaintext.
+     *
      * @param string $data Base64-encoded encrypted string.
-     * @return string Decrypted plain text.
+     * @return string Decrypted plain text, or '' on failure.
      */
     public static function decrypt( string $data ): string {
-        $key  = self::get_encryption_key();
-        $raw  = base64_decode( $data, true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+        $key = self::get_encryption_key();
+
+        // New GCM format.
+        if ( strpos( $data, 'GCM:v1:' ) === 0 ) {
+            $raw = base64_decode( substr( $data, 7 ), true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+            if ( $raw === false || strlen( $raw ) < 28 ) { // 12 (iv) + 16 (tag) minimum
+                return '';
+            }
+            $iv     = substr( $raw, 0, 12 );
+            $tag    = substr( $raw, 12, 16 );
+            $cipher = substr( $raw, 28 );
+
+            $decrypted = openssl_decrypt( $cipher, 'AES-256-GCM', $key, OPENSSL_RAW_DATA, $iv, $tag );
+            return $decrypted !== false ? $decrypted : '';
+        }
+
+        // Legacy CBC format (pre-2.18.0). Kept for backward compat with
+        // existing stored credentials. New writes always use GCM.
+        $raw = base64_decode( $data, true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
         if ( $raw === false || strlen( $raw ) < 16 ) {
             return '';
         }

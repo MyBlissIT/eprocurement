@@ -53,25 +53,74 @@ class Eprocurement_Access_Control {
         } );
 
         // Disable user enumeration via ?author=N.
+        // Audit fix A4: block for ALL users (including Super Admin) and
+        // respond with 404 instead of redirecting home (cleaner UX + harder
+        // for scanners to detect).
         add_action( 'template_redirect', function () {
-            if ( ! is_super_admin() && isset( $_GET['author'] ) ) {
-                $slug = get_option( 'eprocurement_frontend_page_slug', 'tenders' );
-                wp_safe_redirect( home_url( "/{$slug}/" ) );
+            if ( isset( $_GET['author'] ) && absint( $_GET['author'] ) > 0 ) {
+                global $wp_query;
+                $wp_query->set_404();
+                status_header( 404 );
+                nocache_headers();
+                include get_query_template( '404' );
                 exit;
             }
         } );
 
-        // Add security headers on frontend.
+        // Audit fix A3: CSP hardening with per-request nonce.
+        // The previous CSP allowed 'unsafe-inline' for both scripts and
+        // styles — that largely defeated XSS protection. The new CSP uses
+        // a per-request nonce for scripts (injected into all <script> tags
+        // via an output buffer) and keeps 'unsafe-inline' for styles only
+        // (CSS injection is much lower risk and would require touching
+        // every inline style attribute across the plugin + theme).
         add_action( 'send_headers', function () {
             if ( is_admin() ) {
                 return;
             }
+
+            $nonce = Eprocurement_CSP_Nonce::get_nonce();
+
+            // Build the CSP header. Note: 'strict-dynamic' allows nonce'd
+            // scripts to load their own dependencies without listing them
+            // explicitly (CSP Level 3, supported in Chrome 52+, Firefox 52+,
+            // Safari 15.4+). Old browsers fall back to 'self'.
+            header( "Content-Security-Policy: default-src 'self'; " .
+                    "script-src 'self' 'nonce-{$nonce}' 'strict-dynamic'; " .
+                    "style-src 'self' 'unsafe-inline'; " .
+                    "img-src 'self' data: https:; " .
+                    "font-src 'self' data:; " .
+                    "connect-src 'self'; " .
+                    "frame-ancestors 'self'; " .
+                    "base-uri 'self'; " .
+                    "form-action 'self'" );
             header( 'X-Content-Type-Options: nosniff' );
             header( 'X-Frame-Options: SAMEORIGIN' );
             header( 'Referrer-Policy: strict-origin-when-cross-origin' );
             header( 'Permissions-Policy: camera=(), microphone=(), geolocation=()' );
-            header( "Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'self';" );
         } );
+
+        // Start the output buffer that injects the nonce into all <script> tags.
+        // Runs on template_redirect (after the headers above are sent, before
+        // page rendering). Uses a high-priority callback so it wraps any other
+        // buffers added by themes/plugins.
+        add_action( 'template_redirect', function () {
+            if ( is_admin() ) {
+                return;
+            }
+            $nonce = Eprocurement_CSP_Nonce::get_nonce();
+            ob_start( function ( $html ) use ( $nonce ) {
+                // Inject nonce="..." into every <script> tag that doesn't already have one.
+                // Pattern matches <script ...> (with any attributes or none), case-insensitive.
+                return preg_replace_callback(
+                    '/<script(?![^>]*\snonce=)([^>]*)>/i',
+                    function ( $m ) use ( $nonce ) {
+                        return '<script nonce="' . esc_attr( $nonce ) . '"' . $m[1] . '>';
+                    },
+                    $html
+                );
+            } );
+        }, 1 );
 
         // Disable application passwords for non-Super-Admin.
         add_filter( 'wp_is_application_passwords_available_for_user', function ( $available, $user ) {

@@ -128,6 +128,11 @@ class Eprocurement_Smtp {
         $decrypted = Eprocurement_Storage_Interface::decrypt( $encrypted );
         $decoded   = json_decode( $decrypted, true );
 
+        // Audit fix A27: lazily re-encrypt from legacy CBC to GCM on first read.
+        if ( is_array( $decoded ) && strpos( $encrypted, 'GCM:v1:' ) !== 0 ) {
+            update_option( 'eprocurement_smtp_settings', Eprocurement_Storage_Interface::encrypt( $decrypted ) );
+        }
+
         $cached = is_array( $decoded ) ? $decoded : [];
         return $cached;
     }

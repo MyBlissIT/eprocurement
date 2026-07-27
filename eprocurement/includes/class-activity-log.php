@@ -17,13 +17,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Eprocurement_Activity_Log {
 
     /**
-     * Option key for the activity log.
+     * Maximum entries returned by get_recent() by default.
+     * Audit fix A10: the log is now stored in a dedicated DB table
+     * (wp_eproc_audit_log) with append-only INSERT. No cap needed —
+     * table grows naturally and is indexed by created_at for fast paging.
      */
-    private const OPTION_KEY = 'eproc_activity_log';
-    private const MAX_ENTRIES = 200;
+    private const DEFAULT_LIMIT = 200;
 
     /**
      * Record a new activity entry.
+     *
+     * Audit fix A10: now uses an append-only INSERT into the audit_log
+     * table instead of read-modify-write on a wp_options array. Eliminates
+     * the race condition where two concurrent requests could lose entries,
+     * and removes the O(N) per-write cost as the log grows.
      *
      * @param string $type    Activity type (bid, status, query, reply, submission, award, download, bidder).
      * @param string $message Human-readable description (may contain HTML via sprintf).
@@ -31,30 +38,24 @@ class Eprocurement_Activity_Log {
      * @param array  $context Optional context data (document_id, etc.).
      */
     public static function log( string $type, string $message, int $user_id = 0, array $context = [] ): void {
-        $log = self::get_all();
+        global $wpdb;
 
         $user = $user_id ? get_userdata( $user_id ) : null;
 
-        $entry = [
-            'type'        => sanitize_key( $type ),
-            'message'     => $message, // Pre-escaped by caller
-            'user_id'     => $user_id,
-            'user_name'   => $user ? $user->display_name : __( 'System', 'eprocurement' ),
-            'user_email'  => $user ? $user->user_email : '',
-            'context'     => $context,
-            'timestamp'   => current_time( 'mysql', true ),
-        ];
-
-        // Prepend (newest first).
-        array_unshift( $log, $entry );
-
-        // Cap at MAX_ENTRIES.
-        if ( count( $log ) > self::MAX_ENTRIES ) {
-            $log = array_slice( $log, 0, self::MAX_ENTRIES );
-        }
-
-        // Use autoload=false — activity log should not be loaded on every page.
-        update_option( self::OPTION_KEY, $log, false );
+        $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+            Eprocurement_Database::table( 'audit_log' ),
+            [
+                'event_type' => sanitize_key( $type ),
+                'message'    => $message, // Pre-escaped by caller
+                'user_id'    => $user_id,
+                'user_name'  => $user ? $user->display_name : __( 'System', 'eprocurement' ),
+                'user_email' => $user ? $user->user_email : '',
+                'context'    => $context ? wp_json_encode( $context ) : null,
+                'ip_address' => sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ?? '' ) ),
+                'created_at' => current_time( 'mysql', true ),
+            ],
+            [ '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s' ]
+        );
     }
 
     /**
@@ -64,19 +65,76 @@ class Eprocurement_Activity_Log {
      * @return array Array of activity entry arrays.
      */
     public static function get_recent( int $limit = 10 ): array {
-        $log = self::get_all();
-        return array_slice( $log, 0, $limit );
+        global $wpdb;
+
+        $table = Eprocurement_Database::table( 'audit_log' );
+        $limit = min( $limit, self::DEFAULT_LIMIT );
+
+        $rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+            $wpdb->prepare(
+                "SELECT * FROM {$table} ORDER BY created_at DESC, id DESC LIMIT %d",
+                $limit
+            )
+        );
+
+        // Decode context JSON and return in the same shape as the old option-based log.
+        $entries = [];
+        foreach ( $rows as $row ) {
+            $entries[] = [
+                'type'       => $row->event_type,
+                'message'    => $row->message,
+                'user_id'    => (int) $row->user_id,
+                'user_name'  => $row->user_name,
+                'user_email' => $row->user_email,
+                'context'    => $row->context ? json_decode( $row->context, true ) : [],
+                'timestamp'  => $row->created_at,
+            ];
+        }
+        return $entries;
     }
 
     /**
-     * Get all log entries.
+     * Migrate existing option-based log entries into the new DB table.
+     *
+     * Called once during the v2.18.0 upgrade. Idempotent — if the option
+     * is empty or already migrated, this is a no-op.
      */
-    private static function get_all(): array {
-        $log = get_option( self::OPTION_KEY, [] );
-        if ( ! is_array( $log ) ) {
-            return [];
+    public static function migrate_from_options(): void {
+        $old_activity = get_option( 'eproc_activity_log', [] );
+        $old_audit    = get_option( 'eproc_audit_log', [] );
+
+        if ( is_array( $old_activity ) && ! empty( $old_activity ) ) {
+            foreach ( $old_activity as $entry ) {
+                self::log(
+                    $entry['type'] ?? 'legacy',
+                    $entry['message'] ?? '',
+                    (int) ( $entry['user_id'] ?? 0 ),
+                    (array) ( $entry['context'] ?? [] )
+                );
+            }
+            delete_option( 'eproc_activity_log' );
         }
-        return $log;
+
+        if ( is_array( $old_audit ) && ! empty( $old_audit ) ) {
+            global $wpdb;
+            foreach ( $old_audit as $entry ) {
+                $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+                    Eprocurement_Database::table( 'audit_log' ),
+                    [
+                        'event_type' => 'submission_backdated',
+                        'message'    => wp_json_encode( $entry ),
+                        'user_id'    => (int) ( $entry['admin_id'] ?? 0 ),
+                        'user_name'  => '',
+                        'user_email' => $entry['admin_email'] ?? '',
+                        'context'    => wp_json_encode( $entry ),
+                        'ip_address' => $entry['ip'] ?? '',
+                        'created_at' => $entry['timestamp'] ?? current_time( 'mysql', true ),
+                    ],
+                    [ '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s' ]
+                );
+            }
+            delete_option( 'eproc_audit_log' );
+        }
     }
 
     /**

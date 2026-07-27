@@ -5,6 +5,84 @@ All notable changes to the eProcurement plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.18.0] — 2026-07-28
+
+This is a **security hardening release** that completes the items deferred
+from the v2.17.0 audit. No new features — all changes are security or
+reliability improvements that don't change the user-facing experience.
+
+### Security
+
+#### Critical
+
+- **AES-256-GCM authenticated encryption (A27).** Credential storage
+  (cloud OAuth tokens, SMTP passwords, external DB credentials) switched
+  from AES-256-CBC (no authentication) to AES-256-GCM (authenticated
+  encryption). GCM provides both confidentiality and integrity —
+  ciphertext tampering is detected on decrypt rather than silently
+  producing mangled output. Backward-compatible: existing CBC ciphertexts
+  are detected by a `GCM:v1:` version prefix and decrypted with the
+  legacy code path, then lazily re-encrypted with GCM on first read.
+- **No more public sharing links for cloud-stored procurement files (A28).**
+  Google Drive and OneDrive previously created `anyone`/`anonymous`
+  sharing permissions with an expiration window when a user requested a
+  download URL. During that window, anyone with the URL (not just the
+  intended bidder) could download sealed-bid submissions and tender
+  documents. URLs leaked via browser history, referer headers, and
+  support tickets. Now: ALL cloud downloads are proxied server-side
+  through the WordPress PHP endpoint via `stream_file()`. The cloud URL
+  is never exposed to the browser. Google Drive returns an authenticated
+  API endpoint URL; OneDrive returns the Graph `/content` endpoint URL;
+  both are consumed server-side only.
+- **CSP hardening with per-request nonce (A3).** The Content-Security-Policy
+  header previously allowed `'unsafe-inline'` for both scripts and styles,
+  largely defeating XSS protection. Now: `script-src` uses a per-request
+  nonce with `'strict-dynamic'` (CSP Level 3). An output buffer injects
+  the nonce into all `<script>` tags automatically — no template changes
+  required. `style-src` keeps `'unsafe-inline'` for now (CSS injection is
+  much lower risk and would require touching every inline style attribute
+  across the plugin + theme). Also added `base-uri 'self'` and
+  `form-action 'self'` to prevent form submission to external hosts.
+
+#### High
+
+- **Author enumeration now blocks ALL users (A4).** Previously `?author=N`
+  was only redirected for non-Super-Admin users. Now: responds with a 404
+  for all users (including Super Admin), making it harder for scanners to
+  enumerate user IDs.
+
+### Reliability
+
+- **Audit log migrated from wp_options to dedicated DB table (A10).** The
+  activity log and sealed-bid backdate audit trail were stored as
+  serialized arrays in `wp_options`. Read-modify-write pattern was
+  race-prone (concurrent requests could lose entries) and O(N) per write.
+  Now: new `eproc_audit_log` table with append-only INSERT. Existing
+  entries are migrated automatically during the v2.18.0 upgrade. The
+  table is indexed by `created_at` for fast paging on the admin dashboard.
+  Old option keys (`eproc_audit_log`, `eproc_activity_log`) are deleted
+  after migration.
+
+### Compatibility Notes
+
+- **PHP 8.1+** still required. AES-256-GCM requires PHP 7.2+ (satisfied).
+- **WordPress 6.0+** still required.
+- **Database migration required:** the v2.18.0 migration creates the new
+  `audit_log` table and migrates existing option-based log entries. Runs
+  automatically on plugin update.
+- **Credential re-encryption:** existing cloud OAuth tokens, SMTP passwords,
+  and external DB credentials are re-encrypted from AES-256-CBC to
+  AES-256-GCM on first read after the upgrade. No admin action needed.
+- **CSP change may affect custom themes:** themes that emit inline
+  `<script>` tags are automatically nonce'd by the new output buffer. If
+  a theme uses `eval()`, `Function()`, or `setTimeout(string, ...)` with
+  inline strings, those will be blocked by `'strict-dynamic'`. Test custom
+  themes after upgrade.
+- **Google Drive / OneDrive download flow changed:** the admin single-submission
+  download endpoint now returns a WP nonce-protected URL with `type=submission`
+  (previously `type=supporting`). The download handler enforces
+  `eproc_publish_bids` capability for submission downloads.
+
 ## [2.17.0] — 2026-07-28
 
 This is a **CTO-level security and integrity release** following a fresh

@@ -1474,15 +1474,18 @@ class Eprocurement_Admin_Rest_Api {
             return new \WP_REST_Response( [ 'error' => __( 'No storage provider configured.', 'eprocurement' ) ], 500 );
         }
 
-        try {
-            $download_url = $provider->get_download_url( $submission->cloud_key );
-            return new \WP_REST_Response( [
-                'download_url' => $download_url,
-                'file_name'    => $submission->file_name,
-            ] );
-        } catch ( \RuntimeException $e ) {
-            return new \WP_REST_Response( [ 'error' => __( 'Failed to generate download link.', 'eprocurement' ) ], 500 );
-        }
+        // Audit fix A28: return the WP nonce-protected download endpoint URL
+        // with type='submission' (not 'supporting') so the download handler
+        // queries the bid_submissions table and enforces eproc_publish_bids.
+        // The actual file serving happens server-side via stream_file() when
+        // the user clicks the link. This prevents cloud sharing links from
+        // leaking via browser history.
+        $download_url = Eprocurement_Downloads::get_download_link( $submission_id, 'submission' );
+
+        return new \WP_REST_Response( [
+            'download_url' => $download_url,
+            'file_name'    => $submission->file_name,
+        ] );
     }
 
     /**

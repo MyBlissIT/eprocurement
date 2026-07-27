@@ -3,7 +3,7 @@
  * Plugin Name: eProcurement
  * Plugin URI:  https://www.myblisstech.com/eprocurement
  * Description: A mini-CRM WordPress plugin for procurement processes. Manages bid/tender notices, structured communication between procurement officials and prospective bidders, cloud-based document storage, and role-based access control.
- * Version:     2.17.0
+ * Version:     2.18.0
  * Author:      MyBliss Tech
  * Author URI:  https://www.myblisstech.com
  * License:     GPL-2.0+
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin constants
  */
-define( 'EPROC_VERSION', '2.17.0' );
+define( 'EPROC_VERSION', '2.18.0' );
 define( 'EPROC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EPROC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'EPROC_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -250,6 +250,25 @@ function eprocurement_maybe_upgrade(): void {
         // migrations missed on this site (defensive — dbDelta is idempotent).
         require_once EPROC_PLUGIN_DIR . 'includes/class-activator.php';
         Eprocurement_Activator::create_tables();
+    }
+
+    // v2.18.0: Audit log migration to dedicated DB table (audit fix A10).
+    // Creates the new audit_log table via create_tables(), then migrates
+    // existing entries from the old wp_options arrays into the table.
+    // Also handles credential re-encryption (CBC → GCM) for cloud creds —
+    // see class-storage-interface.php for the format detection logic.
+    if ( version_compare( $installed_version, '2.18.0', '<' ) ) {
+        require_once EPROC_PLUGIN_DIR . 'includes/class-activator.php';
+        Eprocurement_Activator::create_tables();
+
+        require_once EPROC_PLUGIN_DIR . 'includes/class-activity-log.php';
+        Eprocurement_Activity_Log::migrate_from_options();
+
+        // Trigger credential re-encryption on next read. The storage
+        // interface decrypt() will detect old CBC format, re-encrypt with
+        // GCM, and save_credentials() will persist the new format.
+        // We do this lazily on first access rather than eagerly here, to
+        // avoid double-decrypting during the upgrade request.
     }
 
     update_option( 'eprocurement_version', EPROC_VERSION );

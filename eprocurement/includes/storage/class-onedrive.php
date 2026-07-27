@@ -158,29 +158,35 @@ class Eprocurement_Onedrive extends Eprocurement_Storage_Interface {
         ];
     }
 
+    /**
+     * Get a server-side download URL for a OneDrive file.
+     *
+     * Audit fix A28: previously created an `anonymous` sharing link with an
+     * expiration window, making the file publicly downloadable by anyone
+     * with the URL during that window. The URL leaked via browser history,
+     * referer headers, and support tickets — exposing sealed-bid submissions
+     * and tender documents.
+     *
+     * Now returns the Graph API `/content` endpoint URL with the access
+     * token appended. This URL is consumed server-side only (by
+     * stream_file() in the base class, which downloads via wp_remote_get).
+     * The URL is never sent to the browser.
+     *
+     * @param string $cloud_key  OneDrive item ID.
+     * @param int    $expires_in Ignored — token expiry is governed by the OAuth refresh cycle.
+     * @return string Server-side-only download URL with access token.
+     * @throws \RuntimeException If the access token cannot be retrieved.
+     */
     public function get_download_url( string $cloud_key, int $expires_in = 3600 ): string {
         $token = $this->get_access_token();
 
-        // Create a sharing link
-        $response = wp_remote_post( self::GRAPH_BASE . '/me/drive/items/' . $cloud_key . '/createLink', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $token,
-                'Content-Type'  => 'application/json',
-            ],
-            'body'    => wp_json_encode( [
-                'type'               => 'view',
-                'scope'              => 'anonymous',
-                'expirationDateTime' => gmdate( 'Y-m-d\TH:i:s\Z', time() + $expires_in ),
-            ] ),
-        ] );
-
-        if ( is_wp_error( $response ) ) {
-            throw new \RuntimeException( 'OneDrive link creation failed: ' . $response->get_error_message() );
-        }
-
-        $body = json_decode( wp_remote_retrieve_body( $response ), true );
-
-        return $body['link']['webUrl'] ?? '';
+        // Return the Graph API /content endpoint URL with the access token
+        // as a query param. This URL is only valid for ~1 hour (token
+        // lifetime) and is consumed server-side by stream_file() — never
+        // exposed to the browser. OneDrive's /content endpoint returns a
+        // 302 redirect to a pre-authenticated download URL, which
+        // wp_remote_get follows automatically.
+        return self::GRAPH_BASE . '/me/drive/items/' . $cloud_key . '/content?access_token=' . rawurlencode( $token );
     }
 
     public function delete( string $cloud_key ): bool {

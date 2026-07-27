@@ -44,7 +44,7 @@ class Eprocurement_Downloads {
         }
 
         $type = sanitize_text_field( $_GET['type'] ?? 'supporting' );
-        if ( ! in_array( $type, [ 'supporting', 'compliance', 'attachment' ], true ) ) {
+        if ( ! in_array( $type, [ 'supporting', 'compliance', 'attachment', 'submission' ], true ) ) {
             wp_die( esc_html__( 'Invalid download type.', 'eprocurement' ), 400 );
         }
         $id   = absint( $_GET['id'] ?? 0 );
@@ -88,6 +88,19 @@ class Eprocurement_Downloads {
                     wp_die( esc_html__( 'You do not have permission to download this attachment.', 'eprocurement' ), 403 );
                 }
             }
+        } elseif ( $type === 'submission' ) {
+            // Audit fix A28: sealed-bid submission downloads.
+            // Require staff capability — submissions are sealed until the
+            // tender closes, and even after closing they're only visible
+            // to staff with publish capability.
+            if ( ! current_user_can( 'eproc_publish_bids' ) ) {
+                wp_die( esc_html__( 'You do not have permission to download bid submissions.', 'eprocurement' ), 403 );
+            }
+
+            $file_record = Eprocurement_Database::get_by_id( 'bid_submissions', $id );
+            if ( $file_record ) {
+                $document_id = (int) $file_record->document_id;
+            }
         }
 
         if ( ! $file_record ) {
@@ -97,57 +110,29 @@ class Eprocurement_Downloads {
         // Log the download
         $this->log_download( $document_id, $id, $type );
 
-        // Get download URL from cloud provider
+        // Serve the file. Audit fix A28: ALL providers now stream server-side
+        // via stream_file() rather than redirecting to a cloud URL. This
+        // eliminates the public sharing links that Google Drive and OneDrive
+        // previously created (which leaked to anyone with the URL).
         try {
             $storage = Eprocurement_Storage_Interface::get_active_provider();
             if ( ! $storage ) {
                 wp_die( esc_html__( 'Cloud storage not configured.', 'eprocurement' ), 500 );
             }
 
-            // For local storage, serve the file directly as a download (not inline)
-            if ( $storage instanceof Eprocurement_Local_Storage ) {
-                $base_dir  = wp_upload_dir()['basedir'] . '/eprocurement';
-                $file_path = $base_dir . '/' . $file_record->cloud_key;
+            $filename  = $file_record->file_name ?? 'download';
+            $mime_type = $file_record->file_type ?? 'application/octet-stream';
 
-                // Defence-in-depth: ensure the resolved real path is inside
-                // the eprocurement base directory (prevent path traversal).
-                $real_path  = realpath( $file_path );
-                $real_base  = realpath( $base_dir );
-                if ( ! $real_path || ! $real_base || strpos( $real_path, $real_base ) !== 0 ) {
-                    wp_die( esc_html__( 'File not found on server.', 'eprocurement' ), 404 );
-                }
-
-                if ( ! file_exists( $real_path ) ) {
-                    wp_die( esc_html__( 'File not found on server.', 'eprocurement' ), 404 );
-                }
-
-                $filename  = $file_record->file_name ?? basename( $real_path );
-                $mime_type = $file_record->file_type ?? ( wp_check_filetype( $real_path )['type'] ?: 'application/octet-stream' );
-
-                // Disable output buffering to prevent memory blow-up on large files.
-                while ( ob_get_level() > 0 ) {
-                    ob_end_clean();
-                }
-
-                header( 'Content-Type: ' . $mime_type );
-                header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $filename ) . '"' );
-                header( 'Content-Length: ' . filesize( $real_path ) );
-                header( 'Cache-Control: no-cache, must-revalidate' );
-                header( 'Pragma: no-cache' );
-                header( 'X-Content-Type-Options: nosniff' );
-                header( 'X-Robots-Tag: noindex, noarchive' );
-
-                readfile( $real_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
-                exit;
-            }
-
-            $download_url = $storage->get_download_url( $file_record->cloud_key );
-
-            // Redirect to the time-limited download URL (cloud providers)
-            wp_redirect( $download_url ); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
-            exit;
+            // For local storage, stream_file() reads from the filesystem
+            // (the realpath containment check happens inside stream_file()
+            // for local storage, or via the base class default for cloud).
+            // For cloud providers, stream_file() downloads server-side and
+            // streams to the browser — the cloud URL is never exposed.
+            $storage->stream_file( $file_record->cloud_key, $filename, $mime_type );
+            // stream_file() calls exit; if we reach here, something went wrong.
+            wp_die( esc_html__( 'Failed to stream file.', 'eprocurement' ), 500 );
         } catch ( \Exception $e ) {
-            wp_die( esc_html__( 'An error occurred while generating the download link.', 'eprocurement' ), 500 );
+            wp_die( esc_html__( 'An error occurred while serving the file.', 'eprocurement' ), 500 );
         }
     }
 

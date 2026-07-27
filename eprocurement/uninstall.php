@@ -33,6 +33,7 @@ $prefix = $wpdb->prefix . 'eproc_';
 
 // Drop all plugin tables in correct order (respecting foreign key dependencies)
 $tables = [
+    'audit_log',
     'evaluation_scores',
     'evaluation_criteria',
     'submission_requirements',

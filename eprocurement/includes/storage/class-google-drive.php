@@ -146,26 +146,44 @@ class Eprocurement_Google_Drive extends Eprocurement_Storage_Interface {
         ];
     }
 
+    /**
+     * Get a server-side download URL for a Google Drive file.
+     *
+     * Audit fix A28: previously created an `anyone`/`reader` permission with
+     * an expiration window, making the file publicly downloadable by anyone
+     * with the URL during that window. The URL leaked via browser history,
+     * referer headers, and support tickets — exposing sealed-bid submissions
+     * and tender documents.
+     *
+     * Now returns the Google Drive API `?alt=media` endpoint URL with the
+     * access token appended. This URL is consumed server-side only (by
+     * stream_file() in the base class, which downloads via wp_remote_get).
+     * The URL is never sent to the browser.
+     *
+     * @param string $cloud_key  Google Drive file ID.
+     * @param int    $expires_in Ignored — token expiry is governed by the OAuth refresh cycle.
+     * @return string Server-side-only download URL with access token.
+     * @throws \RuntimeException If the access token cannot be retrieved.
+     */
     public function get_download_url( string $cloud_key, int $expires_in = 3600 ): string {
         $service = $this->get_service();
+        $client  = $service->getClient();
 
-        // Create a temporary permission for download
-        $permission = new \Google\Service\Drive\Permission();
-        $permission->setType( 'anyone' );
-        $permission->setRole( 'reader' );
-        $permission->setExpirationTime(
-            gmdate( 'Y-m-d\TH:i:s\Z', time() + $expires_in )
-        );
-
-        try {
-            $service->permissions->create( $cloud_key, $permission );
-        } catch ( \Exception $e ) {
-            // Permission might already exist
+        // Force a token refresh if needed, then retrieve the access token.
+        $access_token = $client->getAccessToken();
+        if ( empty( $access_token['access_token'] ) ) {
+            $client->fetchAccessTokenWithRefreshToken( $client->getRefreshToken() );
+            $access_token = $client->getAccessToken();
         }
 
-        $file = $service->files->get( $cloud_key, [ 'fields' => 'webContentLink' ] );
+        if ( empty( $access_token['access_token'] ) ) {
+            throw new \RuntimeException( 'Google Drive: no access token available.' );
+        }
 
-        return $file->webContentLink ?? '';
+        // Return the API endpoint URL with the access token as a query param.
+        // This URL is only valid for ~1 hour (token lifetime) and is consumed
+        // server-side by stream_file() — never exposed to the browser.
+        return "https://www.googleapis.com/drive/v3/files/{$cloud_key}?alt=media&access_token=" . rawurlencode( $access_token['access_token'] );
     }
 
     public function delete( string $cloud_key ): bool {

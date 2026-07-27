@@ -213,6 +213,7 @@ class Eprocurement_Database {
             'evaluation_criteria' => [ 'id', 'document_id', 'name', 'description', 'weight', 'max_score', 'sort_order', 'created_by', 'created_at' ],
             'evaluation_scores'   => [ 'id', 'submission_id', 'criterion_id', 'evaluator_user_id', 'score', 'notes', 'created_at', 'updated_at' ],
             'submission_requirements' => [ 'id', 'document_id', 'field_key', 'field_label', 'description', 'is_required', 'sort_order', 'accepted_extensions', 'max_file_size', 'created_at' ],
+            'audit_log'           => [ 'id', 'event_type', 'message', 'user_id', 'user_name', 'user_email', 'context', 'ip_address', 'created_at' ],
         ];
 
         return $columns[ $table ] ?? [ 'id' ];
