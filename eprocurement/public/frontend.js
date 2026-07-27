@@ -329,8 +329,12 @@
 
                 if (msg.attachments && msg.attachments.length > 0) {
                     msg.attachments.forEach(function (att) {
+                        // Audit fix A36: validate URL scheme before assigning to href.
+                        // escHtml does NOT block javascript: URLs (no <>& chars),
+                        // so a javascript:alert(1) download_url would execute on click.
+                        var safeUrl = /^https?:\/\//i.test(att.download_url) ? att.download_url : '#';
                         html += '<div style="font-size:11px;margin-bottom:8px">' +
-                            '<a href="' + escHtml(att.download_url) + '" class="eproc-btn blue" style="padding:3px 8px;font-size:10px">' +
+                            '<a href="' + escAttr(safeUrl) + '" class="eproc-btn blue" style="padding:3px 8px;font-size:10px" rel="noopener noreferrer">' +
                             '📎 ' + escHtml(att.file_name) + '</a></div>';
                     });
                 }
@@ -385,6 +389,19 @@
         const div = document.createElement('div');
         div.appendChild(document.createTextNode(str));
         return div.innerHTML;
+    }
+
+    // ──── Attribute Escape Helper (audit fix A36) ────
+    // escHtml is NOT safe for attribute values — it doesn't escape quotes.
+    // Use escAttr for any value inserted into an HTML attribute (href, class, data-*, etc.).
+    function escAttr(str) {
+        if (str == null) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
     }
 
     // ──── Init: set active tab from URL ────

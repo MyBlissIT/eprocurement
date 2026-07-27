@@ -675,9 +675,12 @@ class Eprocurement_Bid_Submissions {
         }
 
         foreach ( $submissions as $sub ) {
-            // Build company folder name.
+            // Build company folder name. Append user_id to guarantee uniqueness
+            // (audit fix A8: two bidders from the same company — or company
+            // names that sanitize to the same slug — would otherwise overwrite
+            // each other's files in the ZIP).
             $company_folder = $sub->company_name
-                ? sanitize_file_name( $sub->company_name )
+                ? sanitize_file_name( $sub->company_name ) . '_' . $sub->user_id
                 : 'bidder-' . $sub->user_id;
 
             // Sanitise folder name — replace multiple underscores/spaces.
@@ -916,7 +919,13 @@ class Eprocurement_Bid_Submissions {
      * Validate an uploaded file for bid submission.
      *
      * Checks: upload error, file size (max 10 MB), extension (PDF/XLS/XLSX/CSV),
-     * and MIME type verification.
+     * and MIME type verification via finfo_file (content-based, not just filename).
+     *
+     * Audit fix A7: previously this method only called wp_check_filetype (which
+     * inspects the filename, not the content). A malicious bidder could rename
+     * any file to .pdf and bypass the check. Now delegates to the storage
+     * interface's validate_file() which uses finfo_file for content MIME
+     * verification, matching the same rigor as the admin upload endpoint.
      *
      * @param array $file $_FILES array element.
      * @return true|\WP_Error True if valid, WP_Error if not.
@@ -952,7 +961,23 @@ class Eprocurement_Bid_Submissions {
             );
         }
 
-        // Check extension.
+        // Audit fix A7: delegate to the storage interface's validate_file(),
+        // which performs content-based finfo_file MIME verification — not
+        // just the filename-based wp_check_filetype. This matches the rigor
+        // of the admin upload endpoint and prevents content-type spoofing.
+        // We pass a custom MIME allowlist restricted to bid-submission types.
+        $validation = Eprocurement_Storage_Interface::validate_file( $file, self::MAX_FILE_SIZE );
+        if ( is_wp_error( $validation ) ) {
+            // Re-wrap with our error status code for REST responses.
+            return new \WP_Error(
+                $validation->get_error_code(),
+                $validation->get_error_message(),
+                [ 'status' => 400 ]
+            );
+        }
+
+        // Additionally enforce the bid-submission extension allowlist
+        // (stricter than the storage interface's general allowlist).
         $ext = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
         if ( ! in_array( $ext, self::ALLOWED_EXTENSIONS, true ) ) {
             return new \WP_Error(
@@ -962,22 +987,6 @@ class Eprocurement_Bid_Submissions {
                     __( 'Invalid file type. Allowed types: %s', 'eprocurement' ),
                     implode( ', ', array_map( 'strtoupper', self::ALLOWED_EXTENSIONS ) )
                 ),
-                [ 'status' => 400 ]
-            );
-        }
-
-        // Verify MIME type via WordPress.
-        $wp_check = wp_check_filetype( $file['name'], [
-            'pdf'  => 'application/pdf',
-            'xls'  => 'application/vnd.ms-excel',
-            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'csv'  => 'text/csv',
-        ] );
-
-        if ( ! $wp_check['type'] ) {
-            return new \WP_Error(
-                'invalid_mime',
-                __( 'File type verification failed.', 'eprocurement' ),
                 [ 'status' => 400 ]
             );
         }

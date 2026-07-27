@@ -76,7 +76,13 @@ class Eprocurement_Activator {
     }
 
     /**
-     * Create all 11 custom database tables via dbDelta.
+     * Create all 14 custom database tables via dbDelta.
+     *
+     * NOTE: The documents table schema MUST mirror the columns added by
+     * the versioned migrations in eprocurement.php (v2.12.2 → v2.16.0).
+     * Fresh installs that bypass those migrations get the full schema here.
+     * If you add a column in a migration, also add it here — otherwise
+     * fresh installs will have a broken schema (audit fix A2).
      */
     public static function create_tables(): void {
         global $wpdb;
@@ -87,6 +93,9 @@ class Eprocurement_Activator {
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
         // 1. Documents (core bid/tender records)
+        // Includes all columns added by v2.12.2 → v2.16.0 migrations so
+        // fresh installs get the complete schema without needing the
+        // migration path (audit fix A2).
         $sql = "CREATE TABLE {$prefix}documents (
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             bid_number VARCHAR(100) NOT NULL,
@@ -100,11 +109,19 @@ class Eprocurement_Activator {
             briefing_date DATETIME DEFAULT NULL,
             closing_date DATETIME DEFAULT NULL,
             accept_online_submissions TINYINT(1) NOT NULL DEFAULT 0,
+            submission_mode ENUM('single','per_document') NOT NULL DEFAULT 'single',
+            qa_deadline DATETIME DEFAULT NULL,
             allow_late_submissions TINYINT(1) NOT NULL DEFAULT 0,
             briefing_compulsory TINYINT(1) NOT NULL DEFAULT 0,
             created_by BIGINT(20) UNSIGNED NOT NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            awarded_to_user_id BIGINT(20) UNSIGNED DEFAULT NULL,
+            award_amount DECIMAL(15,2) DEFAULT NULL,
+            award_date DATETIME DEFAULT NULL,
+            award_notes TEXT DEFAULT NULL,
+            reminder_48h_sent TINYINT(1) NOT NULL DEFAULT 0,
+            reminder_24h_sent TINYINT(1) NOT NULL DEFAULT 0,
             PRIMARY KEY  (id),
             UNIQUE KEY bid_number (bid_number),
             KEY status (status),
@@ -113,7 +130,8 @@ class Eprocurement_Activator {
             KEY closing_date (closing_date),
             KEY status_created (status, created_at),
             KEY category_status (category, status),
-            KEY closing_status (closing_date, status)
+            KEY closing_status (closing_date, status),
+            KEY awarded_to_user_id (awarded_to_user_id)
         ) {$charset_collate};";
         dbDelta( $sql );
 
@@ -173,6 +191,7 @@ class Eprocurement_Activator {
         dbDelta( $sql );
 
         // 5. Threads (query/conversation threads per bid)
+        // status includes 'cancelled' for retracted queries (audit fix A12).
         $sql = "CREATE TABLE {$prefix}threads (
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             document_id BIGINT(20) UNSIGNED NOT NULL,
@@ -180,7 +199,7 @@ class Eprocurement_Activator {
             contact_id BIGINT(20) UNSIGNED NOT NULL,
             subject VARCHAR(255) NOT NULL,
             visibility ENUM('private','public') NOT NULL DEFAULT 'private',
-            status ENUM('open','resolved','closed') NOT NULL DEFAULT 'open',
+            status ENUM('open','resolved','closed','cancelled') NOT NULL DEFAULT 'open',
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),

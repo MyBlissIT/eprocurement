@@ -391,7 +391,10 @@ class Eprocurement_Downloads {
                 $company = $profile->company_name ?? '';
             }
 
-            fputcsv( $output, [
+            // Audit fix A25: prevent CSV formula injection.
+            // Excel/LibreOffice interpret leading =, +, -, @, \t, \r as
+            // formula triggers. Prefix with a single quote to neutralize.
+            $row_data = [
                 $row->downloaded_at,
                 $user_name,
                 $user_email,
@@ -400,11 +403,37 @@ class Eprocurement_Downloads {
                 $row->supporting_doc_id ?? 'N/A',
                 $row->ip_address,
                 $row->user_agent,
-            ] );
+            ];
+            $row_data = array_map( [ $this, 'csv_inject_defend' ], $row_data );
+
+            fputcsv( $output, $row_data );
         }
 
         fclose( $output );
         exit;
+    }
+
+    /**
+     * Defend a CSV cell against formula injection.
+     *
+     * If the value starts with a character that Excel/LibreOffice would
+     * interpret as a formula trigger (=, +, -, @, \t, \r), prefix it with
+     * a single quote to neutralize the trigger. The quote is displayed as
+     * a leading character in the cell but is not interpreted as a formula.
+     *
+     * @since 2.17.0  Audit fix A25.
+     * @param string $value Cell value.
+     * @return string Safe cell value.
+     */
+    private function csv_inject_defend( $value ): string {
+        if ( ! is_string( $value ) || $value === '' ) {
+            return (string) $value;
+        }
+        $first = $value[0];
+        if ( in_array( $first, [ '=', '+', '-', '@', "\t", "\r" ], true ) ) {
+            return "'" . $value;
+        }
+        return $value;
     }
 
     /**

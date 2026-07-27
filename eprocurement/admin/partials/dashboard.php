@@ -310,7 +310,19 @@ $recent_threads = $messaging->get_admin_inbox( [
             html += '</div>';
             if (data.by_user && data.by_user.length) {
                 html += '<table class="eproc-table"><thead><tr><th><?php esc_html_e( 'Top Users', 'eprocurement' ); ?></th><th style="text-align:right;"><?php esc_html_e( 'Requests', 'eprocurement' ); ?></th></tr></thead><tbody>';
-                data.by_user.slice(0,5).forEach(function(u){ html += '<tr><td>' + u.display_name + '</td><td style="text-align:right;font-weight:600;">' + u.request_count + '</td></tr>'; });
+                // Audit fix A35: escape user-controlled display_name before
+                // inserting into innerHTML. display_name is settable by any
+                // user (including bidders) via their profile — without escaping,
+                // a bidder named <img src=x onerror=alert(1)> would XSS every
+                // Super Admin who opens this dashboard.
+                function eprocEscHtml(s) {
+                    var d = document.createElement('div');
+                    d.appendChild(document.createTextNode(s == null ? '' : String(s)));
+                    return d.innerHTML;
+                }
+                data.by_user.slice(0,5).forEach(function(u){
+                    html += '<tr><td>' + eprocEscHtml(u.display_name) + '</td><td style="text-align:right;font-weight:600;">' + parseInt(u.request_count, 10) + '</td></tr>';
+                });
                 html += '</tbody></table>';
             }
             body.html(html);

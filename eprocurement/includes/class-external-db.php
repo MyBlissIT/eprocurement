@@ -159,6 +159,29 @@ class Eprocurement_External_Db {
         $username = $settings['username'] ?? '';
         $password = $settings['password'] ?? '';
 
+        // Audit fix A21: validate host and database names against a strict
+        // character allowlist to prevent PDO DSN injection. Without this,
+        // a $host value containing ';' or '=' could inject arbitrary DSN
+        // options (e.g. "evil.com;dbname=other" or "host;unix_socket=/...").
+        if ( ! preg_match( '/^[a-zA-Z0-9.\-]+$/', $host ) ) {
+            throw new \PDOException(
+                sprintf(
+                    /* translators: %s: host name */
+                    __( 'Connection refused: host "%s" contains invalid characters. Only letters, digits, dots, and hyphens are allowed.', 'eprocurement' ),
+                    $host
+                )
+            );
+        }
+        if ( ! preg_match( '/^[a-zA-Z0-9_]+$/', $database ) ) {
+            throw new \PDOException(
+                sprintf(
+                    /* translators: %s: database name */
+                    __( 'Connection refused: database name "%s" contains invalid characters. Only letters, digits, and underscores are allowed.', 'eprocurement' ),
+                    $database
+                )
+            );
+        }
+
         if ( ! $this->is_host_allowed( $host ) ) {
             throw new \PDOException(
                 sprintf(
@@ -169,7 +192,18 @@ class Eprocurement_External_Db {
             );
         }
 
-        $dsn = "mysql:host={$host};port={$port};dbname={$database};charset=utf8mb4";
+        // Audit fix A20: pin PDO to the resolved IP to prevent DNS rebinding.
+        // is_host_allowed() resolves the hostname and validates IPs, but
+        // PDO re-resolves independently — a short-TTL DNS entry could return
+        // a public IP for the check and a private IP for the connection.
+        // We resolve once and connect to the IP directly.
+        $connect_host = $host;
+        $resolved = @gethostbynamel( $host );
+        if ( $resolved && isset( $resolved[0] ) ) {
+            $connect_host = $resolved[0];
+        }
+
+        $dsn = "mysql:host={$connect_host};port={$port};dbname={$database};charset=utf8mb4";
 
         return new \PDO( $dsn, $username, $password, [
             \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
@@ -207,10 +241,12 @@ class Eprocurement_External_Db {
         }
 
         // Hostname — resolve and check each resolved IP.
+        // Audit fix A20: if the hostname doesn't resolve, REJECT (previously
+        // allowed). A non-resolving hostname can be a DNS-rebinding payload
+        // where the second resolution (inside PDO) returns a private IP.
         $resolved = @gethostbynamel( $host );
         if ( ! $resolved ) {
-            // Hostname didn't resolve — allow PDO to fail with a normal error.
-            return true;
+            return false;
         }
 
         foreach ( $resolved as $addr ) {

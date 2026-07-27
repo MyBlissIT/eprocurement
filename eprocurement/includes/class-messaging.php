@@ -58,9 +58,11 @@ class Eprocurement_Messaging {
             $document->title
         );
 
-        $visibility = in_array( $data['visibility'] ?? '', [ 'private', 'public' ], true )
-            ? $data['visibility']
-            : 'private';
+        // Audit fix A13: bidders cannot self-promote their query to 'public'.
+        // Public visibility is reserved for staff review via the dedicated
+        // update_visibility() flow (which fires notify_visibility_change).
+        // Bidder-created threads are ALWAYS private by default.
+        $visibility = 'private';
 
         $thread_id = Eprocurement_Database::insert( 'threads', [
             'document_id' => $document_id,

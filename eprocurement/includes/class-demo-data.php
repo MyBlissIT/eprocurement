@@ -19,8 +19,43 @@ class Eprocurement_Demo_Data {
     /** Meta key used to tag demo users for clean removal. */
     private const DEMO_META_KEY = '_eproc_demo_data';
 
-    /** Default password for all demo users. */
-    private const DEMO_PASSWORD = 'Demo@2025';
+    /**
+     * Generate a random per-install password for demo users.
+     *
+     * Audit fix A19: the previous DEMO_PASSWORD constant was hard-coded
+     * to 'Demo@2025' and identical across all demo users. If demo data
+     * was seeded in a production install (the seeder is gated by
+     * is_super_admin() but has no environment check), anyone who knew
+     * the public username + this publicly-known password could log in
+     * as an SCM Manager — full procurement-system compromise.
+     *
+     * The password is now generated fresh on each seed run, stored in
+     * a transient for the seeding admin to retrieve once, and never
+     * persisted in the plugin source code.
+     */
+    private static function generate_demo_password(): string {
+        return wp_generate_password( 20, true, true );
+    }
+
+    /**
+     * Get the transient key under which the most recent seed run's
+     * credentials are stored for retrieval by the seeding admin.
+     */
+    private static function credentials_transient_key(): string {
+        return 'eproc_demo_credentials_' . get_current_user_id();
+    }
+
+    /**
+     * Retrieve and CLEAR the demo credentials (one-shot read).
+     * Returns null if no credentials are stored or they expired.
+     *
+     * @return array|null Map of username => password, or null.
+     */
+    public static function get_and_clear_demo_credentials(): ?array {
+        $creds = get_transient( self::credentials_transient_key() );
+        delete_transient( self::credentials_transient_key() );
+        return is_array( $creds ) ? $creds : null;
+    }
 
     /**
      * Check if demo data has been seeded.
@@ -280,6 +315,7 @@ class Eprocurement_Demo_Data {
         ];
 
         $created = [];
+        $credentials = []; // username => password (stored in transient for one-shot retrieval)
 
         foreach ( $users_data as $key => $data ) {
             // Check if user already exists
@@ -290,9 +326,12 @@ class Eprocurement_Demo_Data {
                 continue;
             }
 
+            // Audit fix A19: generate a unique random password per demo user.
+            $password = self::generate_demo_password();
+
             $user_id = wp_insert_user( [
                 'user_login'   => $data['user_login'],
-                'user_pass'    => self::DEMO_PASSWORD,
+                'user_pass'    => $password,
                 'user_email'   => $data['user_email'],
                 'display_name' => $data['display_name'],
                 'first_name'   => $data['first_name'],
@@ -303,10 +342,20 @@ class Eprocurement_Demo_Data {
             if ( ! is_wp_error( $user_id ) ) {
                 update_user_meta( $user_id, self::DEMO_META_KEY, '1' );
                 $created[ $key ] = $user_id;
+                $credentials[ $data['user_login'] ] = $password;
             }
         }
 
-        // Create bidder profile for the demo bidder
+        // Store credentials in a transient so the seeding admin can retrieve
+        // them ONCE via get_and_clear_demo_credentials(). 15-minute window.
+        if ( ! empty( $credentials ) ) {
+            set_transient( self::credentials_transient_key(), $credentials, 15 * MINUTE_IN_SECONDS );
+        }
+
+        // Create bidder profile for the demo bidder.
+        // Audit fix A30: do NOT auto-verify the demo bidder. Force them
+        // through the normal email verification flow so the demo data
+        // mirrors real-world behavior.
         if ( isset( $created['bidder'] ) ) {
             global $wpdb;
             $bp_table = $wpdb->prefix . EPROC_TABLE_PREFIX . 'bidder_profiles';
@@ -324,7 +373,7 @@ class Eprocurement_Demo_Data {
                     'company_name'   => 'Van Wyk & Associates',
                     'company_reg'    => '2024/123456/07',
                     'phone'          => '+27 82 555 0101',
-                    'verified'       => 1,
+                    'verified'       => 0, // Audit fix A30: do not auto-verify.
                     'notify_replies' => 1,
                 ] );
             }

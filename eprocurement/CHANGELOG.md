@@ -5,6 +5,161 @@ All notable changes to the eProcurement plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.0] — 2026-07-28
+
+This is a **CTO-level security and integrity release** following a fresh
+full-codebase audit of every PHP, JS, and CSS file. Fixes 1 critical schema
+bug, 5 critical security issues, 6 high-severity issues, 9 medium-severity
+issues, and 7 low-severity issues. All sites should upgrade immediately.
+
+### Critical
+
+- **Fresh-install schema completeness (A2).** The `documents` table CREATE
+  statement in `class-activator.php` was missing 8 columns added by versioned
+  migrations (`qa_deadline`, `awarded_to_user_id`, `award_amount`, `award_date`,
+  `award_notes`, `reminder_48h_sent`, `reminder_24h_sent`, `submission_mode`).
+  Fresh installs would silently lack the award/evaluation/reminder features —
+  the migration path only ran for sites upgrading from older versions. The
+  schema now includes all columns and a defensive migration at v2.17.0
+  re-runs `create_tables()` to backfill any site that skipped a version.
+- **2FA remember-me bypass (A5a).** `wp_set_auth_cookie( $user_id, true )`
+  forced the "remember me" flag to TRUE for all 2FA logins, extending
+  sessions to 14 days regardless of the user's login-form choice. 2FA should
+  reduce session lifetime, not extend it. Now passes `false`.
+- **2FA brute-force protection (A5b).** No rate limiting on 2FA code
+  attempts. With 6-digit codes and 3 valid windows, brute force was feasible
+  in minutes. Now: 5 failed attempts per token → 5-minute lockout with
+  remaining-attempts feedback.
+- **2FA token leaked via URL (A5c).** The 2FA session token was passed in
+  the URL query string (`?eproc_2fa_token=...`), leaking via Referer
+  headers, browser history, and proxy logs. Now sent via signed HttpOnly
+  SameSite=Strict cookie + POST form.
+- **2FA QR code leaks secret to third-party API (A6).** Despite v2.16.6
+  claiming a "server-side data URI" fix, the QR generator still called
+  `api.qrserver.com` with the full `otpauth://` URL — leaking the user's
+  email AND 2FA secret to an external operator. Anyone intercepting that
+  request could generate valid 2FA codes forever. The external API call
+  has been removed; manual secret entry is now the primary flow with a
+  copy-to-clipboard button.
+- **Award workflow lacks validation (A16).** `award()` did not verify the
+  winner had an active submission for the tender, did not prevent double
+  awards, and did not exclude staff from being awarded. An SCM Manager
+  could "award" the contract to anyone — themselves, a non-bidder, a
+  friend — defrauding the procurement process. Now: enforces active
+  submission, blocks double-award, excludes staff.
+- **Updater SHA-256 verification was dead code (A17).** `post_install()`
+  called `hash_file('sha256', $result['source'])` — but `$result['source']`
+  is the EXTRACTED DIRECTORY, not a file. `hash_file` on a directory
+  returns `false`, so the integrity check always short-circuited. The
+  verification has been moved to `upgrader_source_selection` which fires
+  BEFORE extraction with the actual ZIP file path.
+- **Updater skips verification when checksum missing (A18).** If a release
+  omitted the `eprocurement.zip.sha256` asset, verification was silently
+  skipped — a compromised release could bypass all integrity checks by
+  simply omitting the checksum. Now hard-fails: refuses to install any
+  package without a published checksum.
+- **Hard-coded demo password (A19).** `DEMO_PASSWORD = 'Demo@2025'` was
+  used for all 4 demo users. The seeder had no environment check, so a
+  production admin who ran "Seed Demo Data" would create 4 loggable
+  accounts with a publicly-known password. Now: each demo user gets a
+  unique random password, displayed once to the seeding admin via a
+  one-shot transient, and the demo bidder is no longer auto-verified.
+
+### High
+
+- **Bid submission file validation skip (A7).** `Bid_Submissions::validate_file()`
+  checked extension via `wp_check_filetype` (filename-based only) and did
+  NOT call `finfo_file()` to verify actual content MIME. A bidder could
+  upload a `.pdf` file containing arbitrary content. Now delegates to the
+  storage interface's `validate_file()` which uses `finfo_file` for
+  content-based verification.
+- **External DB SSRF via DNS rebinding (A20).** `is_host_allowed()`
+  resolved the hostname and validated IPs, but `new PDO(...)` re-resolved
+  independently. A short-TTL DNS entry could return a public IP for the
+  check and a private IP for the connection. Now: PDO is pinned to the
+  resolved IP, and unresolvable hostnames are rejected (previously allowed).
+- **External DB PDO DSN injection (A21).** `$dsn = "mysql:host={$host};..."`
+  interpolated `$host` and `$database` raw. A `$host` containing `;` could
+  inject arbitrary DSN options. Now: strict character allowlist
+  (`/^[a-zA-Z0-9.\-]+$/` for host, `/^[a-zA-Z0-9_]+$/` for database).
+- **Local storage direct file access on non-Apache (A22).** The `.htaccess`
+  block only protects files on Apache with mod_php. On nginx, LiteSpeed,
+  or Apache without mod_php, sealed-bid submissions were publicly
+  accessible via direct URL. Now: `get_download_url()` always returns
+  the nonce-protected PHP download endpoint.
+- **Local storage delete() path traversal (A23).** `delete()` did
+  `$base_dir . '/' . $cloud_key` with no `realpath()` containment check.
+  A `cloud_key` like `../../../wp-config.php` could delete critical files.
+  Now: applies the same `realpath()` containment check used in the
+  download handler.
+- **Admin dashboard XSS via display_name (A35).** The API-usage widget
+  concatenated `u.display_name` into `innerHTML` without escaping. Any
+  user (including bidders) could set their display_name to
+  `<img src=x onerror=alert(document.cookie)>` and XSS every Super Admin
+  who opens the dashboard. Now: escaped via `textContent`-based helper.
+- **Frontend `javascript:` href XSS (A36).** `frontend.js` used `escHtml`
+  to escape `att.download_url` before inserting into an `href` attribute.
+  `escHtml` does NOT block `javascript:` URLs (no `<>&` chars). Now:
+  validates `^https?://` scheme before assignment.
+
+### Medium
+
+- **Thread retract ENUM violation + missing role check (A12).** The retract
+  endpoint set thread `status = 'cancelled'` but the threads ENUM only
+  allowed `('open','resolved','closed')` — the UPDATE silently failed in
+  strict mode. Also, the docstring said "bidders only" but the code didn't
+  enforce it. Now: 'cancelled' added to ENUM (activator + migration), and
+  an explicit bidder-only check is enforced.
+- **Bidder can self-promote query to public visibility (A13).**
+  `create_thread` accepted `visibility` from the request. A bidder could
+  set `visibility=public` to publish their query to all bidders
+  immediately, bypassing the staff review flow. Now: bidder-created
+  threads are always private; only staff can change visibility.
+- **CSV formula injection (A25).** `export_csv()` wrote user-controlled
+  fields (`display_name`, `user_email`, `user_agent`) without prefixing
+  dangerous leading characters. A user agent like `=cmd|'/c calc'!A1`
+  would be interpreted as a formula by Excel/LibreOffice. Now: any cell
+  starting with `=`, `+`, `-`, `@`, `\t`, or `\r` is prefixed with `'`.
+- **ZIP filename collisions (A8).** Two bidders from the same company
+  (or company names that sanitize to the same slug) would overwrite each
+  other's files in the ZIP. Now: company folder includes `_user_id` suffix
+  to guarantee uniqueness.
+- **archive_expired_closed_bids timezone mismatch (A24).** The cutoff was
+  computed in UTC but `updated_at` is stored in site-local time, causing
+  bids to be archived ~2 hours late on UTC+2 sites. (Defense-in-depth
+  migration at v2.17.0 re-runs create_tables to ensure schema consistency.)
+- **Local storage extension validation (A25 variant).** `$ext` was taken
+  raw from `pathinfo` and stored. A `.php` file would be stored; .htaccess
+  mitigates on Apache but not on nginx. Now: validates extension against
+  `get_allowed_mime_types()` before saving.
+- **External DB PDO error messages returned to UI (subagent finding #16).**
+  PDO exceptions were returned verbatim to the admin UI, revealing internal
+  hostnames, ports, and database names. (Already mitigated by esc_html
+  preventing XSS; documented as defense-in-depth.)
+
+### Low
+
+- **Demo data auto-verify + timezone (A30).** Demo bidder no longer
+  auto-verified; forces the normal email verification flow.
+- **Updater ineffective nonce (subagent #21).** Removed cosmetic nonce on
+  the "Check for updates" link (update-core.php doesn't verify it).
+- **2FA input unslash (A5d).** Superglobal access now uses `wp_unslash`
+  before sanitizing.
+- **Multiple defense-in-depth JS escaping fixes** in admin/partials/settings.php,
+  public/partials/manage/bid-edit.php, admin/admin.js.
+
+### Compatibility Notes
+
+- **PHP 8.1+** still required.
+- **WordPress 6.0+** still required.
+- **Database migration required:** the v2.17.0 migration ALTERs the
+  `threads` table ENUM to include 'cancelled' and re-runs `create_tables()`
+  to backfill any missing columns. Runs automatically on plugin update.
+- **2FA setup flow changed:** users will now see the secret as text with a
+  copy-to-clipboard button instead of a QR code. This is a deliberate
+  privacy-first decision; an otpauth:// URL is available under "Advanced"
+  for users who want to construct their own QR.
+
 ## [2.14.0] — 2026-06-21
 
 This is a **major security and quality release**. Upgrade immediately.

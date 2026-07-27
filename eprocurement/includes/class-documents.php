@@ -515,6 +515,50 @@ class Eprocurement_Documents {
             return new \WP_Error( 'not_closed', __( 'Tender must be closed before awarding.', 'eprocurement' ), [ 'status' => 400 ] );
         }
 
+        // Audit fix A16: procurement integrity validations.
+        //
+        // 1. Prevent double-award — require explicit withdraw_award() first.
+        //    Silently overwriting an existing award destroys the audit trail
+        //    and leaves the prior winner unaware.
+        if ( ! empty( $document->awarded_to_user_id ) ) {
+            return new \WP_Error(
+                'already_awarded',
+                __( 'This tender has already been awarded. Withdraw the existing award first to re-award.', 'eprocurement' ),
+                [ 'status' => 400 ]
+            );
+        }
+
+        // 2. Verify the winner has an active submission for this tender.
+        //    Without this, an SCM Manager could "award" the contract to
+        //    anyone — themselves, a non-bidder, a friend — defrauding the
+        //    procurement process.
+        $submissions = new Eprocurement_Bid_Submissions();
+        $subs        = $submissions->get_submissions_for_document( $document_id );
+        $valid_winner = false;
+        foreach ( $subs as $sub ) {
+            if ( (int) $sub->user_id === $winner_user_id && $sub->status === 'submitted' ) {
+                $valid_winner = true;
+                break;
+            }
+        }
+        if ( ! $valid_winner ) {
+            return new \WP_Error(
+                'not_a_bidder',
+                __( 'The selected winner does not have an active submission for this tender.', 'eprocurement' ),
+                [ 'status' => 400 ]
+            );
+        }
+
+        // 3. Exclude staff users from being awarded. A staff member should
+        //    never be a procurement counterparty — conflict of interest.
+        if ( Eprocurement_Roles::is_staff( $winner_user_id ) ) {
+            return new \WP_Error(
+                'staff_not_allowed',
+                __( 'Staff members cannot be awarded tenders. Select a registered bidder.', 'eprocurement' ),
+                [ 'status' => 400 ]
+            );
+        }
+
         $result = Eprocurement_Database::update( 'documents', [
             'awarded_to_user_id' => $winner_user_id,
             'award_amount'       => $award_amount > 0 ? $award_amount : null,

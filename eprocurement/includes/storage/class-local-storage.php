@@ -87,8 +87,21 @@ class Eprocurement_Local_Storage extends Eprocurement_Storage_Interface {
         }
 
         // Generate unique filename to prevent overwrites
-        $ext       = pathinfo( $remote_name, PATHINFO_EXTENSION );
+        // Audit fix A25 (local-storage variant): validate extension against
+        // the allowed MIME types to prevent .php uploads from being stored
+        // (defense-in-depth for nginx/litespeed where .htaccess is ignored).
+        $ext       = strtolower( pathinfo( $remote_name, PATHINFO_EXTENSION ) );
         $base_name = pathinfo( $remote_name, PATHINFO_FILENAME );
+        $allowed   = self::get_allowed_mime_types();
+        if ( ! isset( $allowed[ $ext ] ) ) {
+            throw new \RuntimeException(
+                sprintf(
+                    /* translators: %s: file extension */
+                    __( 'File type "%s" is not allowed.', 'eprocurement' ),
+                    esc_html( $ext )
+                )
+            );
+        }
         $safe_name = sanitize_file_name( $base_name ) . '-' . wp_generate_password( 8, false ) . '.' . $ext;
         $dest_path = $target_dir . '/' . $safe_name;
 
@@ -112,21 +125,51 @@ class Eprocurement_Local_Storage extends Eprocurement_Storage_Interface {
 
     /**
      * Generate a download URL for a locally stored file.
+     *
+     * Audit fix A22: previously returned a direct URL to the file under
+     * wp-content/uploads/eprocurement/. The .htaccess protection only
+     * works on Apache with mod_php — nginx, LiteSpeed, and Apache without
+     * mod_php would serve the file publicly, exposing sealed-bid submissions
+     * and tender documents to anyone with the URL.
+     *
+     * Now always returns the nonce-protected PHP download endpoint URL.
+     * The actual file path is resolved server-side by class-downloads.php
+     * after nonce + capability verification.
      */
     public function get_download_url( string $cloud_key, int $expires_in = 3600 ): string {
-        // For local storage, return a direct URL (protected by WP nonce at the download endpoint)
-        return $this->get_base_url() . '/' . $cloud_key;
+        // Return the WordPress-powered download endpoint. The cloud_key is
+        // passed as a query param; class-downloads.php resolves it to the
+        // local file path after authenticating the request.
+        $slug = eprocurement_get_slug();
+        return home_url( "/{$slug}/download/?key=" . rawurlencode( $cloud_key ) );
     }
 
     /**
      * Delete a file from local storage.
+     *
+     * Audit fix A23: added realpath() containment check to prevent path
+     * traversal via attacker-controlled cloud_key values. Without this,
+     * a cloud_key like '../../../wp-config.php' could delete critical files.
      */
     public function delete( string $cloud_key ): bool {
-        $file_path = $this->get_base_dir() . '/' . $cloud_key;
+        $base_dir   = $this->get_base_dir();
+        $file_path  = $base_dir . '/' . $cloud_key;
 
-        if ( file_exists( $file_path ) ) {
-            wp_delete_file( $file_path );
-            return ! file_exists( $file_path );
+        // Audit fix A23: verify the resolved path is inside the base dir.
+        $real_base  = realpath( $base_dir );
+        $real_file  = realpath( $file_path );
+        if ( ! $real_base || ! $real_file ) {
+            // File doesn't exist — nothing to delete.
+            return true;
+        }
+        if ( strpos( $real_file, $real_base . '/' ) !== 0 && $real_file !== $real_base ) {
+            // Path traversal attempt — refuse to delete.
+            return false;
+        }
+
+        if ( file_exists( $real_file ) ) {
+            wp_delete_file( $real_file );
+            return ! file_exists( $real_file );
         }
 
         return true; // File doesn't exist, consider it deleted

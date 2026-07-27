@@ -3,7 +3,7 @@
  * Plugin Name: eProcurement
  * Plugin URI:  https://www.myblisstech.com/eprocurement
  * Description: A mini-CRM WordPress plugin for procurement processes. Manages bid/tender notices, structured communication between procurement officials and prospective bidders, cloud-based document storage, and role-based access control.
- * Version:     2.16.7
+ * Version:     2.17.0
  * Author:      MyBliss Tech
  * Author URI:  https://www.myblisstech.com
  * License:     GPL-2.0+
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin constants
  */
-define( 'EPROC_VERSION', '2.16.7' );
+define( 'EPROC_VERSION', '2.17.0' );
 define( 'EPROC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EPROC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'EPROC_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -230,6 +230,24 @@ function eprocurement_maybe_upgrade(): void {
 
         // Ensure evaluation + submission_requirements tables exist
         // (idempotent — dbDelta won't recreate existing tables).
+        require_once EPROC_PLUGIN_DIR . 'includes/class-activator.php';
+        Eprocurement_Activator::create_tables();
+    }
+
+    // v2.17.0: Threads ENUM expansion (add 'cancelled' for retract feature).
+    // Also re-runs create_tables() to add any columns still missing on
+    // sites that skipped intermediate versions (audit fix A2 + A12).
+    if ( version_compare( $installed_version, '2.17.0', '<' ) ) {
+        global $wpdb;
+        $threads_table = $wpdb->prefix . EPROC_TABLE_PREFIX . 'threads';
+
+        // ALTER the threads.status ENUM to include 'cancelled'.
+        $wpdb->query(
+            "ALTER TABLE {$threads_table} MODIFY COLUMN status ENUM('open','resolved','closed','cancelled') NOT NULL DEFAULT 'open'"
+        ); // phpcs:ignore
+
+        // Re-run create_tables() to backfill any columns that prior
+        // migrations missed on this site (defensive — dbDelta is idempotent).
         require_once EPROC_PLUGIN_DIR . 'includes/class-activator.php';
         Eprocurement_Activator::create_tables();
     }

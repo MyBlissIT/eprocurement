@@ -1062,10 +1062,22 @@ class Eprocurement_Rest_Api {
         $user_id   = get_current_user_id();
         $messaging = new Eprocurement_Messaging();
 
+        // Audit fix A12: only bidders can retract their own threads.
+        // Staff can resolve/close threads via the dedicated admin endpoints,
+        // not via this bidder-facing retract endpoint.
+        if ( ! Eprocurement_Roles::is_bidder( $user_id ) ) {
+            return new \WP_REST_Response( [ 'error' => __( 'Only bidders can retract their own queries.', 'eprocurement' ) ], 403 );
+        }
+
         // Get the thread — must be owned by the current user.
         $thread = $messaging->get_thread( $thread_id, $user_id );
         if ( ! $thread ) {
             return new \WP_REST_Response( [ 'error' => __( 'Thread not found or access denied.', 'eprocurement' ) ], 404 );
+        }
+
+        // Verify ownership: only the bidder who created the thread can retract it.
+        if ( (int) $thread->bidder_id !== $user_id ) {
+            return new \WP_REST_Response( [ 'error' => __( 'You can only retract your own queries.', 'eprocurement' ) ], 403 );
         }
 
         // Check if any staff member has replied.
@@ -1080,6 +1092,9 @@ class Eprocurement_Rest_Api {
         }
 
         // Mark the thread as cancelled.
+        // Audit fix A12: 'cancelled' is now a valid status value in the
+        // threads ENUM (activator schema updated for fresh installs, and
+        // a migration adds it for existing sites in eprocurement_maybe_upgrade).
         $result = Eprocurement_Database::update( 'threads', [
             'status'     => 'cancelled',
             'updated_at' => current_time( 'mysql' ),

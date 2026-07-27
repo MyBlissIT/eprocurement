@@ -40,6 +40,14 @@ class Eprocurement_Updater {
         add_filter( 'plugins_api', [ $this, 'plugin_info' ], 20, 3 );
         add_filter( 'upgrader_post_install', [ $this, 'post_install' ], 10, 3 );
 
+        // Audit fix A17: verify the downloaded ZIP's SHA-256 BEFORE
+        // WordPress extracts it. The previous post_install hook ran
+        // hash_file() on $result['source'] which is the EXTRACTED
+        // DIRECTORY (returns false), making the integrity check dead code.
+        // upgrader_source_selection fires after download but before
+        // extraction, with $source = path to the downloaded ZIP file.
+        add_filter( 'upgrader_source_selection', [ $this, 'verify_package_checksum' ], 10, 4 );
+
         // Show update notification details
         add_filter( 'plugin_row_meta', [ $this, 'plugin_row_meta' ], 10, 2 );
     }
@@ -252,6 +260,73 @@ class Eprocurement_Updater {
     }
 
     /**
+     * Verify the downloaded ZIP's SHA-256 BEFORE extraction.
+     *
+     * Audit fix A17 + A18: the previous post_install checksum verification
+     * was dead code because it hashed a directory instead of a file. This
+     * hook fires after download but before extraction, with $source = path
+     * to the downloaded ZIP file. We hash the actual ZIP and compare
+     * against the expected SHA-256 published alongside the release.
+     *
+     * Audit fix A18: if no checksum was published (the release omitted the
+     * .sha256 asset), we now HARD-FAIL the update. Previously verification
+     * was silently skipped, allowing a compromised release to bypass all
+     * integrity checks simply by omitting the checksum asset.
+     *
+     * @param string       $source      Path to the downloaded ZIP file.
+     * @param string       $remote_src  Remote source (unused).
+     * @param WP_Upgrader  $upgrader    Upgrader instance.
+     * @param array        $hook_extra  Extra args (contains 'plugin').
+     * @return string|WP_Error $source on success, WP_Error on mismatch.
+     */
+    public function verify_package_checksum( $source, $remote_src, $upgrader, $hook_extra ) {
+        // Only verify our own plugin updates.
+        if ( ! isset( $hook_extra['plugin'] ) || $hook_extra['plugin'] !== $this->plugin_basename ) {
+            return $source;
+        }
+
+        // Only verify actual files (not directories).
+        if ( ! $source || ! file_exists( $source ) || is_dir( $source ) ) {
+            return $source;
+        }
+
+        $update_transient = get_site_transient( 'update_plugins' );
+        $expected_sha     = $update_transient->response[ $this->plugin_basename ]->eproc_expected_sha256 ?? null;
+
+        // Audit fix A18: HARD-FAIL if no checksum was published.
+        // A release without a checksum asset can no longer bypass
+        // integrity verification.
+        if ( ! $expected_sha ) {
+            return new \WP_Error(
+                'eproc_no_checksum',
+                __( 'eProcurement update rejected: the release does not publish a SHA-256 checksum asset. Refusing to install an unverified package. Contact the plugin maintainer.', 'eprocurement' )
+            );
+        }
+
+        $actual_sha = hash_file( 'sha256', $source );
+        if ( ! $actual_sha ) {
+            return new \WP_Error(
+                'eproc_checksum_read_failed',
+                __( 'eProcurement update rejected: could not compute SHA-256 of the downloaded package.', 'eprocurement' )
+            );
+        }
+
+        if ( ! hash_equals( strtolower( $expected_sha ), strtolower( $actual_sha ) ) ) {
+            return new \WP_Error(
+                'eproc_checksum_mismatch',
+                sprintf(
+                    /* translators: 1: expected SHA-256, 2: actual SHA-256 */
+                    __( 'eProcurement update rejected: package checksum mismatch (expected %1$s, got %2$s). The downloaded package may have been tampered with.', 'eprocurement' ),
+                    $expected_sha,
+                    $actual_sha
+                )
+            );
+        }
+
+        return $source;
+    }
+
+    /**
      * After WordPress extracts the update ZIP, ensure the folder name
      * matches our plugin slug. GitHub zipballs use "owner-repo-hash"
      * as the folder name, which would break the plugin path.
@@ -267,30 +342,11 @@ class Eprocurement_Updater {
             return $result;
         }
 
-        // Supply-chain integrity check (security fix C-04).
-        // If the update transient carried an expected SHA-256, verify the
-        // downloaded package before WordPress installs it.
-        $update_transient = get_site_transient( 'update_plugins' );
-        $expected_sha     = $update_transient->response[ $this->plugin_basename ]->eproc_expected_sha256 ?? null;
-
-        if ( $expected_sha && ! empty( $result['destination'] ) ) {
-            // The downloaded ZIP is at $result['source'] (temporary path).
-            $downloaded_zip = $result['source'] ?? '';
-            if ( $downloaded_zip && file_exists( $downloaded_zip ) ) {
-                $actual_sha = hash_file( 'sha256', $downloaded_zip );
-                if ( $actual_sha && ! hash_equals( strtolower( $expected_sha ), strtolower( $actual_sha ) ) ) {
-                    return new \WP_Error(
-                        'eproc_checksum_mismatch',
-                        sprintf(
-                            /* translators: 1: expected SHA-256, 2: actual SHA-256 */
-                            __( 'eProcurement update rejected: package checksum mismatch (expected %1$s, got %2$s). The downloaded package may have been tampered with.', 'eprocurement' ),
-                            $expected_sha,
-                            $actual_sha
-                        )
-                    );
-                }
-            }
-        }
+        // Audit fix A17: SHA-256 verification has been moved to
+        // verify_package_checksum() which fires BEFORE extraction via
+        // the upgrader_source_selection filter. The previous code here
+        // hashed a directory (the extracted result), which always
+        // returned false — making the integrity check dead code.
 
         global $wp_filesystem;
 

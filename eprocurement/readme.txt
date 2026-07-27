@@ -4,7 +4,7 @@ Tags: procurement, tender, bids, crm, government, supply-chain, scm
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 2.14.0
+Stable tag: 2.17.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -72,6 +72,45 @@ By default, uninstalling the plugin preserves all data so you can reinstall with
 Email security@myblisstech.com with details. We respond within 48 hours and credit responsible disclosure in our changelog.
 
 == Changelog ==
+
+= 2.17.0 (2026-07-28) =
+
+**Critical**
+
+* Schema: Fresh installs now get all 14 documents-table columns (was missing 8 award/evaluation/reminder columns on fresh install — only upgrades got them).
+* 2FA: Removed remember-me bypass that extended 2FA sessions to 14 days.
+* 2FA: Added rate limiting (5 attempts / 5-min lockout) to prevent brute force.
+* 2FA: Moved session token from URL query string to signed HttpOnly SameSite=Strict cookie (was leaking via Referer/history).
+* 2FA: Removed external api.qrserver.com call that leaked the 2FA secret + email to a third-party operator. Manual secret entry is now the primary flow.
+* Award: Added procurement-integrity validations — winner must have an active submission, no double-award, no staff-as-winner.
+* Updater: Fixed SHA-256 verification that was hashing a directory instead of a file (dead code). Now verifies before extraction via `upgrader_source_selection`.
+* Updater: Hard-fails if no checksum asset is published (previously silently skipped, allowing bypass).
+* Demo data: Replaced hard-coded `Demo@2025` password with per-install random passwords, displayed once to the seeding admin.
+
+**High**
+
+* Bid submission file validation now uses `finfo_file` content MIME verification (was filename-based only).
+* External DB: SSRF protection now pins PDO to the resolved IP to prevent DNS rebinding; unresolvable hostnames rejected.
+* External DB: Added strict character allowlist on host/database names to prevent PDO DSN injection.
+* Local storage: `get_download_url()` always returns the nonce-protected PHP endpoint (was returning direct file URLs that bypassed .htaccess on nginx).
+* Local storage: Added `realpath()` containment check to `delete()` to prevent path traversal.
+* Admin dashboard: Fixed XSS in API-usage widget where `display_name` was concatenated into `innerHTML` without escaping.
+* Frontend: Fixed `javascript:` href XSS where `escHtml` was used instead of URL-scheme validation.
+
+**Medium**
+
+* Threads: Added 'cancelled' to status ENUM (was silently failing in strict mode). Migration included.
+* Threads: Added explicit bidder-only check on retract endpoint.
+* Messaging: Bidder-created threads are now always private (was accepting `visibility` from the request, allowing self-promotion to public).
+* Downloads: CSV export now prefixes dangerous leading characters (`=`, `+`, `-`, `@`, `\t`, `\r`) with `'` to prevent formula injection in Excel.
+* ZIP: Company folder now includes `_user_id` suffix to prevent filename collisions between bidders from the same company.
+* Local storage: Validates file extension against allowed MIME types before saving.
+
+**Low**
+
+* Demo bidder no longer auto-verified (forces normal email verification flow).
+* 2FA input now uses `wp_unslash` before sanitizing.
+* Multiple defense-in-depth JS escaping fixes in admin and frontend.
 
 = 2.14.0 (2026-06-21) =
 
