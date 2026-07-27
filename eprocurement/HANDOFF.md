@@ -1,6 +1,6 @@
 # HANDOFF DOCUMENT — eProcurement WordPress Plugin
 
-**Version:** 2.16.6
+**Version:** 2.16.7
 **Date:** 2026-06-22
 **Prepared by:** Super Z (AI assistant)
 **Repository:** github.com/MyBlissIT/eprocurement

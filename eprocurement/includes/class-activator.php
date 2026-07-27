@@ -78,7 +78,7 @@ class Eprocurement_Activator {
     /**
      * Create all 11 custom database tables via dbDelta.
      */
-    private static function create_tables(): void {
+    public static function create_tables(): void {
         global $wpdb;
 
         $charset_collate = $wpdb->get_charset_collate();

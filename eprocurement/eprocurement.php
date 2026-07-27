@@ -211,16 +211,27 @@ function eprocurement_maybe_upgrade(): void {
             }
         }
 
-        // Create evaluation tables (also created on fresh activation, but
-        // existing sites need them too).
+        // Create evaluation + submission_requirements tables (also created
+        // on fresh activation, but existing sites need them too).
         require_once EPROC_PLUGIN_DIR . 'includes/class-activator.php';
         Eprocurement_Activator::create_tables();
+    }
 
-        // v2.15.0: Add submission_mode column for per-document uploads.
+    // v2.16.0: Add submission_mode column for per-document uploads.
+    // This was previously inside the v2.14.0 block — a bug that meant sites
+    // already at v2.14.0 would never get the column. Now gated independently.
+    if ( version_compare( $installed_version, '2.16.0', '<' ) ) {
+        global $wpdb;
+        $doc_table = $wpdb->prefix . EPROC_TABLE_PREFIX . 'documents';
         $sub_mode_col = $wpdb->get_var( "SHOW COLUMNS FROM {$doc_table} LIKE 'submission_mode'" ); // phpcs:ignore
         if ( ! $sub_mode_col ) {
             $wpdb->query( "ALTER TABLE {$doc_table} ADD COLUMN submission_mode ENUM('single','per_document') NOT NULL DEFAULT 'single' AFTER accept_online_submissions" ); // phpcs:ignore
         }
+
+        // Ensure evaluation + submission_requirements tables exist
+        // (idempotent — dbDelta won't recreate existing tables).
+        require_once EPROC_PLUGIN_DIR . 'includes/class-activator.php';
+        Eprocurement_Activator::create_tables();
     }
 
     update_option( 'eprocurement_version', EPROC_VERSION );
